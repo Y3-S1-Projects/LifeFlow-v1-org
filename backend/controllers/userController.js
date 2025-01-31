@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendOTP = async (email) => {
+export const sendOTP = async (email) => {
   const generateNumericOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };

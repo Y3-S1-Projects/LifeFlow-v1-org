@@ -1,16 +1,29 @@
 "use client";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import { Mail, Lock, Heart, Moon, Sun, Eye, EyeOff } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Heart,
+  Moon,
+  Sun,
+  Eye,
+  EyeOff,
+  Loader2,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import "../styles/index.css";
 
 const Login = () => {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [focusedInput, setFocusedInput] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const autofillStyles = `
   /* Light mode autofill styles */
@@ -68,10 +81,13 @@ const Login = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
       setEmailError("Email is required");
+      return false; // Return false if email is empty
     } else if (!emailRegex.test(email)) {
       setEmailError("Please enter a valid email address");
+      return false; // Return false if email is invalid
     } else {
       setEmailError("");
+      return true; // Return true if email is valid
     }
   };
 
@@ -80,12 +96,42 @@ const Login = () => {
     if (email) validateEmail(email);
   }, [email]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    validateEmail(email);
+    const isEmailValid = validateEmail(email); // Validate email and get the result
 
-    if (!emailError) {
-      console.log("Login attempted with:", { email, password });
+    if (isEmailValid) {
+      setIsLoading(true); // Start the loading process
+      try {
+        const response = await fetch("http://localhost:3001/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.status === 403 && data.requiresVerification) {
+          // Redirect to OTP verification component
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        } else if (response.ok) {
+          // Store token in localStorage or using your preferred state management
+          localStorage.setItem("token", data.token);
+          // Redirect to dashboard or home page
+          router.push("/dashboard");
+        } else {
+          // Handle other error cases
+          console.error("Login failed:", data.message);
+          setErrorMessage(data.message);
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        setErrorMessage("An error occurred, please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -162,6 +208,14 @@ const Login = () => {
             isDarkMode ? "bg-gray-800/80" : "bg-white/80"
           } backdrop-blur-sm py-8 px-4 shadow-2xl sm:rounded-2xl sm:px-10`}
         >
+          {errorMessage && (
+            <div className="mt-2 mb-2 w-full flex justify-center">
+              <p className="text-sm text-red-500 bg-red-100 border border-red-400 p-3 rounded-lg w-full max-w-md text-center">
+                {errorMessage}
+              </p>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Email input field */}
             <motion.div variants={itemVariants}>
@@ -310,19 +364,23 @@ const Login = () => {
             {/* Sign In Button */}
             <motion.div variants={itemVariants}>
               <motion.button
-                whileHover={{
-                  scale: 1.02,
-                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                }}
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
-                  isDarkMode
-                    ? "bg-gradient-to-r from-red-700 to-red-600"
+                  isLoading
+                    ? "bg-gray-400 cursor-wait"
                     : "bg-gradient-to-r from-red-600 to-red-500"
                 } hover:from-red-700 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200`}
               >
-                Sign in
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign in"
+                )}
               </motion.button>
             </motion.div>
           </form>

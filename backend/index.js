@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import express from "express";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoute.js";
+import { loginUser } from "./controllers/loginController.js";
 import cors from "cors";
 
 dotenv.config();
@@ -31,3 +32,4 @@ app.listen(port, () => {
 });
 
 app.use("/users", userRoutes);
+app.use("/api", loginUser);

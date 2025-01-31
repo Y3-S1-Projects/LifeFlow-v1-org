@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
@@ -9,6 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import Modal from "./Modal";
 import {
   InputOTP,
   InputOTPGroup,
@@ -38,6 +39,9 @@ const VerifyOtp: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [attempts, setAttempts] = useState<number>(0); // Track OTP attempts
+  const [message, setMessage] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [timer, setTimer] = useState(5);
 
   const handleVerifyOtp = async (): Promise<void> => {
     setLoading(true);
@@ -63,7 +67,9 @@ const VerifyOtp: React.FC = () => {
         throw new Error(data.message);
       }
 
-      router.push("/login");
+      setMessage("OTP Verified successfully!");
+      setIsModalOpen(true);
+      startTimer(); // Start the timer once OTP is verified
     } catch (error) {
       setError(error instanceof Error ? error.message : "Invalid OTP");
     } finally {
@@ -79,10 +85,57 @@ const VerifyOtp: React.FC = () => {
   };
 
   const handleResendCode = async (): Promise<void> => {
-    // Implement resend logic here
-    console.log("Resending code to:", email);
+    try {
+      const response = await fetch("http://localhost:3001/users/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setAttempts(0); // Reset attempts after successful resend
+        setError(""); // Clear any previous errors
+        setMessage("OTP sent successfully!");
+        setIsModalOpen(true);
+        startTimer(); // Start the timer after resend
+      } else {
+        throw new Error("Failed to resend OTP");
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Error sending OTP");
+    }
   };
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false); // Close the modal
+  };
+
+  // Use useEffect to handle redirect and reset timer once the modal is closed
+  useEffect(() => {
+    if (!isModalOpen && timer === 0) {
+      setTimer(5); // Reset the timer to initial value
+      router.push("/login"); // Redirect to login page when modal is closed
+    }
+  }, [isModalOpen, timer, router]);
+
+  // Use useEffect to navigate to the login page after timer expires
+  useEffect(() => {
+    if (timer === 0) {
+      router.push("/login");
+    }
+  }, [timer, router]);
+
+  // Start the 5-second timer
+  const startTimer = () => {
+    const interval = setInterval(() => {
+      setTimer((prevTimer) => {
+        if (prevTimer === 1) {
+          clearInterval(interval); // Clear the interval to stop the timer
+        }
+        return prevTimer - 1;
+      });
+    }, 1000);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex flex-col items-center justify-center p-4">
       <div className="mb-8 flex items-center">
@@ -163,6 +216,20 @@ const VerifyOtp: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal for success message */}
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+        <h3>{message}</h3>
+        <p>
+          Redirecting to login page in <strong>{timer}</strong> seconds...
+        </p>
+        <button
+          onClick={handleCloseModal}
+          className="mt-4 px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700"
+        >
+          Proceed to Login
+        </button>
+      </Modal>
     </div>
   );
 };
