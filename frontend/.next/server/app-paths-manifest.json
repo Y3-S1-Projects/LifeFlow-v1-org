@@ -1,8 +1,7 @@
 {
-  "/page": "app/page.js",
-  "/donor-registration/page": "app/donor-registration/page.js",
-  "/login/page": "app/login/page.js",
+  "/doner-dashboard/page": "app/doner-dashboard/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/verify-email/page": "app/verify-email/page.js"
+  "/login/page": "app/login/page.js",
+  "/verify-email/page": "app/verify-email/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
 }

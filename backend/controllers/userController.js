@@ -247,17 +247,20 @@ export const getUsers = async (req, res) => {
 };
 
 // Get a user by ID
-export const getUserById = async (req, res) => {
-  const { id } = req.params;
-
+export const getUserDetails = async (req, res) => {
   try {
-    const user = await User.findById(id);
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Error fetching user:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

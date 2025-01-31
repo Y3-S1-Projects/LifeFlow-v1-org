@@ -14,37 +14,40 @@ export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if user exists
-    const user = await User.findOne({ email });
+    console.log("Login attempt for email:", email);
+
+    const user = await User.findOne({ email: email });
+
     if (!user) {
+      console.log("User not found in database");
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log("Invalid password for user:", email);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Check if email is verified
     if (!user.isVerified) {
-      // Send new OTP for verification
-      await sendOTP(email); // Reuse the existing sendOTP function
+      console.log("User email not verified:", email);
+      await sendOTP(email);
       return res.status(403).json({
-        message: "Email not verified. A new OTP has been sent to your email.",
+        message: "Email not verified. A new OTP has been sent.",
         requiresVerification: true,
-        userId: user._id,
       });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      {
+        expiresIn: "24h",
+      }
     );
 
-    // Return user data and token
+    console.log("Login successful for:", email);
+
     res.status(200).json({
       message: "Login successful",
       token,
@@ -103,9 +106,12 @@ export const verifyLoginOTP = async (req, res) => {
     // Delete the used OTP
     await Otp.deleteOne({ email });
 
+    console.log("Generated Token:", token);
+
     // Return success response with token and user data
     res.status(200).json({
       message: "Email verified successfully. Please login again.",
+      token,
       user: {
         id: user._id,
         firstName: user.firstName,
