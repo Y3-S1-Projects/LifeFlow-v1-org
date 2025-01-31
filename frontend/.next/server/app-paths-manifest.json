@@ -1,0 +1,6 @@
+{
+  "/verify-email/page": "app/verify-email/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/donor-registration/page": "app/donor-registration/page.js",
+  "/login/page": "app/login/page.js"
+}
