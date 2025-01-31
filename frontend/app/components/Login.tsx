@@ -98,36 +98,30 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const isEmailValid = validateEmail(email); // Validate email and get the result
+    const isEmailValid = validateEmail(email);
 
     if (isEmailValid) {
-      setIsLoading(true); // Start the loading process
+      setIsLoading(true); // Start loading
       try {
         const response = await fetch("http://localhost:3001/api/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password }), // Ensure email and password are passed
         });
 
         const data = await response.json();
 
         if (response.status === 403 && data.requiresVerification) {
-          // Redirect to OTP verification component
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         } else if (response.ok) {
-          // Store token in localStorage or using your preferred state management
           localStorage.setItem("token", data.token);
-          // Redirect to dashboard or home page
-          router.push("/dashboard");
+          router.push("/doner-dashboard");
         } else {
-          // Handle other error cases
-          console.error("Login failed:", data.message);
           setErrorMessage(data.message);
         }
       } catch (error) {
-        console.error("Login error:", error);
         setErrorMessage("An error occurred, please try again.");
       } finally {
         setIsLoading(false);

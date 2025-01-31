@@ -4,7 +4,7 @@ import {
   verifyOTP,
   resendOTP,
   getUsers,
-  getUserById,
+  getUserDetails,
   updateUser,
   addDonationRecord,
   deleteUser,
@@ -16,7 +16,7 @@ router.post("/register", registerUser);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 router.get("/allUsers", getUsers);
-router.get("/getUserById/:id", getUserById);
+router.get("/getUserDetails/:id", getUserDetails);
 router.put("/updateUser/:id", updateUser);
 router.post("/addUserDonationRecord/:id/donations", addDonationRecord);
 router.delete("/deleteUser/:id", deleteUser);
