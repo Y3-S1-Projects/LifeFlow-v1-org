@@ -1,4 +1,6 @@
-import React from "react";
+"use client"; // Ensures this runs on the client side
+
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,11 +10,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings, LogOut, HelpCircle, ChevronDown } from "lucide-react";
+import useUser from "../hooks/useUser";
 
-const Header = () => {
-  const user = {
-    firstName: "John",
-    image: "/api/placeholder/32/32",
+const Header: React.FC = () => {
+  const router = useRouter(); // Next.js router
+  const { user, loading, error } = useUser();
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
+  const logOut = async (): Promise<void> => {
+    try {
+      localStorage.removeItem("token"); // Remove token
+
+      router.replace("/login"); // Redirect to login page
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
@@ -27,36 +41,21 @@ const Header = () => {
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-6">
-              <Card className="border-0 shadow-none hover:bg-gray-50">
-                <CardContent className="p-2">
-                  <a
-                    href="/dashboard"
-                    className="text-gray-600 hover:text-red-600"
-                  >
-                    Dashboard
-                  </a>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-none hover:bg-gray-50">
-                <CardContent className="p-2">
-                  <a
-                    href="/appointments"
-                    className="text-gray-600 hover:text-red-600"
-                  >
-                    Appointments
-                  </a>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-none hover:bg-gray-50">
-                <CardContent className="p-2">
-                  <a
-                    href="/donations"
-                    className="text-gray-600 hover:text-red-600"
-                  >
-                    My Donations
-                  </a>
-                </CardContent>
-              </Card>
+              {["Dashboard", "Appointments", "My Donations"].map((item) => (
+                <Card
+                  key={item}
+                  className="border-0 shadow-none hover:bg-gray-50"
+                >
+                  <CardContent className="p-2">
+                    <a
+                      href={`/${item.toLowerCase().replace(/\s+/g, "")}`}
+                      className="text-gray-600 hover:text-red-600"
+                    >
+                      {item}
+                    </a>
+                  </CardContent>
+                </Card>
+              ))}
             </nav>
 
             {/* User Menu */}
@@ -64,12 +63,8 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Card className="border-0 shadow-none hover:bg-gray-50 cursor-pointer">
                   <CardContent className="flex items-center space-x-2 p-2">
-                    <img
-                      src={user.image}
-                      alt="User"
-                      className="w-8 h-8 rounded-full"
-                    />
-                    <span className="font-medium">{user.firstName}</span>
+                    <img alt="User" className="w-8 h-8 rounded-full" />
+                    <span className="font-medium">{user?.firstName}</span>
                     <ChevronDown className="h-4 w-4 text-gray-500" />
                   </CardContent>
                 </Card>
@@ -86,7 +81,10 @@ const Header = () => {
                       <span>Support</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer text-red-600">
+                    <DropdownMenuItem
+                      onClick={logOut}
+                      className="cursor-pointer text-red-600"
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Logout</span>
                     </DropdownMenuItem>

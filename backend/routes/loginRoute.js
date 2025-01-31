@@ -1,5 +1,9 @@
 import express from "express";
-import { loginUser, verifyLoginOTP } from "../controllers/loginController.js";
+import {
+  loginUser,
+  logoutUser,
+  verifyLoginOTP,
+} from "../controllers/loginController.js";
 import { getUserDetails } from "../controllers/userController.js";
 import { authenticateUser } from "../middleware/authMiddleware.js";
 
@@ -14,5 +18,6 @@ router.post("/verify-login-otp", verifyLoginOTP);
 
 // Protected route to get user details
 router.get("/me", authenticateUser, getUserDetails);
+router.post("/logout", authenticateUser, logoutUser);
 
 export default router;

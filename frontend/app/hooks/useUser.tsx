@@ -4,11 +4,20 @@ import { getToken } from "../utils/auth";
 
 interface User {
   firstName: string;
+  lastName: string;
   email: string;
   bloodType?: string;
   isVerified: boolean;
+  phoneNumber?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  };
+  dateOfBirth?: Date;
+  isEligible?: boolean;
 }
-
 const useUser = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -40,6 +49,7 @@ const useUser = () => {
           timeout: 5000,
           validateStatus: (status) => status >= 200 && status < 300,
         });
+        console.log(response.data);
 
         // Validate response data
         if (!response.data || !response.data.email) {

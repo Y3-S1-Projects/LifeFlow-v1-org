@@ -127,3 +127,20 @@ export const verifyLoginOTP = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const logoutUser = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(400).json({ message: "No token provided" });
+    }
+
+    blacklistedTokens.add(token); // Add token to blacklist
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

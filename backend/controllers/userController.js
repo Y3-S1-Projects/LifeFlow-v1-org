@@ -253,7 +253,18 @@ export const getUserDetails = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    const user = await User.findById(req.user.userId).select("-password");
+    const user = await User.findById(req.user.userId).select({
+      firstName: 1,
+      lastName: 1,
+      email: 1,
+      bloodType: 1,
+      isVerified: 1,
+      phoneNumber: 1,
+      address: 1,
+      dateOfBirth: 1,
+      isEligible: 1,
+    });
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
