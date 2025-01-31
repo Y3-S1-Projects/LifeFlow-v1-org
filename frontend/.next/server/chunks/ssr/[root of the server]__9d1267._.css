@@ -1204,10 +1204,6 @@ body {
   letter-spacing: -.025em;
 }
 
-.tracking-widest {
-  letter-spacing: .1em;
-}
-
 .text-card-foreground {
   color: hsl(var(--card-foreground));
 }
