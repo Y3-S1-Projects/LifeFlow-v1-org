@@ -83,6 +83,10 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false, // Default to false until all fields are filled
   },
+  isProfileComplete: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

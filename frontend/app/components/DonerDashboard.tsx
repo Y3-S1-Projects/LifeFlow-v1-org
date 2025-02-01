@@ -53,6 +53,10 @@ const DonorDashboard: React.FC = () => {
   const impactLives = totalDonations * 3;
   const nextEligibleDate = "2025-04-15";
 
+  const customNavigate = (path: string) => {
+    window.location.href = path;
+  };
+
   const handleClose = () => {
     setIsVisible(false);
   };
@@ -204,7 +208,12 @@ const DonorDashboard: React.FC = () => {
                   Complete all required fields in your donor profile to start
                   your journey.
                 </p>
-                <button className="mt-2 bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600">
+                <button
+                  className="mt-2 bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600"
+                  onClick={() => {
+                    customNavigate("/eligibility-form");
+                  }}
+                >
                   Complete Profile
                 </button>
               </div>
