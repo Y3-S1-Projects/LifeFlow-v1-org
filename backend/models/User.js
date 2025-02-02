@@ -19,6 +19,9 @@ const DonationHistorySchema = new mongoose.Schema({
 
 // Define the User schema
 const UserSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+  },
   firstName: {
     type: String,
     required: true,
@@ -56,7 +59,7 @@ const UserSchema = new mongoose.Schema({
     default: null,
   },
   dateOfBirth: {
-    type: Date,
+    type: String,
     default: null,
   },
   address: {
@@ -65,7 +68,7 @@ const UserSchema = new mongoose.Schema({
     state: { type: String, default: null },
     zipCode: { type: String, default: null },
   },
-  medicalConditions: {
+  healthConditions: {
     type: [String], // List of conditions (e.g., ["Diabetes", "Hypertension"])
     default: [],
   },
@@ -75,6 +78,15 @@ const UserSchema = new mongoose.Schema({
   },
   lastDonationDate: {
     type: Date,
+    default: null,
+  },
+  donatedBefore: {
+    type: String,
+    enum: ["yes", "no"],
+    default: "no",
+  },
+  additionalInfo: {
+    type: String,
     default: null,
   },
   isVerified: { type: Boolean, default: false },

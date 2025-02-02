@@ -3,6 +3,8 @@ import axios from "axios";
 import { getToken } from "../utils/auth";
 
 interface User {
+  _id: string;
+  fullName: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -15,7 +17,11 @@ interface User {
     state?: string;
     zipCode?: string;
   };
-  dateOfBirth?: Date;
+  dateOfBirth?: string;
+  donatedBefore?: string;
+  additionalInfo?: string;
+  healthConditions?: string[];
+  lastDonationDate?: Date | null;
   isEligible?: boolean;
 }
 const useUser = () => {
