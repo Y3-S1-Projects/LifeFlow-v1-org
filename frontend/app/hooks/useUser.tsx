@@ -23,13 +23,13 @@ interface User {
   healthConditions?: string[];
   lastDonationDate?: Date | null;
   isEligible?: boolean;
+  isProfileComplete?: boolean;
 }
 const useUser = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Move this into an environment variable
   const API_URL =
     process.env.REACT_APP_API_URL ||
     `http://localhost:${process.env.PORT || 3001}`;
@@ -39,7 +39,6 @@ const useUser = () => {
       try {
         const token = getToken();
 
-        // Better token validation
         if (!token || token === "undefined") {
           setError("Authentication required");
           setLoading(false);
@@ -51,7 +50,6 @@ const useUser = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          // Add timeout and validateStatus
           timeout: 5000,
           validateStatus: (status) => status >= 200 && status < 300,
         });

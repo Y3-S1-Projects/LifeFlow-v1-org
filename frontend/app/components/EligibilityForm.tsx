@@ -14,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import useUser from "../hooks/useUser";
 import Header from "./Header";
+import { Router } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface FormErrors {
   fullName?: string;
@@ -38,6 +40,7 @@ interface FormData {
 }
 
 export default function EligibilityForm() {
+  const router = useRouter();
   const { user, loading, error } = useUser();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -59,6 +62,14 @@ export default function EligibilityForm() {
   console.log("User blood type:", user?.bloodType);
   console.log("Form data blood type:", formData.bloodType);
 
+  useEffect(() => {
+    if (user && user.isProfileComplete) {
+      router.push(
+        "/donor-dashboard?message=" +
+          encodeURIComponent("You have already completed the profile")
+      );
+    }
+  }, [user, router]);
   useEffect(() => {
     if (user) {
       console.log("Before update - bloodType:", formData.bloodType);
@@ -139,6 +150,7 @@ export default function EligibilityForm() {
     const dataToSubmit = {
       ...formData,
       dateOfBirth: formData.dob.replace(/-/g, "/"), // Convert YYYY-MM-DD to YYYY/MM/DD
+      isProfileComplete: true,
     };
 
     setSubmitting(true);

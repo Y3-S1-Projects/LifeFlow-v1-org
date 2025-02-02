@@ -63,7 +63,7 @@ const Header: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Card className="border-0 shadow-none hover:bg-gray-50 cursor-pointer">
                   <CardContent className="flex items-center space-x-2 p-2">
-                    <img alt="User" className="w-8 h-8 rounded-full" />
+                    {/* <img alt="User" className="w-8 h-8 rounded-full" /> */}
                     <span className="font-medium">{user?.firstName}</span>
                     <ChevronDown className="h-4 w-4 text-gray-500" />
                   </CardContent>

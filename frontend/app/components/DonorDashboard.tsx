@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSearchParams } from "next/navigation";
+import { Toaster, toast } from "sonner";
 import {
   Calendar,
   Droplet,
@@ -12,7 +14,7 @@ import {
 } from "lucide-react";
 import Header from "./Header";
 import useUser from "../hooks/useUser";
-
+import { useRouter } from "next/navigation";
 interface Donation {
   date: string;
   location: string;
@@ -21,8 +23,29 @@ interface Donation {
 }
 
 const DonorDashboard: React.FC = () => {
+  const router = useRouter();
   const { user, loading, error } = useUser();
+  const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState<boolean>(true);
+  const [toastShown, setToastShown] = useState(false);
+  const toastShownRef = useRef(false);
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    // Only show if we have a message and haven't shown it yet
+    if (message && !toastShown) {
+      // Single timeout to handle the toast
+      const timer = setTimeout(() => {
+        toast.success(message);
+        toastShownRef.current = true;
+        router.replace("/donor-dashboard");
+        setToastShown(true);
+      }, 500);
+
+      // Cleanup function to prevent memory leaks
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, toastShown]);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -64,6 +87,15 @@ const DonorDashboard: React.FC = () => {
   return (
     <div className="min-h-screen p-6 w-full mx-auto space-y-6 flex flex-col">
       <Header />
+      <Toaster
+        toastOptions={{
+          style: {
+            background: "hsl(var(--background))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--border))",
+          },
+        }}
+      />
 
       {/* 3D Card Style Eligibility Message */}
       {/* {!user?.isEligible && isVisible && (
@@ -130,13 +162,13 @@ const DonorDashboard: React.FC = () => {
                     className={`
                   px-3 py-1 rounded-full text-xs font-medium
                   ${
-                    user?.isEligible
+                    user?.isProfileComplete
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
                   }
                 `}
                   >
-                    {user?.isEligible ? "Completed" : "Incomplete"}
+                    {user?.isProfileComplete ? "Completed" : "Incomplete"}
                   </span>
                 </div>
               </div>
@@ -209,12 +241,25 @@ const DonorDashboard: React.FC = () => {
                   your journey.
                 </p>
                 <button
-                  className="mt-2 bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600"
+                  className={`mt-2 px-4 py-2 rounded text-sm flex items-center gap-2 ${
+                    user?.isProfileComplete
+                      ? "bg-green-500 text-white cursor-default"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
                   onClick={() => {
-                    customNavigate("/eligibility-form");
+                    if (!user?.isProfileComplete) {
+                      customNavigate("/eligibility-form");
+                    }
                   }}
+                  disabled={user?.isProfileComplete}
                 >
-                  Complete Profile
+                  {user?.isProfileComplete ? (
+                    <>
+                      <span>Profile Completed</span>✅
+                    </>
+                  ) : (
+                    "Complete Profile"
+                  )}
                 </button>
               </div>
 
