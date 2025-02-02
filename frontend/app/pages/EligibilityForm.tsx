@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import useUser from "../hooks/useUser";
-import Header from "./Header";
+import Header from "../components/Header";
 import { Router } from "lucide-react";
 import { useRouter } from "next/navigation";
 

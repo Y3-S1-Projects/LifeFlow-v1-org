@@ -5,7 +5,7 @@ import { FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { TbBrandFacebook } from "react-icons/tb";
 import Link from "next/link";
 import { cn } from "../libs/utils";
-import Footer from "./Footer";
+import Footer from "../components/Footer";
 
 const Home = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);

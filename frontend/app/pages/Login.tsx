@@ -117,7 +117,7 @@ const Login = () => {
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         } else if (response.ok) {
           localStorage.setItem("token", data.token);
-          router.push("/doner-dashboard");
+          router.push("/donor-dashboard");
         } else {
           setErrorMessage(data.message);
         }

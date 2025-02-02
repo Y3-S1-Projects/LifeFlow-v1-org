@@ -1,5 +1,8 @@
 {
   "/donor-dashboard/page": "app/donor-dashboard/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/eligibility-form/page": "app/eligibility-form/page.js"
+  "/eligibility-form/page": "app/eligibility-form/page.js",
+  "/login/page": "app/login/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/self-assessment/page": "app/self-assessment/page.js"
 }

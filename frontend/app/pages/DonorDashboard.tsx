@@ -12,7 +12,7 @@ import {
   User,
   Clipboard,
 } from "lucide-react";
-import Header from "./Header";
+import Header from "../components/Header";
 import useUser from "../hooks/useUser";
 import { useRouter } from "next/navigation";
 interface Donation {
@@ -176,23 +176,24 @@ const DonorDashboard: React.FC = () => {
               <div className="flex items-center">
                 <Droplet className="mr-3 text-gray-500" />
                 <div>
-                  <h3 className="font-semibold">Health Screening</h3>
+                  <h3 className="font-semibold">Self-Assessment</h3>
                   <p className="text-sm text-gray-600">
-                    Medical evaluation to determine donation eligibility
+                    Complete an online questionnaire to assess donation
+                    eligibility
                   </p>
                 </div>
                 <div className="ml-auto">
                   <span
                     className={`
-                  px-3 py-1 rounded-full text-xs font-medium
-                  ${
-                    user?.isEligible
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }
-                `}
+                    px-3 py-1 rounded-full text-xs font-medium
+                    ${
+                      user?.isEligible
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }
+                  `}
                   >
-                    {user?.isEligible ? "Completed" : "Pending"}
+                    {user?.isEligible ? "Completed" : "Incomplete"}
                   </span>
                 </div>
               </div>
@@ -265,14 +266,14 @@ const DonorDashboard: React.FC = () => {
 
               <div className="bg-green-50 border-l-4 border-green-500 p-4">
                 <h3 className="font-semibold text-green-800 mb-2">
-                  2. Schedule Health Screening
+                  2. Complete Self-Assessment
                 </h3>
                 <p className="text-sm text-green-700">
-                  Book an appointment for a quick health assessment to determine
-                  eligibility.
+                  Fill out a short online questionnaire to assess your
+                  eligibility for donation.
                 </p>
                 <button className="mt-2 bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">
-                  Schedule Screening
+                  Start Self-Assessment
                 </button>
               </div>
             </div>
