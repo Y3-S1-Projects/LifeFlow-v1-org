@@ -15,16 +15,20 @@ import {
   Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import Header from "../components/Header";
 import Footer from "../components/Footer";
+import GlobalHeader from "../components/GlobalHeader";
 
 const DonorRegistration = () => {
   const router = useRouter();
-  // const [fname, setFname] = useState("");
-  // const [lname, setLname] = useState("");
-  // const [email, setEmail] = useState("");
-  // const [password, setPassword] = useState("");
-  // const [contact, setContact] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const menuItems = [
+    { title: "Home", href: "/" },
+    { title: "About", href: "/about" },
+    { title: "Donate", href: "/donate" },
+    { title: "Find Donors", href: "/find-donors" },
+    { title: "Contact", href: "/contact" },
+  ];
   const [focusedInput, setFocusedInput] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -169,18 +173,24 @@ const DonorRegistration = () => {
   );
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden ">
+      <GlobalHeader
+        scrolled={scrolled}
+        isDarkMode={isDarkMode}
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+        menuItems={menuItems}
+      />
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className={`h-screen w-screen ${
+        className={`h-screen w-screen min-h-screen ${
           isDarkMode
             ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
             : "bg-gradient-to-br from-red-50 via-white to-red-50"
-        } flex flex-col justify-center py-12 sm:px-6 lg:px-8`}
+        }  py-12 sm:px-6 lg:px-8 pt-16 pb-16 `} // Adjusted padding for mobile
       >
-        <Header />
         {/* Dark Mode Toggle */}
         <motion.button
           onClick={toggleDarkMode}
@@ -196,7 +206,7 @@ const DonorRegistration = () => {
         </motion.button>
 
         <motion.div
-          className="sm:mx-auto sm:w-full sm:max-w-md"
+          className="mx-auto w-full max-w-md" // Adjusted for mobile
           variants={itemVariants}
         >
           <motion.div
@@ -213,17 +223,17 @@ const DonorRegistration = () => {
           </motion.div>
           <motion.h2
             variants={itemVariants}
-            className={`mt-6 text-center text-4xl font-bold ${
+            className={`mt-6 text-center text-3xl sm:text-4xl font-bold ${
               isDarkMode ? "text-white" : "text-gray-900"
-            } drop-shadow-sm`}
+            } drop-shadow-sm`} // Responsive font size
           >
             Donor Registration
           </motion.h2>
           <motion.p
             variants={itemVariants}
-            className={`mt-2 text-center text-lg ${
+            className={`mt-2 text-center text-base sm:text-lg ${
               isDarkMode ? "text-gray-300" : "text-gray-600"
-            }`}
+            }`} // Responsive font size
           >
             Become a life saver today
           </motion.p>
@@ -231,13 +241,13 @@ const DonorRegistration = () => {
 
         <motion.div
           variants={containerVariants}
-          className="mt-8 sm:mx-auto sm:w-full sm:max-w-md"
+          className="mt-8 mx-auto w-full max-w-md" // Adjusted for mobile
         >
           <motion.div
             variants={itemVariants}
             className={`${
               isDarkMode ? "bg-gray-800/80" : "bg-white/80"
-            } backdrop-blur-sm py-8 px-4 shadow-2xl sm:rounded-2xl sm:px-10`}
+            } backdrop-blur-sm py-8 px-4 shadow-2xl rounded-2xl sm:px-10`} // Adjusted padding for mobile
           >
             {apiError && (
               <motion.div
@@ -277,7 +287,7 @@ const DonorRegistration = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedInput("fname")}
                     onBlur={() => setFocusedInput("")}
-                    className={`block w-full pl-10 pr-3 py-3 ${
+                    className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
                         : "bg-white text-gray-900"
@@ -316,7 +326,7 @@ const DonorRegistration = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedInput("lname")}
                     onBlur={() => setFocusedInput("")}
-                    className={`block w-full pl-10 pr-3 py-3 ${
+                    className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
                         : "bg-white text-gray-900"
@@ -355,7 +365,7 @@ const DonorRegistration = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedInput("email")}
                     onBlur={() => setFocusedInput("")}
-                    className={`block w-full pl-10 pr-3 py-3 ${
+                    className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
                         : "bg-white text-gray-900"
@@ -395,12 +405,12 @@ const DonorRegistration = () => {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => {
-                      handleChange(e); // Properly invoke handleChange
-                      validatePassword(e.target.value); // Validate the password
+                      handleChange(e);
+                      validatePassword(e.target.value);
                     }}
                     onFocus={() => setFocusedInput("password")}
                     onBlur={() => setFocusedInput("")}
-                    className={`block w-full pl-10 pr-12 py-3 ${
+                    className={`block w-full pl-10 pr-12 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
                         : "bg-white text-gray-900"
@@ -479,7 +489,7 @@ const DonorRegistration = () => {
                     inputMode="numeric"
                     onFocus={() => setFocusedInput("contact")}
                     onBlur={() => setFocusedInput("")}
-                    className={`block w-full pl-10 pr-3 py-3 ${
+                    className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
                         : "bg-white text-gray-900"
@@ -497,12 +507,12 @@ const DonorRegistration = () => {
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white ${
+                  className={`w-full py-2 sm:py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white ${
                     isDarkMode
                       ? "bg-gradient-to-r from-red-700 to-red-600"
                       : "bg-gradient-to-r from-red-600 to-red-500"
                   } hover:from-red-700 hover:to-red-600 transition-all duration-200 
-    disabled:opacity-50 disabled:cursor-not-allowed`}
+            disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
@@ -538,6 +548,7 @@ const DonorRegistration = () => {
           </motion.div>
         </motion.div>
       </motion.div>
+
       <Footer isDarkMode={isDarkMode} />
     </div>
   );

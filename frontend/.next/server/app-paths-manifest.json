@@ -4,5 +4,7 @@
   "/eligibility-form/page": "app/eligibility-form/page.js",
   "/login/page": "app/login/page.js",
   "/_not-found/page": "app/_not-found/page.js",
-  "/self-assessment/page": "app/self-assessment/page.js"
+  "/self-assessment/page": "app/self-assessment/page.js",
+  "/donor-registration/page": "app/donor-registration/page.js",
+  "/page": "app/page.js"
 }
