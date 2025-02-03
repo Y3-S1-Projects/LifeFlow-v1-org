@@ -6,7 +6,7 @@
   "path": "static/chunks/app_verify-email_page_tsx_04199f._.js",
   "chunks": [
     "static/chunks/node_modules_b19c6c._.js",
-    "static/chunks/_04b3bf._.js"
+    "static/chunks/_c1680e._.js"
   ],
   "source": "dynamic"
 });

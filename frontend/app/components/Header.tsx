@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings, LogOut, HelpCircle, ChevronDown } from "lucide-react";
+import { Settings, LogOut, HelpCircle, ChevronDown, User } from "lucide-react";
 import useUser from "../hooks/useUser";
 
 const Header: React.FC = () => {
@@ -21,13 +21,30 @@ const Header: React.FC = () => {
 
   const logOut = async (): Promise<void> => {
     try {
-      localStorage.removeItem("token"); // Remove token
+      localStorage.removeItem("token");
+      localStorage.removeItem("userData");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("userData");
 
-      router.replace("/login"); // Redirect to login page
+      router.replace("/"); // Redirect to login page
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
+
+  const customeNavigate = (path: string): void => {
+    router.push(path);
+  };
+
+  // Mapping object for navigation links
+  const navLinks = {
+    Dashboard: "/donor-dashboard",
+    Appointments: "/appointments",
+    "My Donations": "/my-donations",
+  };
+
+  // Explicitly define the type of the keys in navLinks
+  type NavLinkKey = keyof typeof navLinks;
 
   return (
     <Card className="rounded-lg border-t-0 border-x-0">
@@ -42,14 +59,14 @@ const Header: React.FC = () => {
             {/* Navigation Links */}
             {user?.isEligible && (
               <nav className="hidden md:flex items-center space-x-6">
-                {["Dashboard", "Appointments", "My Donations"].map((item) => (
+                {(Object.keys(navLinks) as NavLinkKey[]).map((item) => (
                   <Card
                     key={item}
                     className="border-0 shadow-none hover:bg-gray-50"
                   >
                     <CardContent className="p-2">
                       <a
-                        href={`/${item.toLowerCase().replace(/\s+/g, "")}`}
+                        href={navLinks[item]}
                         className="text-gray-600 hover:text-red-600"
                       >
                         {item}
@@ -74,10 +91,26 @@ const Header: React.FC = () => {
               <DropdownMenuContent align="end" className="w-48">
                 <Card className="border-0 shadow-none">
                   <CardContent className="p-0">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
+                    {user?.isEligible && (
+                      <DropdownMenuItem className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+
+                        <span onClick={() => customeNavigate("/donor-profile")}>
+                          Profile
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+                    {user?.isEligible && (
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span
+                          onClick={() => customeNavigate("/donor-settings")}
+                        >
+                          Settings
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+
                     <DropdownMenuItem className="cursor-pointer">
                       <HelpCircle className="mr-2 h-4 w-4" />
                       <span>Support</span>

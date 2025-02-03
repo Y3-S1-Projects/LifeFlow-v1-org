@@ -109,6 +109,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const isEmailValid = validateEmail(email);
+    const rememberMe = { checked: Boolean };
 
     if (isEmailValid) {
       setIsLoading(true); // Start loading
@@ -343,15 +344,15 @@ const Login = () => {
                 <div className="flex items-center">
                   <motion.input
                     whileTap={{ scale: 0.9 }}
-                    id="remember-me"
-                    name="remember-me"
+                    id="rememberMe"
+                    name="rememberMe"
                     type="checkbox"
                     className={`h-4 w-4 ${
                       isDarkMode ? "text-red-600" : "text-red-600"
                     } focus:ring-red-500 border-gray-300 rounded cursor-pointer`}
                   />
                   <label
-                    htmlFor="remember-me"
+                    htmlFor="rememberMe"
                     className={`ml-2 block text-sm ${
                       isDarkMode ? "text-gray-300" : "text-gray-900"
                     }`}

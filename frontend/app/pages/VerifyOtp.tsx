@@ -9,7 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import Modal from "./Modal";
+import Modal from "../components/Modal";
 import {
   InputOTP,
   InputOTPGroup,

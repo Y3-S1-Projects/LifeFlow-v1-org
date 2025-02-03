@@ -9,3 +9,8 @@ export const getToken = (): string | null => {
     return null;
   }
 };
+
+export const isAuthenticated = (): boolean => {
+  const token = getToken();
+  return !!token;
+};
