@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { use, useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import useUser from "../hooks/useUser";
+import { useRouter } from "next/navigation";
 
 type FormFields =
   | "understandsBenefits"
@@ -19,7 +21,9 @@ type FormData = {
 };
 
 const BloodDonationForm = () => {
+  const router = useRouter();
   const [currentSection, setCurrentSection] = useState(1);
+  const { user, loading, error } = useUser();
   const [formData, setFormData] = useState<FormData>({
     understandsBenefits: false,
     awareOfSideEffects: false,
@@ -32,6 +36,15 @@ const BloodDonationForm = () => {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
+
+  useEffect(() => {
+    if (user && user.isAssessmentCompleted) {
+      router.push(
+        "/donor-dashboard?message=" +
+          encodeURIComponent("You have already completed the assessment")
+      );
+    }
+  }, [user, router]);
 
   const section1Fields: FormFields[] = [
     "understandsBenefits",
@@ -76,8 +89,9 @@ const BloodDonationForm = () => {
     setShowSuccess(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (validateSection(section2Fields)) {
       setShowError(false);
       setShowSuccess(true);
@@ -85,6 +99,37 @@ const BloodDonationForm = () => {
     } else {
       setShowError(true);
       setShowSuccess(false);
+      return; // Exit early if validation fails
+    }
+
+    // Prepare data to be submitted
+    const dataToSubmit = { isAssessmentCompleted: true };
+
+    try {
+      // Perform the PUT request to update the user
+      const response = await fetch(
+        `http://localhost:3001/users/updateUser/${user?._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataToSubmit),
+        }
+      );
+
+      // Check if the request was successful
+      if (response.ok) {
+        router.push(
+          "/donor-dashboard?message=" +
+            encodeURIComponent("You have  completed the Assessment")
+        );
+        console.log("Assessment completed status updated");
+      } else {
+        console.error("Failed to update assessment status");
+      }
+    } catch (error) {
+      console.error("Error submitting data:", error);
     }
   };
 
@@ -130,7 +175,7 @@ const BloodDonationForm = () => {
 
   // Rest of the JSX remains the same until the buttons section
   return (
-    <div className="min-h-screen w-screen bg-gray-50 py-6">
+    <div className="min-h-screen w-screen bg-gray-50 py-6 overflow-hidden">
       <Header />
       <div className="mt-6 mb-6">
         <Card className="max-w-3xl mx-auto shadow-lg">

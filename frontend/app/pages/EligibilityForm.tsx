@@ -25,6 +25,7 @@ interface FormErrors {
   dob?: string;
   donatedBefore?: string;
   terms?: string;
+  weight?: string;
 }
 
 interface FormData {
@@ -37,6 +38,7 @@ interface FormData {
   lastDonationDate: Date | null;
   healthConditions: string[];
   additionalInfo: string;
+  weight: number | null;
 }
 
 export default function EligibilityForm() {
@@ -57,6 +59,7 @@ export default function EligibilityForm() {
     lastDonationDate: null,
     healthConditions: [],
     additionalInfo: "",
+    weight: null,
   });
 
   console.log("User blood type:", user?.bloodType);
@@ -72,8 +75,6 @@ export default function EligibilityForm() {
   }, [user, router]);
   useEffect(() => {
     if (user) {
-      console.log("Before update - bloodType:", formData.bloodType);
-      console.log("User bloodType:", user.bloodType);
       setFormData((prevData) => {
         const newData = {
           ...prevData,
@@ -84,6 +85,7 @@ export default function EligibilityForm() {
             ? new Date(user.dateOfBirth).toISOString().split("T")[0]
             : prevData.dob,
           bloodType: user.bloodType || prevData.bloodType,
+          weight: user.weight || prevData.weight,
           donatedBefore: user.donatedBefore || prevData.donatedBefore,
           lastDonationDate: user.lastDonationDate || prevData.lastDonationDate,
           healthConditions: user.healthConditions || prevData.healthConditions,
@@ -124,6 +126,9 @@ export default function EligibilityForm() {
     }
     if (!formData.bloodType) {
       newErrors.bloodType = "Blood type is required";
+    }
+    if (formData.weight === null || formData.weight === undefined) {
+      newErrors.weight = "Weight is required";
     }
     if (!formData.dob) {
       newErrors.dob = "Date of Birth is required";
@@ -176,10 +181,10 @@ export default function EligibilityForm() {
 
       const data = await response.json();
       setSubmitSuccess(true);
-      // Optionally reset form or redirect user
-      // setFormData(initialFormState);
-      // or
-      // router.push('/profile');
+      router.push(
+        "/donor-dashboard?message=" +
+          encodeURIComponent("You have  updated your Profile")
+      );
     } catch (err) {
       setSubmitError(
         err instanceof Error
@@ -328,6 +333,7 @@ export default function EligibilityForm() {
             type="tel"
             value={formData.phone}
             onChange={handleInputChange}
+            pattern="^\d{10}$"
           />
           {errors.phone && (
             <p className="text-red-500 text-sm">{errors.phone}</p>
@@ -349,17 +355,40 @@ export default function EligibilityForm() {
           )}
           {errors.dob && <p className="text-red-500 text-sm">{errors.dob}</p>}
         </div>
+
+        <div className="space-y-4">
+          <Label htmlFor="weight">Weight (in kg)</Label>
+          <Input
+            id="weight"
+            name="weight"
+            type="number"
+            value={formData.weight ?? ""}
+            onChange={handleInputChange}
+            min="0"
+            step="0.1" // Allows decimal input for fractional kg (optional)
+          />
+          {formData.weight && formData.weight < 50 && (
+            <p className="text-red-500 text-sm">
+              Weight must be at least 50 kg to donate blood.
+            </p>
+          )}
+          {errors.weight && (
+            <p className="text-red-500 text-sm">{errors.weight}</p>
+          )}
+        </div>
+
         {/* Blood Donation Details */}
         <div className="space-y-4">
           <Label htmlFor="bloodType">Blood Type</Label>
           <Select
-            defaultValue={user?.bloodType}
+            value={user?.bloodType || "none"} // Use "none" as the default when nothing is selected
             onValueChange={handleSelectChange}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select your blood type" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">None</SelectItem>{" "}
               <SelectItem value="O-">O-</SelectItem>
               <SelectItem value="O+">O+</SelectItem>
               <SelectItem value="A-">A-</SelectItem>
@@ -370,6 +399,7 @@ export default function EligibilityForm() {
               <SelectItem value="AB+">AB+</SelectItem>
             </SelectContent>
           </Select>
+
           {errors.bloodType && (
             <p className="text-red-500 text-sm">{errors.bloodType}</p>
           )}

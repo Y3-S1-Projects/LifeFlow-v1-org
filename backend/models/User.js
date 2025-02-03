@@ -62,11 +62,15 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+
+  weight: {
+    type: Number,
+    default: null,
+  },
   address: {
     street: { type: String, default: null },
     city: { type: String, default: null },
     state: { type: String, default: null },
-    zipCode: { type: String, default: null },
   },
   healthConditions: {
     type: [String], // List of conditions (e.g., ["Diabetes", "Hypertension"])
@@ -96,6 +100,10 @@ const UserSchema = new mongoose.Schema({
     default: false, // Default to false until all fields are filled
   },
   isProfileComplete: {
+    type: Boolean,
+    default: false,
+  },
+  isAssessmentCompleted: {
     type: Boolean,
     default: false,
   },

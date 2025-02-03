@@ -40,23 +40,25 @@ const Header: React.FC = () => {
             </div>
 
             {/* Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-6">
-              {["Dashboard", "Appointments", "My Donations"].map((item) => (
-                <Card
-                  key={item}
-                  className="border-0 shadow-none hover:bg-gray-50"
-                >
-                  <CardContent className="p-2">
-                    <a
-                      href={`/${item.toLowerCase().replace(/\s+/g, "")}`}
-                      className="text-gray-600 hover:text-red-600"
-                    >
-                      {item}
-                    </a>
-                  </CardContent>
-                </Card>
-              ))}
-            </nav>
+            {user?.isEligible && (
+              <nav className="hidden md:flex items-center space-x-6">
+                {["Dashboard", "Appointments", "My Donations"].map((item) => (
+                  <Card
+                    key={item}
+                    className="border-0 shadow-none hover:bg-gray-50"
+                  >
+                    <CardContent className="p-2">
+                      <a
+                        href={`/${item.toLowerCase().replace(/\s+/g, "")}`}
+                        className="text-gray-600 hover:text-red-600"
+                      >
+                        {item}
+                      </a>
+                    </CardContent>
+                  </Card>
+                ))}
+              </nav>
+            )}
 
             {/* User Menu */}
             <DropdownMenu>

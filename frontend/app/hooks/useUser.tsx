@@ -11,11 +11,11 @@ interface User {
   bloodType?: string;
   isVerified: boolean;
   phoneNumber?: string;
+  weight?: number;
   address?: {
     street?: string;
     city?: string;
     state?: string;
-    zipCode?: string;
   };
   dateOfBirth?: string;
   donatedBefore?: string;
@@ -24,6 +24,7 @@ interface User {
   lastDonationDate?: Date | null;
   isEligible?: boolean;
   isProfileComplete?: boolean;
+  isAssessmentCompleted?: boolean;
 }
 const useUser = () => {
   const [user, setUser] = useState<User | null>(null);

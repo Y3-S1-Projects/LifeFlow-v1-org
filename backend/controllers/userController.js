@@ -264,7 +264,9 @@ export const getUserDetails = async (req, res) => {
       address: 1,
       dateOfBirth: 1,
       isEligible: 1,
+      weight: 1,
       isProfileComplete: 1,
+      isAssessmentCompleted: 1,
     });
 
     if (!user) {

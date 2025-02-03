@@ -15,6 +15,12 @@ import {
 import Header from "../components/Header";
 import useUser from "../hooks/useUser";
 import { useRouter } from "next/navigation";
+import Footer from "../components/Footer";
+import { Button } from "@/components/ui/button";
+import { ClipLoader } from "react-spinners";
+import Loader from "../components/Loader";
+import Modal2 from "../components/Modal2";
+
 interface Donation {
   date: string;
   location: string;
@@ -29,6 +35,8 @@ const DonorDashboard: React.FC = () => {
   const [isVisible, setIsVisible] = useState<boolean>(true);
   const [toastShown, setToastShown] = useState(false);
   const toastShownRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const message = searchParams.get("message");
@@ -47,8 +55,58 @@ const DonorDashboard: React.FC = () => {
     }
   }, [searchParams, toastShown]);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Loader />
+        <p style={{ marginTop: "10px" }}>Loading...</p>
+      </div>
+    );
+  }
   if (error) return <p className="text-red-500">{error}</p>;
+
+  const handleEligibilityUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true); // Start loading
+    setIsModalOpen(true); // Open the modal
+
+    const dataToSubmit = { isEligible: true };
+
+    try {
+      // Simulate a delay before making the API call
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2-second delay
+
+      const response = await fetch(
+        `http://localhost:3001/users/updateUser/${user?._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataToSubmit),
+        }
+      );
+
+      if (response.ok) {
+        // Simulate a delay before redirecting
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // 2-second delay
+
+        router.push(
+          "/donor-dashboard?message=" +
+            encodeURIComponent("You are now eligible for more features")
+        );
+        console.log("Eligibility status updated");
+        window.location.reload();
+      } else {
+        console.error("Failed to update eligibility status");
+      }
+    } catch (error) {
+      console.error("Error submitting data:", error);
+    } finally {
+      setIsLoading(false); // Stop loading
+      setIsModalOpen(false); // Close the modal
+    }
+  };
 
   // Default Values
   const donationHistory: Donation[] = [
@@ -124,17 +182,66 @@ const DonorDashboard: React.FC = () => {
         </div>
       )} */}
       {user?.isEligible === false && isVisible && (
-        <div className="bg-gradient-to-r from-red-100 to-red-50 rounded-lg p-6 shadow-md">
+        <div
+          className={`rounded-lg p-6 shadow-md ${
+            user?.isAssessmentCompleted && user?.isProfileComplete
+              ? "bg-gradient-to-r from-green-100 to-green-50" // Green gradient for "all setup"
+              : "bg-gradient-to-r from-red-100 to-red-50" // Red gradient for "not eligible"
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-red-800 mb-2">
-                Welcome, {user?.firstName || "New Donor"}
-              </h1>
-              <p className="text-red-600">
-                You're not yet eligible to donate. Let's get you started!
-              </p>
-            </div>
-            <AlertCircle className="h-12 w-12 text-red-600" />
+            {user?.isAssessmentCompleted && user?.isProfileComplete ? (
+              <>
+                <div>
+                  <h1 className="text-3xl font-bold text-green-800 mb-2">
+                    Welcome, {user?.firstName || "New Donor"}
+                  </h1>
+                  <p className="text-green-600">You are all set up!</p>
+                </div>
+                <Button
+                  variant={"default"}
+                  onClick={handleEligibilityUpdate}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ClipLoader size={20} color={"#ffffff"} /> // Spinner inside the button
+                  ) : (
+                    "Start my journey"
+                  )}
+                </Button>
+                <Modal2
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100%", // Ensure the container takes full height of the modal
+                    }}
+                  >
+                    <Loader /> {/* Spinner */}
+                    <p style={{ marginTop: "10px" }}>
+                      Setting up your profile...
+                    </p>
+                  </div>
+                </Modal2>
+              </>
+            ) : (
+              <>
+                <div>
+                  <h1 className="text-3xl font-bold text-red-800 mb-2">
+                    Welcome, {user?.firstName || "New Donor"}
+                  </h1>
+                  <p className="text-red-600">
+                    You're not yet eligible to donate. Let's get you started!
+                  </p>
+                </div>
+                <AlertCircle className="h-12 w-12 text-red-600" />
+              </>
+            )}
           </div>
         </div>
       )}
@@ -187,13 +294,13 @@ const DonorDashboard: React.FC = () => {
                     className={`
                     px-3 py-1 rounded-full text-xs font-medium
                     ${
-                      user?.isEligible
+                      user?.isAssessmentCompleted
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }
                   `}
                   >
-                    {user?.isEligible ? "Completed" : "Incomplete"}
+                    {user?.isAssessmentCompleted ? "Completed" : "Incomplete"}
                   </span>
                 </div>
               </div>
@@ -211,13 +318,13 @@ const DonorDashboard: React.FC = () => {
                     className={`
                   px-3 py-1 rounded-full text-xs font-medium
                   ${
-                    user?.isEligible
+                    user?.isProfileComplete
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
                   }
                 `}
                   >
-                    {user?.isEligible ? "Qualified" : "Not Qualified"}
+                    {user?.isProfileComplete ? "Qualified" : "Not Qualified"}
                   </span>
                 </div>
               </div>
@@ -233,6 +340,7 @@ const DonorDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Update Your Profile Section */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
                 <h3 className="font-semibold text-blue-800 mb-2">
                   1. Update Your Profile
@@ -256,7 +364,7 @@ const DonorDashboard: React.FC = () => {
                 >
                   {user?.isProfileComplete ? (
                     <>
-                      <span>Profile Completed</span>✅
+                      <span>Profile Completed</span>
                     </>
                   ) : (
                     "Complete Profile"
@@ -264,16 +372,35 @@ const DonorDashboard: React.FC = () => {
                 </button>
               </div>
 
-              <div className="bg-green-50 border-l-4 border-green-500 p-4">
-                <h3 className="font-semibold text-green-800 mb-2">
+              {/* Complete Self-Assessment Section */}
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+                <h3 className="font-semibold text-blue-800 mb-2">
                   2. Complete Self-Assessment
                 </h3>
-                <p className="text-sm text-green-700">
+                <p className="text-sm text-blue-700">
                   Fill out a short online questionnaire to assess your
                   eligibility for donation.
                 </p>
-                <button className="mt-2 bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">
-                  Start Self-Assessment
+                <button
+                  className={`mt-2 px-4 py-2 rounded text-sm flex items-center gap-2 ${
+                    user?.isAssessmentCompleted
+                      ? "bg-green-500 text-white cursor-default"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                  onClick={() => {
+                    if (!user?.isAssessmentCompleted) {
+                      customNavigate("/self-assessment");
+                    }
+                  }}
+                  disabled={user?.isAssessmentCompleted}
+                >
+                  {user?.isAssessmentCompleted ? (
+                    <>
+                      <span>Assessment Completed</span>
+                    </>
+                  ) : (
+                    "Start Assessment"
+                  )}
                 </button>
               </div>
             </div>
@@ -378,6 +505,7 @@ const DonorDashboard: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      <Footer isDarkMode={false} />
     </div>
   );
 };
