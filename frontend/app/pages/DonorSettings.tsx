@@ -7,6 +7,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import Loader from "../components/Loader";
 
 interface Settings {
   darkMode: boolean;
@@ -31,6 +32,8 @@ const DonorSettings = () => {
     language: "english",
     savedSuccess: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleToggle = (setting: SettingKey) => {
     setSettings((prev) => ({
@@ -52,7 +55,15 @@ const DonorSettings = () => {
       }));
     }, 3000);
   };
-
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Loader />
+        <p style={{ marginTop: "10px" }}>Loading...</p>
+      </div>
+    );
+  }
+  if (error) return <p className="text-red-500">{error}</p>;
   return (
     <div
       className={`min-h-screen p-8 w-screen

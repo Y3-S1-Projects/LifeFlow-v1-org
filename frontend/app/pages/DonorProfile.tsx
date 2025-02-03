@@ -25,6 +25,7 @@ import {
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import useUser from "../hooks/useUser";
+import Loader from "../components/Loader";
 
 interface DonorProfile {
   name: string;
@@ -99,6 +100,15 @@ const DonorProfileAdvanced = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
   };
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Loader />
+        <p style={{ marginTop: "10px" }}>Loading...</p>
+      </div>
+    );
+  }
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="min-h-screen p-6 w-full mx-auto space-y-6 flex flex-col">

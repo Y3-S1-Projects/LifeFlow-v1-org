@@ -1,11 +1,7 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/donor-profile/page": "app/donor-profile/page.js",
-  "/donor-appointments/page": "app/donor-appointments/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/admin-dashboard/page": "app/admin-dashboard/page.js",
   "/page": "app/page.js",
   "/donor-registration/page": "app/donor-registration/page.js",
   "/login/page": "app/login/page.js",
-  "/donor-dashboard/page": "app/donor-dashboard/page.js",
-  "/eligibility-form/page": "app/eligibility-form/page.js"
+  "/donor-dashboard/page": "app/donor-dashboard/page.js"
 }

@@ -125,6 +125,52 @@ export default function EligibilityForm() {
     }
   }, [formData.dob]);
 
+  const validateNIC = (nic: string, dob: string): string | null => {
+    if (!nic) return "NIC is required";
+
+    const nicLength = nic.length;
+    const dobDate = new Date(dob);
+    const birthYear = dobDate.getFullYear();
+
+    // Validate NIC length
+    if (nicLength !== 9 && nicLength !== 12) {
+      return "NIC must be either 9 or 12 digits long";
+    }
+
+    // Validate old NIC format
+    if (nicLength === 9) {
+      const nicYear = parseInt(nic.substring(0, 2), 10);
+      const expectedYear = birthYear % 100; // Last two digits of the birth year
+
+      if (nicYear !== expectedYear) {
+        return "NIC does not match the birth year (old format)";
+      }
+
+      // Check if the last character is a digit or 'V'
+      const lastChar = nic.charAt(8);
+      if (!/\d|V/i.test(lastChar)) {
+        return "Invalid NIC format (old format)";
+      }
+    }
+
+    // Validate new NIC format
+    if (nicLength === 12) {
+      const nicYear = parseInt(nic.substring(0, 4), 10);
+
+      if (nicYear !== birthYear) {
+        return "NIC does not match the birth year (new format)";
+      }
+
+      // Check if the last character is a digit
+      const lastChar = nic.charAt(11);
+      if (!/\d/.test(lastChar)) {
+        return "Invalid NIC format (new format)";
+      }
+    }
+
+    return null; // No error
+  };
+
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
@@ -137,6 +183,14 @@ export default function EligibilityForm() {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email address is invalid";
+    }
+    if (!formData.nicNo) {
+      newErrors.nicNo = "NIC is required";
+    } else {
+      const nicError = validateNIC(formData.nicNo, formData.dob);
+      if (nicError) {
+        newErrors.nicNo = nicError;
+      }
     }
     if (!formData.phone) {
       newErrors.phone = "Phone number is required";
@@ -380,20 +434,6 @@ export default function EligibilityForm() {
         </div>
 
         <div className="space-y-4">
-          <Label htmlFor="nicNo">NIC</Label>
-          <Input
-            id="nicNo"
-            name="nicNo"
-            type="text"
-            value={formData.nicNo}
-            onChange={handleInputChange}
-          />
-          {errors.nicNo && (
-            <p className="text-red-500 text-sm">{errors.nicNo}</p>
-          )}
-        </div>
-
-        <div className="space-y-4">
           <Label htmlFor="dob">Date of Birth</Label>
           <Input
             id="dob"
@@ -407,6 +447,20 @@ export default function EligibilityForm() {
             <p className="text-sm text-gray-600">Age: {age} years</p>
           )}
           {errors.dob && <p className="text-red-500 text-sm">{errors.dob}</p>}
+        </div>
+
+        <div className="space-y-4">
+          <Label htmlFor="nicNo">NIC</Label>
+          <Input
+            id="nicNo"
+            name="nicNo"
+            type="text"
+            value={formData.nicNo}
+            onChange={handleInputChange}
+          />
+          {errors.nicNo && (
+            <p className="text-red-500 text-sm">{errors.nicNo}</p>
+          )}
         </div>
 
         <div className="space-y-4">
