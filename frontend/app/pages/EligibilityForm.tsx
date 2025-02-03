@@ -14,8 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import useUser from "../hooks/useUser";
 import Header from "../components/Header";
-import { Router } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Loader from "../components/Loader";
 
 interface FormErrors {
   fullName?: string;
@@ -62,9 +62,6 @@ export default function EligibilityForm() {
     weight: null,
   });
 
-  console.log("User blood type:", user?.bloodType);
-  console.log("Form data blood type:", formData.bloodType);
-
   useEffect(() => {
     if (user && user.isProfileComplete) {
       router.push(
@@ -84,14 +81,13 @@ export default function EligibilityForm() {
           dob: user.dateOfBirth
             ? new Date(user.dateOfBirth).toISOString().split("T")[0]
             : prevData.dob,
-          bloodType: user.bloodType || prevData.bloodType,
+          bloodType: user.bloodType || prevData.bloodType || "none",
           weight: user.weight || prevData.weight,
           donatedBefore: user.donatedBefore || prevData.donatedBefore,
           lastDonationDate: user.lastDonationDate || prevData.lastDonationDate,
           healthConditions: user.healthConditions || prevData.healthConditions,
           additionalInfo: user.additionalInfo || prevData.additionalInfo,
         };
-        console.log("After update - new formData:", newData);
         return newData;
       });
     }
@@ -281,7 +277,14 @@ export default function EligibilityForm() {
   const handleTermsChange = (checked: boolean) => {
     setTermsAccepted(checked);
   };
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Loader />
+        <p style={{ marginTop: "10px" }}>Loading...</p>
+      </div>
+    );
+  }
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
@@ -381,7 +384,7 @@ export default function EligibilityForm() {
         <div className="space-y-4">
           <Label htmlFor="bloodType">Blood Type</Label>
           <Select
-            value={user?.bloodType || "none"} // Use "none" as the default when nothing is selected
+            value={user?.bloodType || formData.bloodType || "none"} // Use "none" as the default when nothing is selected
             onValueChange={handleSelectChange}
           >
             <SelectTrigger className="w-full">

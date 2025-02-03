@@ -1,5 +1,8 @@
+import type { NextPage } from "next";
 import Home from "./pages/Home";
 
-export default function HomePage() {
+const HomePage: NextPage = () => {
   return <Home />;
-}
+};
+
+export default HomePage;
