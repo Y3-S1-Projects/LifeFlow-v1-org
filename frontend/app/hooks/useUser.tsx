@@ -12,6 +12,7 @@ interface User {
   isVerified: boolean;
   phoneNumber?: string;
   weight?: number;
+  nicNo?: string;
   address?: {
     street?: string;
     city?: string;

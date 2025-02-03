@@ -8,7 +8,7 @@
     {"offset": {"line": 29, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}},
     {"offset": {"line": 35, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":""}},
     {"offset": {"line": 39, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}},
-    {"offset": {"line": 45, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/Sithila/Documents/LifeFlow-v1/LifeFlow-v1/frontend/app/page.tsx"],"sourcesContent":["import type { NextPage } from \"next\";\nimport Home from \"./pages/Home\";\n\nconst HomePage: NextPage = () => {\n  return <Home />;\n};\n\nexport default HomePage;\n"],"names":[],"mappings":";;;;AACA;;;AAEA,MAAM,WAAqB;IACzB,qBAAO,8OAAC,qHAAA,CAAA,UAAI;;;;;AACd;uCAEe"}},
+    {"offset": {"line": 45, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/Sithila/Documents/LifeFlow-v1/LifeFlow-v1/frontend/app/page.tsx"],"sourcesContent":["import type { NextPage } from \"next\";\r\nimport Home from \"./pages/Home\";\r\n\r\nconst HomePage: NextPage = () => {\r\n  return <Home />;\r\n};\r\n\r\nexport default HomePage;\r\n"],"names":[],"mappings":";;;;AACA;;;AAEA,MAAM,WAAqB;IACzB,qBAAO,8OAAC,qHAAA,CAAA,UAAI;;;;;AACd;uCAEe"}},
     {"offset": {"line": 60, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}},
     {"offset": {"line": 71, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":""}},
     {"offset": {"line": 71, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}},

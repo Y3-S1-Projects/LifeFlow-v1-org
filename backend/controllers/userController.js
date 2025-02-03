@@ -262,6 +262,7 @@ export const getUserDetails = async (req, res) => {
       isVerified: 1,
       phoneNumber: 1,
       address: 1,
+      nicNo: 1,
       dateOfBirth: 1,
       isEligible: 1,
       weight: 1,

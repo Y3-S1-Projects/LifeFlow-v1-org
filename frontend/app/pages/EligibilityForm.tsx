@@ -26,6 +26,10 @@ interface FormErrors {
   donatedBefore?: string;
   terms?: string;
   weight?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  nicNo?: string;
 }
 
 interface FormData {
@@ -34,11 +38,17 @@ interface FormData {
   phone: string;
   bloodType: string;
   dob: string;
+  nicNo: string;
   donatedBefore: string;
   lastDonationDate: Date | null;
   healthConditions: string[];
   additionalInfo: string;
   weight: number | null;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+  };
 }
 
 export default function EligibilityForm() {
@@ -55,11 +65,17 @@ export default function EligibilityForm() {
     phone: "",
     bloodType: "",
     dob: "",
+    nicNo: "",
     donatedBefore: "no",
     lastDonationDate: null,
     healthConditions: [],
     additionalInfo: "",
     weight: null,
+    address: {
+      street: "",
+      city: "",
+      state: "",
+    },
   });
 
   useEffect(() => {
@@ -70,6 +86,7 @@ export default function EligibilityForm() {
       );
     }
   }, [user, router]);
+
   useEffect(() => {
     if (user) {
       setFormData((prevData) => {
@@ -81,12 +98,18 @@ export default function EligibilityForm() {
           dob: user.dateOfBirth
             ? new Date(user.dateOfBirth).toISOString().split("T")[0]
             : prevData.dob,
+          nicNo: user.nicNo || prevData.nicNo,
           bloodType: user.bloodType || prevData.bloodType || "none",
           weight: user.weight || prevData.weight,
           donatedBefore: user.donatedBefore || prevData.donatedBefore,
           lastDonationDate: user.lastDonationDate || prevData.lastDonationDate,
           healthConditions: user.healthConditions || prevData.healthConditions,
           additionalInfo: user.additionalInfo || prevData.additionalInfo,
+          address: {
+            street: user.address?.street || prevData.address.street,
+            city: user.address?.city || prevData.address.city,
+            state: user.address?.state || prevData.address.state,
+          },
         };
         return newData;
       });
@@ -120,12 +143,25 @@ export default function EligibilityForm() {
     } else if (!/^\d{10}$/.test(formData.phone)) {
       newErrors.phone = "Phone number is invalid";
     }
+    if (!formData.nicNo) {
+      newErrors.nicNo = "NIC is required";
+    }
     if (!formData.bloodType) {
       newErrors.bloodType = "Blood type is required";
     }
     if (formData.weight === null || formData.weight === undefined) {
       newErrors.weight = "Weight is required";
     }
+    if (!formData.address.street) {
+      newErrors.street = "Street is required";
+    }
+    if (!formData.address.city) {
+      newErrors.city = "City is required";
+    }
+    if (!formData.address.state) {
+      newErrors.state = "State is required";
+    }
+
     if (!formData.dob) {
       newErrors.dob = "Date of Birth is required";
     } else {
@@ -179,7 +215,7 @@ export default function EligibilityForm() {
       setSubmitSuccess(true);
       router.push(
         "/donor-dashboard?message=" +
-          encodeURIComponent("You have  updated your Profile")
+          encodeURIComponent("You have updated your Profile")
       );
     } catch (err) {
       setSubmitError(
@@ -344,6 +380,20 @@ export default function EligibilityForm() {
         </div>
 
         <div className="space-y-4">
+          <Label htmlFor="nicNo">NIC</Label>
+          <Input
+            id="nicNo"
+            name="nicNo"
+            type="text"
+            value={formData.nicNo}
+            onChange={handleInputChange}
+          />
+          {errors.nicNo && (
+            <p className="text-red-500 text-sm">{errors.nicNo}</p>
+          )}
+        </div>
+
+        <div className="space-y-4">
           <Label htmlFor="dob">Date of Birth</Label>
           <Input
             id="dob"
@@ -357,6 +407,62 @@ export default function EligibilityForm() {
             <p className="text-sm text-gray-600">Age: {age} years</p>
           )}
           {errors.dob && <p className="text-red-500 text-sm">{errors.dob}</p>}
+        </div>
+
+        <div className="space-y-4">
+          <h3 className=" font-semibold">Address</h3>
+          <Label htmlFor="street">Street</Label>
+          <Input
+            id="street"
+            name="street"
+            type="text"
+            value={formData.address.street}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                address: { ...formData.address, street: e.target.value },
+              })
+            }
+          />
+          {errors.street && (
+            <p className="text-red-500 text-sm">{errors.street}</p>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <Label htmlFor="city">City</Label>
+          <Input
+            id="city"
+            name="city"
+            type="text"
+            value={formData.address.city}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                address: { ...formData.address, city: e.target.value },
+              })
+            }
+          />
+          {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
+        </div>
+
+        <div className="space-y-4">
+          <Label htmlFor="state">State</Label>
+          <Input
+            id="state"
+            name="state"
+            type="text"
+            value={formData.address.state}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                address: { ...formData.address, state: e.target.value },
+              })
+            }
+          />
+          {errors.state && (
+            <p className="text-red-500 text-sm">{errors.state}</p>
+          )}
         </div>
 
         <div className="space-y-4">
