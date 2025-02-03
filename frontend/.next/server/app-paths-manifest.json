@@ -1,5 +1,6 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/donor-profile/page": "app/donor-profile/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/donor-settings/page": "app/donor-settings/page.js"
+  "/donor-appointments/page": "app/donor-appointments/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js"
 }

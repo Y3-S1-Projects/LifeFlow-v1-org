@@ -11,10 +11,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings, LogOut, HelpCircle, ChevronDown, User } from "lucide-react";
 import useUser from "../hooks/useUser";
+import { useDarkMode } from "../contexts/DarkModeContext";
 
 const Header: React.FC = () => {
   const router = useRouter(); // Next.js router
   const { user, loading, error } = useUser();
+  const { darkMode } = useDarkMode();
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -39,7 +41,7 @@ const Header: React.FC = () => {
   // Mapping object for navigation links
   const navLinks = {
     Dashboard: "/donor-dashboard",
-    Appointments: "/appointments",
+    Appointments: "/donor-appointments",
     "My Donations": "/my-donations",
   };
 
@@ -47,7 +49,11 @@ const Header: React.FC = () => {
   type NavLinkKey = keyof typeof navLinks;
 
   return (
-    <Card className="rounded-lg border-t-0 border-x-0">
+    <Card
+      className={`rounded-lg border-t-0 border-x-0 ${
+        darkMode ? "bg-gray-800" : "bg-gray-100"
+      }`}
+    >
       <CardContent className="p-0">
         <div className="w-full mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
@@ -92,22 +98,22 @@ const Header: React.FC = () => {
                 <Card className="border-0 shadow-none">
                   <CardContent className="p-0">
                     {user?.isEligible && (
-                      <DropdownMenuItem className="cursor-pointer">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => customeNavigate("/donor-profile")}
+                      >
                         <User className="mr-2 h-4 w-4" />
 
-                        <span onClick={() => customeNavigate("/donor-profile")}>
-                          Profile
-                        </span>
+                        <span>Profile</span>
                       </DropdownMenuItem>
                     )}
                     {user?.isEligible && (
-                      <DropdownMenuItem className="cursor-pointer">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => customeNavigate("/donor-settings")}
+                      >
                         <Settings className="mr-2 h-4 w-4" />
-                        <span
-                          onClick={() => customeNavigate("/donor-settings")}
-                        >
-                          Settings
-                        </span>
+                        <span>Settings</span>
                       </DropdownMenuItem>
                     )}
 

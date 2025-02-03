@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { useDarkMode } from "../contexts/DarkModeContext";
 
 interface Settings {
   darkMode: boolean;
@@ -20,6 +21,7 @@ interface Settings {
 type SettingKey = keyof Omit<Settings, "savedSuccess" | "language">;
 
 const DonorSettings = () => {
+  const { darkMode, toggleDarkMode } = useDarkMode();
   const [settings, setSettings] = useState<Settings>({
     darkMode: false,
     emailNotifications: true,
@@ -75,7 +77,7 @@ const DonorSettings = () => {
               Appearance
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Dark Mode</p>
@@ -83,10 +85,7 @@ const DonorSettings = () => {
                   Toggle dark mode appearance
                 </p>
               </div>
-              <Switch
-                checked={settings.darkMode}
-                onCheckedChange={() => handleToggle("darkMode")}
-              />
+              <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
             </div>
           </CardContent>
         </Card>
