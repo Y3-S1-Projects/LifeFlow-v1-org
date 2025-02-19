@@ -108,7 +108,6 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const isEmailValid = validateEmail(email);
-    const rememberMe = { checked: Boolean };
 
     if (isEmailValid) {
       setIsLoading(true); // Start loading
@@ -124,18 +123,40 @@ const Login = () => {
         const data = await response.json();
 
         if (response.status === 403 && data.requiresVerification) {
+          // Redirect to email verification page if email is not verified
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         } else if (response.ok) {
+          // Store token and role in local storage
           localStorage.setItem("token", data.token);
-          router.push("/donor-dashboard");
+          localStorage.setItem("role", data.user.role); // Store the user's role
+
+          // Redirect based on the user's role
+          switch (data.user.role) {
+            case "Admin":
+              router.push("/admin-dashboard");
+              break;
+            case "Camo Organizer":
+              router.push("/camo-dashboard");
+              break;
+            case "Support Agent":
+              router.push("/support-dashboard");
+              break;
+            default:
+              router.push("/donor-dashboard"); // Default dashboard for regular users
+              break;
+          }
         } else {
-          setErrorMessage(data.message);
+          // Handle login errors
+          setErrorMessage(data.message || "Login failed. Please try again.");
         }
       } catch (error) {
+        // Handle network or server errors
         setErrorMessage("An error occurred, please try again.");
       } finally {
-        setIsLoading(false);
+        setIsLoading(false); // Stop loading
       }
+    } else {
+      setErrorMessage("Please enter a valid email address.");
     }
   };
 

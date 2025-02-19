@@ -27,6 +27,15 @@ export const authenticateUser = (req, res, next) => {
   }
 };
 
+export const authorizeRole = (roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Unauthorized access" });
+    }
+    next();
+  };
+};
+
 // Function to blacklist a token (use in logout)
 export const logoutUser = (req, res) => {
   const authHeader = req.headers.authorization;

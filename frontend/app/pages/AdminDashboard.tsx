@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TableHead,
@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Header from "../components/Header";
+import { getRoleFromToken } from "../utils/auth";
 
 interface Donor {
   id: number;
@@ -34,6 +35,13 @@ interface DonationStat {
 }
 
 const AdminDashboard: React.FC = () => {
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    // Get the role when the component mounts
+    const userRole = getRoleFromToken();
+    setRole(userRole);
+  }, []);
+
   const [donors] = useState<Donor[]>([
     {
       id: 1,
