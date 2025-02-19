@@ -1,7 +1,0 @@
-{
-  "/admin-dashboard/page": "app/admin-dashboard/page.js",
-  "/page": "app/page.js",
-  "/donor-registration/page": "app/donor-registration/page.js",
-  "/login/page": "app/login/page.js",
-  "/donor-dashboard/page": "app/donor-dashboard/page.js"
-}
