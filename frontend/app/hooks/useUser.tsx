@@ -22,7 +22,7 @@ interface User {
   donatedBefore?: string;
   additionalInfo?: string;
   healthConditions?: string[];
-  lastDonationDate?: Date | null;
+  lastDonationDate?: string;
   isEligible?: boolean;
   isProfileComplete?: boolean;
   isAssessmentCompleted?: boolean;
@@ -57,12 +57,19 @@ const useUser = () => {
         });
         console.log(response.data);
 
+        console.log("Raw API response:", response.data);
+        console.log(
+          "lastDonationDate from API:",
+          response.data.lastDonationDate
+        );
+
         // Validate response data
         if (!response.data || !response.data.email) {
           throw new Error("Invalid user data received");
         }
 
         setUser(response.data);
+        console.log("User state after setting:", response.data);
         setError(null);
       } catch (err) {
         console.error("User fetch error:", err);

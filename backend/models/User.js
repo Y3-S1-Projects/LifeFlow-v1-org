@@ -1,10 +1,14 @@
 // Import Mongoose
 import mongoose from "mongoose";
 
-// Define the schema for Donation History
 const DonationHistorySchema = new mongoose.Schema({
   donationDate: {
     type: Date,
+    required: true,
+  },
+  donationType: {
+    type: String,
+    enum: ["Whole Blood", "Plasma", "Platelets", "Double Red Cells"],
     required: true,
   },
   donationCenter: {
@@ -14,6 +18,14 @@ const DonationHistorySchema = new mongoose.Schema({
   notes: {
     type: String,
     default: "",
+  },
+  postDonationIssues: {
+    type: String, // Stores any issues like dizziness, nausea, fatigue, etc.
+    default: "None",
+  },
+  pintsDonated: {
+    type: Number,
+    required: true, // Ensures each donation logs the amount donated
   },
 });
 
@@ -60,13 +72,22 @@ const UserSchema = new mongoose.Schema({
   },
   dateOfBirth: {
     type: String,
-    default: null,
+    default: "null",
   },
 
   weight: {
     type: Number,
     default: null,
   },
+  totalPintsDonated: {
+    type: Number,
+    default: 0, // Tracks cumulative pints donated by the user
+  },
+  lastPintsDonated: {
+    type: Number,
+    default: 0, // Stores the amount from the last donation
+  },
+
   address: {
     street: { type: String, default: null },
     city: { type: String, default: null },
@@ -81,8 +102,8 @@ const UserSchema = new mongoose.Schema({
     default: false,
   },
   lastDonationDate: {
-    type: Date,
-    default: null,
+    type: String,
+    default: "",
   },
   donatedBefore: {
     type: String,

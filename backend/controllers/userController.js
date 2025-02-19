@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import Otp from "../models/Otp.js";
+import Otp from "../models/OTP.js";
 import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import otpGenerator from "otp-generator";
@@ -264,6 +264,7 @@ export const getUserDetails = async (req, res) => {
       address: 1,
       nicNo: 1,
       dateOfBirth: 1,
+      lastDonationDate: 1,
       isEligible: 1,
       weight: 1,
       isProfileComplete: 1,
@@ -286,12 +287,28 @@ export const updateUser = async (req, res) => {
   const updates = req.body;
 
   try {
-    const user = await User.findByIdAndUpdate(id, updates, { new: true });
+    console.log("Received update request:", {
+      id,
+      updates,
+    });
+
+    const existingUser = await User.findById(id);
+    console.log("Existing user:", existingUser);
+
+    const user = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true, // Add this to ensure validation runs
+    });
+
+    console.log("Updated user:", user);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({ message: "User updated successfully", user });
+
+    res.status(200).json(user);
   } catch (err) {
+    console.error("Update error:", err);
     res.status(400).json({ message: err.message });
   }
 };

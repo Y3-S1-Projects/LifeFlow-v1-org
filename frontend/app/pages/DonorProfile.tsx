@@ -31,7 +31,7 @@ interface DonorProfile {
   name: string;
   bloodType: string;
   age: number;
-  lastDonation: string;
+  lastDonationDate: string;
   totalDonations: number;
   nextEligibleDate: string;
   medicalConditions: string[];
@@ -54,7 +54,7 @@ const DonorProfileAdvanced = () => {
     name: "John Doe",
     bloodType: "O+",
     age: 32,
-    lastDonation: "2024-01-15",
+    lastDonationDate: "2024-01-15",
     totalDonations: 8,
     nextEligibleDate: "2025-04-15",
     medicalConditions: ["None"],
@@ -92,6 +92,7 @@ const DonorProfileAdvanced = () => {
     setSuccessMessage("Password updated successfully!");
     setTimeout(() => setSuccessMessage(""), 3000);
   };
+  console.log("user123", user);
 
   const calculateDaysUntilEligible = () => {
     const nextDate = new Date(profile.nextEligibleDate);
@@ -167,7 +168,9 @@ const DonorProfileAdvanced = () => {
                       <span className="font-semibold">Last Donation</span>
                     </div>
                     <p className="text-2xl font-bold mt-2">
-                      {new Date(profile.lastDonation).toLocaleDateString()}
+                      {user?.lastDonationDate
+                        ? new Date(user.lastDonationDate).toLocaleDateString()
+                        : new Date().toLocaleDateString()}
                     </p>
                   </div>
 

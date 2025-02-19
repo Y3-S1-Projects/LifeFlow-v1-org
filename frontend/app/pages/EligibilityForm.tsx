@@ -40,7 +40,7 @@ interface FormData {
   dob: string;
   nicNo: string;
   donatedBefore: string;
-  lastDonationDate: Date | null;
+  lastDonationDate: string;
   healthConditions: string[];
   additionalInfo: string;
   weight: number | null;
@@ -67,7 +67,7 @@ export default function EligibilityForm() {
     dob: "",
     nicNo: "",
     donatedBefore: "no",
-    lastDonationDate: null,
+    lastDonationDate: "",
     healthConditions: [],
     additionalInfo: "",
     weight: null,
@@ -102,7 +102,9 @@ export default function EligibilityForm() {
           bloodType: user.bloodType || prevData.bloodType || "none",
           weight: user.weight || prevData.weight,
           donatedBefore: user.donatedBefore || prevData.donatedBefore,
-          lastDonationDate: user.lastDonationDate || prevData.lastDonationDate,
+          lastDonationDate: user.lastDonationDate
+            ? new Date(user.lastDonationDate).toISOString().split("T")[0]
+            : prevData.lastDonationDate,
           healthConditions: user.healthConditions || prevData.healthConditions,
           additionalInfo: user.additionalInfo || prevData.additionalInfo,
           address: {

@@ -51,14 +51,13 @@ const DonorRegistration = () => {
   const [apiError, setApiError] = useState("");
 
   const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      y: 0,
       transition: {
-        duration: 0.6,
-        when: "beforeChildren",
-        staggerChildren: 0.2,
+        duration: 0.4,
+        staggerChildren: 0.07, // Stagger children for better performance
+        delayChildren: 0.1,
       },
     },
   };
