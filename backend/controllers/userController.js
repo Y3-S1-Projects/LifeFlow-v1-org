@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import Otp from "../models/OTP.js";
+import Otp from "../models/Otp.js";
 import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import otpGenerator from "otp-generator";
@@ -117,7 +117,6 @@ export const registerUser = async (req, res) => {
     email,
     password,
     bloodType,
-    dateOfBirth,
     phoneNumber,
     address,
   } = req.body;
@@ -139,7 +138,6 @@ export const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       bloodType,
-      dateOfBirth,
       phoneNumber,
       address,
       isVerified: false, // Set to false until OTP verification

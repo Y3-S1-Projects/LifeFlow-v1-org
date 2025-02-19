@@ -72,7 +72,7 @@ const UserSchema = new mongoose.Schema({
   },
   dateOfBirth: {
     type: String,
-    default: "null",
+    default: "",
   },
 
   weight: {
