@@ -16,6 +16,7 @@ import useUser from "../hooks/useUser";
 import Header from "../components/Header";
 import { useRouter } from "next/navigation";
 import Loader from "../components/Loader";
+import { getToken } from "../utils/auth";
 
 interface FormErrors {
   fullName?: string;
@@ -53,6 +54,7 @@ interface FormData {
 
 export default function EligibilityForm() {
   const router = useRouter();
+  const token = getToken();
   const { user, loading, error } = useUser();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -257,6 +259,7 @@ export default function EligibilityForm() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(dataToSubmit),
         }

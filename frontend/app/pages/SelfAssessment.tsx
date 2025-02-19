@@ -6,6 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import useUser from "../hooks/useUser";
 import { useRouter } from "next/navigation";
+import { getToken } from "../utils/auth";
 
 type FormFields =
   | "understandsBenefits"
@@ -22,6 +23,7 @@ type FormData = {
 
 const BloodDonationForm = () => {
   const router = useRouter();
+  const token = getToken();
   const [currentSection, setCurrentSection] = useState(1);
   const { user, loading, error } = useUser();
   const [formData, setFormData] = useState<FormData>({
@@ -113,6 +115,7 @@ const BloodDonationForm = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(dataToSubmit),
         }
