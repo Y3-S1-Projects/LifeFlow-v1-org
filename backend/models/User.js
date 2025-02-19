@@ -44,6 +44,11 @@ const UserSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  role: {
+    type: String,
+    enum: ["Camp Organizer", "Admin", "Support Agent", "User"],
+    default: "User", // Default role for new users
+  },
   email: {
     type: String,
     required: true,

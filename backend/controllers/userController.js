@@ -119,6 +119,7 @@ export const registerUser = async (req, res) => {
     bloodType,
     phoneNumber,
     address,
+    role,
   } = req.body;
 
   if (!firstName || !lastName || !email || !password) {
@@ -140,6 +141,7 @@ export const registerUser = async (req, res) => {
       bloodType,
       phoneNumber,
       address,
+      role: role || "User", // Default to "User"
       isVerified: false, // Set to false until OTP verification
     });
 
@@ -267,6 +269,7 @@ export const getUserDetails = async (req, res) => {
       weight: 1,
       isProfileComplete: 1,
       isAssessmentCompleted: 1,
+      role: 1, // Include role in the response
     });
 
     if (!user) {
@@ -285,20 +288,10 @@ export const updateUser = async (req, res) => {
   const updates = req.body;
 
   try {
-    console.log("Received update request:", {
-      id,
-      updates,
-    });
-
-    const existingUser = await User.findById(id);
-    console.log("Existing user:", existingUser);
-
     const user = await User.findByIdAndUpdate(id, updates, {
       new: true,
-      runValidators: true, // Add this to ensure validation runs
+      runValidators: true,
     });
-
-    console.log("Updated user:", user);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -310,7 +303,6 @@ export const updateUser = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
 // Add a donation record for a user
 export const addDonationRecord = async (req, res) => {
   const { id } = req.params;

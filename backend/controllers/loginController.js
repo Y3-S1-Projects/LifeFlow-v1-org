@@ -12,25 +12,23 @@ if (!process.env.JWT_SECRET) {
 // Login function
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
 
   try {
-    console.log("Login attempt for email:", email);
-
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email });
 
     if (!user) {
-      console.log("User not found in database");
       return res.status(404).json({ message: "User not found" });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      console.log("Invalid password for user:", email);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     if (!user.isVerified) {
-      console.log("User email not verified:", email);
       await sendOTP(email);
       return res.status(403).json({
         message: "Email not verified. A new OTP has been sent.",
@@ -39,14 +37,10 @@ export const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
+      { expiresIn: "24h" }
     );
-
-    console.log("Login successful for:", email);
 
     res.status(200).json({
       message: "Login successful",
@@ -59,6 +53,7 @@ export const loginUser = async (req, res) => {
         bloodType: user.bloodType,
         isVerified: user.isVerified,
         isEligible: user.isEligible,
+        role: user.role,
       },
     });
   } catch (err) {
@@ -66,7 +61,6 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 // Verify login OTP
 export const verifyLoginOTP = async (req, res) => {
   const { email, otp } = req.body;
