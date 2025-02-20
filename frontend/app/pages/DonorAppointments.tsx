@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { MapPin, Calendar, Clock, Hospital } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import MapComponent from "../components/Map";
 
 // Types for our component
 interface DonationCamp {
@@ -25,7 +26,7 @@ const BloodDonationAppointments: React.FC = () => {
   const [selectedCamp, setSelectedCamp] = useState<DonationCamp | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>("");
   const [appointmentTime, setAppointmentTime] = useState<string>("");
-
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   useEffect(() => {
     // Simulated function to fetch nearest donation camps with available dates
     const fetchNearestCamps = async () => {
@@ -201,6 +202,9 @@ const BloodDonationAppointments: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      </div>
+      <div>
+        <MapComponent apiKey={apiKey} />
       </div>
     </div>
   );
