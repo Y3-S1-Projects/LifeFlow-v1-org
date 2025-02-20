@@ -25,7 +25,7 @@ router.post("/resend-otp", resendOTP);
 // Protected routes
 router.get("/allUsers", authenticateUser, authorizeRole(["Admin"]), getUsers);
 router.get("/getUserDetails/:id", authenticateUser, getUserDetails);
-router.put("/updateUser/:id", authenticateUser, updateUser);
+router.put("/updateUser/:id", updateUser);
 router.post(
   "/addUserDonationRecord/:id/donations",
   authenticateUser,
