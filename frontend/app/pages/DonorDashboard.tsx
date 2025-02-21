@@ -143,7 +143,7 @@ const DonorDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 w-full mx-auto space-y-6 flex flex-col">
+    <div className="min-h-screen p-6 w-screen mx-auto space-y-6 flex flex-col">
       <Header />
       <Toaster
         toastOptions={{

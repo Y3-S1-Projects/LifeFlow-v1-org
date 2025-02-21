@@ -23,8 +23,8 @@ router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 
 // Protected routes
-router.get("/allUsers", authenticateUser, authorizeRole(["Admin"]), getUsers);
-router.get("/getUserDetails/:id", authenticateUser, getUserDetails);
+router.get("/allUsers", getUsers);
+router.get("/getUserDetails/:id", getUserDetails);
 router.put("/updateUser/:id", updateUser);
 router.post(
   "/addUserDonationRecord/:id/donations",
@@ -32,11 +32,6 @@ router.post(
   authorizeRole(["Camo Organizer", "Admin"]),
   addDonationRecord
 );
-router.delete(
-  "/deleteUser/:id",
-  authenticateUser,
-  authorizeRole(["Admin"]),
-  deleteUser
-);
+router.delete("/deleteUser/:id", deleteUser);
 
 export default router;

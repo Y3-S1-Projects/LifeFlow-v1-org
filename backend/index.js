@@ -3,6 +3,7 @@ import express from "express";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoute.js";
 import loginUser from "./routes/loginRoute.js";
+import campRoutes from "./routes/campRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -33,3 +34,4 @@ app.listen(port, () => {
 
 app.use("/users", userRoutes);
 app.use("/api", loginUser);
+app.use("/camps", campRoutes);

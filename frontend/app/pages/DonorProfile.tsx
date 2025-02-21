@@ -92,7 +92,6 @@ const DonorProfileAdvanced = () => {
     setSuccessMessage("Password updated successfully!");
     setTimeout(() => setSuccessMessage(""), 3000);
   };
-  console.log("user123", user);
 
   const calculateDaysUntilEligible = () => {
     const nextDate = new Date(profile.nextEligibleDate);

@@ -18,6 +18,10 @@ interface User {
     city?: string;
     state?: string;
   };
+  location?: {
+    type: string;
+    coordinates: [number, number]; // [longitude, latitude]
+  };
   dateOfBirth?: string;
   donatedBefore?: string;
   additionalInfo?: string;

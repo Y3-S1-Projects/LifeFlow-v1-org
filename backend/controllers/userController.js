@@ -133,6 +133,8 @@ export const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user WITHOUT setting location field at all
     const newUser = new User({
       firstName,
       lastName,
@@ -141,12 +143,12 @@ export const registerUser = async (req, res) => {
       bloodType,
       phoneNumber,
       address,
-      role: role || "User", // Default to "User"
-      isVerified: false, // Set to false until OTP verification
+      role: role || "User",
+      isVerified: false,
     });
 
     await newUser.save();
-    await sendOTP(email); // Send OTP for verification
+    await sendOTP(email);
 
     res
       .status(201)
@@ -263,6 +265,7 @@ export const getUserDetails = async (req, res) => {
       phoneNumber: 1,
       address: 1,
       nicNo: 1,
+      location: 1,
       dateOfBirth: 1,
       lastDonationDate: 1,
       isEligible: 1,
@@ -283,11 +286,22 @@ export const getUserDetails = async (req, res) => {
 };
 
 // Update a user's information
+// controllers/userController.js
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
+  // Check if lat and lng are provided in the request to update the location
+  if (updates.lat && updates.lng) {
+    // Make sure the location is stored in GeoJSON format
+    updates.location = {
+      type: "Point",
+      coordinates: [updates.lng, updates.lat], // [longitude, latitude]
+    };
+  }
+
   try {
+    // Find and update the user
     const user = await User.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
@@ -297,12 +311,13 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    res.status(200).json(user); // Return updated user
   } catch (err) {
     console.error("Update error:", err);
     res.status(400).json({ message: err.message });
   }
 };
+
 // Add a donation record for a user
 export const addDonationRecord = async (req, res) => {
   const { id } = req.params;

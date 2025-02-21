@@ -61,6 +61,17 @@ const UserSchema = new mongoose.Schema({
     required: true,
     minlength: 6,
   },
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      required: false, // Make the whole field optional
+    },
+    coordinates: {
+      type: [Number],
+      required: false,
+    },
+  },
   phoneNumber: {
     type: String,
     required: true,
@@ -123,7 +134,7 @@ const UserSchema = new mongoose.Schema({
   donationHistory: [DonationHistorySchema],
   isEligible: {
     type: Boolean,
-    default: false, // Default to false until all fields are filled
+    default: false,
   },
   isProfileComplete: {
     type: Boolean,
@@ -139,6 +150,17 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
+UserSchema.index(
+  {
+    location: "2dsphere",
+  },
+  {
+    partialFilterExpression: {
+      "location.type": "Point",
+      "location.coordinates": { $exists: true, $type: "array" },
+    },
+  }
+);
 // Pre-save middleware to check eligibility
 UserSchema.pre("save", function (next) {
   // Check if the user has filled all required fields for eligibility

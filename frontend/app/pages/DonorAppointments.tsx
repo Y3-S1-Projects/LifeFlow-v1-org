@@ -3,6 +3,10 @@ import { MapPin, Calendar, Clock, Hospital } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import MapComponent from "../components/Map";
+import useUser from "../hooks/useUser";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import Loader from "../components/Loader";
 
 // Types for our component
 interface DonationCamp {
@@ -21,12 +25,98 @@ interface Appointment {
   time: string;
 }
 
+interface Camp {
+  _id: string;
+  name: string;
+  distance: number;
+  distanceUnit: string;
+  status: string;
+  availableDates: string;
+}
+
 const BloodDonationAppointments: React.FC = () => {
+  const { user } = useUser();
   const [nearestCamps, setNearestCamps] = useState<DonationCamp[]>([]);
   const [selectedCamp, setSelectedCamp] = useState<DonationCamp | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>("");
   const [appointmentTime, setAppointmentTime] = useState<string>("");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
+  const [camps, setCamps] = useState<Camp[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  useEffect(() => {
+    const getLocation = () => {
+      if (user && user.location) {
+        const { location } = user;
+        // If the user has a stored location, use it
+        const [longitude, latitude] = location?.coordinates || [];
+        console.log("Using stored location:", { latitude, longitude });
+        const radius = 20; // Example: 10 km radius
+        setLatitude(latitude);
+        setLongitude(longitude);
+        fetchNearbyCamps(latitude, longitude, radius);
+      } else if (navigator.geolocation) {
+        // If no stored location, use browser geolocation (for mobile)
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            console.log("Using browser location:", { latitude, longitude });
+            const radius = 50; // Example: 10 km radius
+            fetchNearbyCamps(latitude, longitude, radius);
+          },
+          (error) => {
+            setError("Unable to retrieve your location");
+            setLoading(false);
+          }
+        );
+      } else {
+        setError("Geolocation is not supported by this browser");
+        setLoading(false);
+      }
+    };
+
+    // Fetch nearby camps with lat, lng, and radius
+    const fetchNearbyCamps = async (
+      lat: number,
+      lng: number,
+      radius: number
+    ) => {
+      try {
+        console.log("Fetching nearby camps with the following parameters:", {
+          lat,
+          lng,
+          radius,
+        });
+
+        const response = await fetch(
+          `http://localhost:3001/camps/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch nearby camps");
+        }
+
+        const data = await response.json();
+        console.log("Nearby Camps Data:", data); // Log the fetched camps data
+
+        setCamps(data);
+        setLoading(false);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch nearby camps"
+        );
+        setLoading(false);
+      }
+    };
+
+    getLocation();
+  }, [user]); // Re-run effect if user changes
+
   useEffect(() => {
     // Simulated function to fetch nearest donation camps with available dates
     const fetchNearestCamps = async () => {
@@ -90,9 +180,21 @@ const BloodDonationAppointments: React.FC = () => {
       })) || []
     );
   }, [selectedCamp]);
+  console.log("location", user?.location);
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Loader />
+        <p style={{ marginTop: "10px" }}>Loading...</p>
+      </div>
+    );
+  }
+  const fallbackLatitude = latitude ?? 6.9271; // Default: Colombo
+  const fallbackLongitude = longitude ?? 79.8612; // Default: Colombo
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="min-h-screen p-6 w-full mx-auto space-y-6 flex flex-col">
+      <Header />
       <h1 className="text-2xl font-bold mb-6">Blood Donation Appointments</h1>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -203,9 +305,24 @@ const BloodDonationAppointments: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      <div>
-        <MapComponent apiKey={apiKey} />
+      <div className="my-10">
+        {camps.map((camp) => {
+          return (
+            <div key={camp._id}>
+              {camp.name} - {camp.distance} {camp.distanceUnit} away <br />
+              status : {camp.status} , Date {camp.availableDates}
+            </div>
+          );
+        })}
+
+        <MapComponent
+          userLatitude={fallbackLatitude}
+          userLongitude={fallbackLongitude}
+          apiKey={apiKey}
+          showNearbyCamps={true}
+        />
       </div>
+      <Footer isDarkMode={false} />
     </div>
   );
 };
