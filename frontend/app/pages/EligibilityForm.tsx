@@ -16,6 +16,7 @@ import useUser from "../hooks/useUser";
 import Header from "../components/Header";
 import { useRouter } from "next/navigation";
 import Loader from "../components/Loader";
+import MapComponent from "../components/Map";
 import { getToken } from "../utils/auth";
 
 interface FormErrors {
@@ -31,6 +32,10 @@ interface FormErrors {
   city?: string;
   state?: string;
   nicNo?: string;
+}
+interface Location {
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface FormData {
@@ -50,6 +55,7 @@ interface FormData {
     city: string;
     state: string;
   };
+  location: Location;
 }
 
 export default function EligibilityForm() {
@@ -60,6 +66,7 @@ export default function EligibilityForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const [age, setAge] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -78,6 +85,14 @@ export default function EligibilityForm() {
       city: "",
       state: "",
     },
+    location: {
+      latitude: null,
+      longitude: null,
+    },
+  });
+  const [userLocation, setUserLocation] = useState({
+    latitude: 6.9271, // Colombo's latitude
+    longitude: 79.8612, // Colombo's longitude
   });
 
   useEffect(() => {
@@ -246,6 +261,11 @@ export default function EligibilityForm() {
       ...formData,
       dateOfBirth: formData.dob.replace(/-/g, "/"), // Convert YYYY-MM-DD to YYYY/MM/DD
       isProfileComplete: true,
+      // Add lat and lng here
+      lat: formData.location.latitude,
+      lng: formData.location.longitude,
+      // Remove the location object
+      location: undefined,
     };
 
     setSubmitting(true);
@@ -285,6 +305,39 @@ export default function EligibilityForm() {
     } finally {
       setSubmitting(false);
     }
+  };
+  // Get user's current location on component mount
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setFormData((prev) => ({
+            ...prev,
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+          }));
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        }
+      );
+    }
+  }, []);
+
+  const handleLocationSelect = (lat: number, lng: number): void => {
+    setFormData((prev) => ({
+      ...prev,
+      location: {
+        latitude: lat,
+        longitude: lng,
+      },
+    }));
   };
 
   // Calculate age based on DOB
@@ -387,7 +440,7 @@ export default function EligibilityForm() {
       <Header />
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-lg"
+        className="space-y-6 max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg"
       >
         <h2 className="text-2xl font-bold text-center">
           Complete Your Profile
@@ -465,6 +518,24 @@ export default function EligibilityForm() {
           />
           {errors.nicNo && (
             <p className="text-red-500 text-sm">{errors.nicNo}</p>
+          )}
+        </div>
+        {/* Map Section */}
+        <div className="space-y-4">
+          <Label>Select Your Location</Label>
+          <div className="my-10">
+            <MapComponent
+              apiKey={apiKey}
+              userLatitude={userLocation.latitude}
+              userLongitude={userLocation.longitude}
+              onLocationSelect={handleLocationSelect}
+            />
+          </div>
+          {formData.location.latitude && formData.location.longitude && (
+            <p className="text-sm text-gray-600">
+              Selected location: {formData.location.latitude.toFixed(6)},{" "}
+              {formData.location.longitude.toFixed(6)}
+            </p>
           )}
         </div>
 
@@ -642,7 +713,8 @@ export default function EligibilityForm() {
               onCheckedChange={handleTermsChange}
             />
             <Label htmlFor="terms">
-              I agree to the terms and conditions of blood donation.
+              I confirm that the information provided above is accurate and
+              up-to-date.
             </Label>
           </div>
           {errors.terms && (

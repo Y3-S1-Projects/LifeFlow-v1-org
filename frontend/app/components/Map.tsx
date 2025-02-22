@@ -44,6 +44,7 @@ const MapComponent: React.FC<IMapProps> = ({
     useState<google.maps.LatLngLiteral | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [center, setCenter] = useState({ lat: 6.9271, lng: 79.8612 }); // Default location
 
   // Mobile detection effect remains the same
   useEffect(() => {
@@ -69,10 +70,10 @@ const MapComponent: React.FC<IMapProps> = ({
     maxWidth: "100vw",
   };
 
-  const center: google.maps.LatLngLiteral = {
-    lat: userLatitude || 7.8731,
-    lng: userLongitude || 80.7718,
-  };
+  // const center: google.maps.LatLngLiteral = {
+  //   lat: userLatitude || 7.8731,
+  //   lng: userLongitude || 80.7718,
+  // };
 
   // Previous map styles remain the same
   const mapStyles = [
@@ -141,6 +142,10 @@ const MapComponent: React.FC<IMapProps> = ({
       const lat = latLng.lat();
       const lng = latLng.lng();
       setSelectedLocation({ lat, lng });
+
+      // Set the new center for the map to the clicked location
+      setCenter({ lat, lng });
+
       if (onLocationSelect) {
         onLocationSelect(lat, lng);
       }
@@ -159,6 +164,7 @@ const MapComponent: React.FC<IMapProps> = ({
       onCampSelect(campId);
     }
   };
+  const defaultZoom = 1;
 
   return (
     <LoadScript googleMapsApiKey={apiKey}>
@@ -166,7 +172,7 @@ const MapComponent: React.FC<IMapProps> = ({
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
           center={center}
-          zoom={isMobile ? 11 : 12}
+          zoom={defaultZoom}
           onLoad={() => setMapLoaded(true)}
           onClick={handleMapClick}
           options={{
@@ -317,14 +323,14 @@ const MapComponent: React.FC<IMapProps> = ({
             })}
           {selectedLocation && !showNearbyCamps && (
             <Marker position={selectedLocation}>
-              <InfoWindow
+              {/* <InfoWindow
                 position={selectedLocation}
                 onCloseClick={() => setSelectedLocation(null)}
               >
                 <div className={isMobile ? "text-sm" : "text-base"}>
                   Selected Location
                 </div>
-              </InfoWindow>
+              </InfoWindow> */}
             </Marker>
           )}
         </GoogleMap>
