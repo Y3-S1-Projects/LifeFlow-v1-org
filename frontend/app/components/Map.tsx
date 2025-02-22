@@ -44,7 +44,21 @@ const MapComponent: React.FC<IMapProps> = ({
     useState<google.maps.LatLngLiteral | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [center, setCenter] = useState({ lat: 6.9271, lng: 79.8612 }); // Default location
+  const defaultLocation = { lat: 6.9271, lng: 79.8612 }; // Colombo (default)
+  const storedUserLocation =
+    userLatitude && userLongitude
+      ? { lat: userLatitude, lng: userLongitude }
+      : null;
+
+  const [center, setCenter] = useState<{ lat: number; lng: number }>(
+    defaultLocation
+  );
+
+  useEffect(() => {
+    if (userLatitude !== undefined && userLongitude !== undefined) {
+      setCenter({ lat: userLatitude, lng: userLongitude });
+    }
+  }, [userLatitude, userLongitude]); // Only run when the user’s location changes
 
   // Mobile detection effect remains the same
   useEffect(() => {
@@ -103,6 +117,7 @@ const MapComponent: React.FC<IMapProps> = ({
       stylers: [{ color: "#a0d3e8" }],
     },
   ];
+  const userLocation = { lat: userLatitude, lng: userLongitude }; // Default Colombo location
 
   // Previous useEffect for fetching camps remains the same
   useEffect(() => {
@@ -165,7 +180,6 @@ const MapComponent: React.FC<IMapProps> = ({
     }
   };
   const defaultZoom = 1;
-
   return (
     <LoadScript googleMapsApiKey={apiKey}>
       <div className="relative w-full">
@@ -194,6 +208,20 @@ const MapComponent: React.FC<IMapProps> = ({
             gestureHandling: isMobile ? "greedy" : "cooperative",
           }}
         >
+          {mapLoaded && userLatitude && userLongitude && (
+            <Marker
+              position={{ lat: userLatitude, lng: userLongitude }}
+              label={{
+                text: "You",
+                color: "#4285F4",
+                fontWeight: "bold",
+                fontSize: "16px",
+                className:
+                  "font-poppins bg-white px-2 py-1 rounded-full shadow-md border-2 border-blue-500",
+              }}
+              zIndex={1000}
+            />
+          )}
           {mapLoaded &&
             showNearbyCamps &&
             camps.map((camp) => {
