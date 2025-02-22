@@ -157,7 +157,7 @@ export const deleteCamp = async (req, res) => {
     }
 
     // Delete the camp
-    await camp.remove();
+    await Camp.findByIdAndDelete(id); // Instead of camp.remove()
     res.status(200).json({ message: "Camp deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete camp" });

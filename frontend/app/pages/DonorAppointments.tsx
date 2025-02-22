@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { MapPin, Calendar, Clock, Hospital } from "lucide-react";
+import { MapPin, Calendar, Clock, Hospital, Phone, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import MapComponent from "../components/Map";
@@ -7,16 +7,45 @@ import useUser from "../hooks/useUser";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Loader from "../components/Loader";
+import { useRouter } from "next/navigation";
 
-// Types for our component
-interface DonationCamp {
-  id: string;
+interface Address {
+  street: string;
+  city: string;
+  postalCode: string;
+}
+
+interface Contact {
+  phone: string;
+  email: string;
+}
+
+interface Location {
+  type: string;
+  coordinates: number[];
+}
+
+interface DonationHistory {
+  donorName: string;
+  donationDate: Date;
+  amount: number;
+  remarks: string;
+}
+
+interface Camp {
+  _id: string;
   name: string;
-  address: string;
-  distance: number;
-  availableSlots: number;
+  description: string;
   operatingHours: string;
-  availableDates: string[]; // New field for available dates
+  location: Location;
+  address: Address;
+  status: "Open" | "Closed" | "Full" | "Upcoming";
+  availableDates: Date[];
+  contact: Contact;
+  donationHistory: DonationHistory[];
+  createdAt: Date;
+  distance?: number;
+  distanceUnit?: string;
 }
 
 interface Appointment {
@@ -25,19 +54,9 @@ interface Appointment {
   time: string;
 }
 
-interface Camp {
-  _id: string;
-  name: string;
-  distance: number;
-  distanceUnit: string;
-  status: string;
-  availableDates: string;
-}
-
 const BloodDonationAppointments: React.FC = () => {
-  const { user } = useUser();
-  const [nearestCamps, setNearestCamps] = useState<DonationCamp[]>([]);
-  const [selectedCamp, setSelectedCamp] = useState<DonationCamp | null>(null);
+  const { user, isInitialized } = useUser();
+  const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>("");
   const [appointmentTime, setAppointmentTime] = useState<string>("");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
@@ -46,25 +65,38 @@ const BloodDonationAppointments: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [selectedCampId, setSelectedCampId] = useState<string>("");
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isInitialized) {
+      console.log("User data after initialization:", user);
+
+      // Redirect if the user is not logged in
+      if (!user?._id) {
+        console.log("User is not logged in, redirecting to login page...");
+        router.push("/login"); // Redirect to login page
+      }
+    }
+  }, [isInitialized, user, router]);
 
   useEffect(() => {
     const getLocation = () => {
       if (user && user.location) {
         const { location } = user;
-        // If the user has a stored location, use it
         const [longitude, latitude] = location?.coordinates || [];
         console.log("Using stored location:", { latitude, longitude });
-        const radius = 20; // Example: 10 km radius
+        const radius = 20;
         setLatitude(latitude);
         setLongitude(longitude);
         fetchNearbyCamps(latitude, longitude, radius);
       } else if (navigator.geolocation) {
-        // If no stored location, use browser geolocation (for mobile)
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
             console.log("Using browser location:", { latitude, longitude });
-            const radius = 50; // Example: 10 km radius
+            const radius = 50;
             fetchNearbyCamps(latitude, longitude, radius);
           },
           (error) => {
@@ -78,19 +110,12 @@ const BloodDonationAppointments: React.FC = () => {
       }
     };
 
-    // Fetch nearby camps with lat, lng, and radius
     const fetchNearbyCamps = async (
       lat: number,
       lng: number,
       radius: number
     ) => {
       try {
-        console.log("Fetching nearby camps with the following parameters:", {
-          lat,
-          lng,
-          radius,
-        });
-
         const response = await fetch(
           `http://localhost:3001/camps/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
         );
@@ -100,8 +125,6 @@ const BloodDonationAppointments: React.FC = () => {
         }
 
         const data = await response.json();
-        console.log("Nearby Camps Data:", data); // Log the fetched camps data
-
         setCamps(data);
         setLoading(false);
       } catch (error) {
@@ -115,47 +138,27 @@ const BloodDonationAppointments: React.FC = () => {
     };
 
     getLocation();
-  }, [user]); // Re-run effect if user changes
+  }, [user]);
 
-  useEffect(() => {
-    // Simulated function to fetch nearest donation camps with available dates
-    const fetchNearestCamps = async () => {
-      const mockCamps: DonationCamp[] = [
-        {
-          id: "1",
-          name: "City Central Hospital",
-          address: "123 Main St, Cityville",
-          distance: 2.5,
-          availableSlots: 10,
-          operatingHours: "8 AM - 4 PM",
-          availableDates: ["2024-03-01", "2024-03-02", "2024-03-03"],
-        },
-        {
-          id: "2",
-          name: "Red Cross Center",
-          address: "456 Health Ave, Townsburg",
-          distance: 5.2,
-          availableSlots: 15,
-          operatingHours: "9 AM - 5 PM",
-          availableDates: ["2024-03-02", "2024-03-03", "2024-03-04"],
-        },
-      ];
-      setNearestCamps(mockCamps);
-    };
-
-    fetchNearestCamps();
-  }, []);
-
-  // Reset appointment date when camp changes
   useEffect(() => {
     setAppointmentDate("");
     setAppointmentTime("");
   }, [selectedCamp]);
 
+  const handleCampSelect = (campId: string) => {
+    setSelectedCampId(campId);
+    const camp = camps.find((c) => c._id === campId);
+    setSelectedCamp(camp || null);
+  };
+  const handleCampClick = (camp: Camp) => {
+    setSelectedCamp(camp);
+    setSelectedCampId(camp._id);
+  };
+
   const handleAppointmentBooking = () => {
     if (selectedCamp && appointmentDate && appointmentTime) {
       const newAppointment: Appointment = {
-        campId: selectedCamp.id,
+        campId: selectedCamp._id,
         date: appointmentDate,
         time: appointmentTime,
       };
@@ -166,21 +169,29 @@ const BloodDonationAppointments: React.FC = () => {
     }
   };
 
-  // Generate date options based on selected camp
-  const availableDateOptions = useMemo(() => {
-    return (
-      selectedCamp?.availableDates.map((date) => ({
-        value: date,
-        label: new Date(date).toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-      })) || []
-    );
+  const availableDates = useMemo(() => {
+    if (!selectedCamp?.availableDates) return [];
+    return selectedCamp.availableDates.map((date) => ({
+      value: new Date(date).toISOString().split("T")[0],
+      label: new Date(date).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    }));
   }, [selectedCamp]);
-  console.log("location", user?.location);
+
+  const getStatusColor = (status: Camp["status"]) => {
+    const colors = {
+      Open: "text-green-600",
+      Closed: "text-red-600",
+      Full: "text-orange-600",
+      Upcoming: "text-blue-600",
+    };
+    return colors[status] || "text-gray-600";
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: "center" }}>
@@ -189,8 +200,9 @@ const BloodDonationAppointments: React.FC = () => {
       </div>
     );
   }
-  const fallbackLatitude = latitude ?? 6.9271; // Default: Colombo
-  const fallbackLongitude = longitude ?? 79.8612; // Default: Colombo
+
+  const fallbackLatitude = latitude ?? 6.9271;
+  const fallbackLongitude = longitude ?? 79.8612;
 
   return (
     <div className="min-h-screen p-6 w-full mx-auto space-y-6 flex flex-col">
@@ -203,32 +215,59 @@ const BloodDonationAppointments: React.FC = () => {
           <CardHeader>
             <CardTitle>Nearest Donation Camps</CardTitle>
           </CardHeader>
-          <CardContent>
-            {nearestCamps.map((camp) => (
+          <CardContent className="max-h-[400px] overflow-y-auto">
+            {" "}
+            {/* Add max height and overflow */}
+            {camps.map((camp) => (
               <div
-                key={camp.id}
+                key={camp._id}
                 className={`border p-4 mb-4 rounded cursor-pointer ${
-                  selectedCamp?.id === camp.id ? "bg-blue-100" : ""
+                  selectedCampId === camp._id ? "bg-blue-100" : ""
                 }`}
-                onClick={() => setSelectedCamp(camp)}
+                onClick={() => handleCampClick(camp)}
               >
-                <div className="flex items-center mb-2">
-                  <Hospital className="mr-2 text-red-500" />
-                  <h3 className="font-semibold">{camp.name}</h3>
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="mr-2 text-gray-500" size={16} />
-                  <p>{camp.address}</p>
-                </div>
-                <div className="flex justify-between mt-2">
+                <div className="flex items-center mb-2 justify-between">
                   <div className="flex items-center">
-                    <Clock className="mr-2 text-gray-500" size={16} />
-                    <span>{camp.operatingHours}</span>
+                    <Hospital className="mr-2 text-red-500" />
+                    <h3 className="font-semibold">{camp.name}</h3>
                   </div>
-                  <span className="text-green-600">
-                    {camp.availableSlots} slots available
+                  <span className={getStatusColor(camp.status)}>
+                    {camp.status}
                   </span>
                 </div>
+
+                <p className="text-sm text-gray-600 mb-2">{camp.description}</p>
+
+                <div className="flex items-center mb-2">
+                  <MapPin className="mr-2 text-gray-500" size={16} />
+                  <p>
+                    {camp.address.street}, {camp.address.city}{" "}
+                    {camp.address.postalCode}
+                  </p>
+                </div>
+
+                <div className="flex items-center mb-2">
+                  <Clock className="mr-2 text-gray-500" size={16} />
+                  <span>{camp.operatingHours}</span>
+                </div>
+
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Phone className="mr-1" size={14} />
+                    <span>{camp.contact.phone}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Mail className="mr-1" size={14} />
+                    <span>{camp.contact.email}</span>
+                  </div>
+                </div>
+
+                {camp.distance && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Distance: {camp.distance} {camp.distanceUnit}
+                  </div>
+                )}
+
                 <div className="mt-2 text-sm text-gray-600">
                   Available Dates:{" "}
                   {camp.availableDates
@@ -270,7 +309,7 @@ const BloodDonationAppointments: React.FC = () => {
                     className="w-full p-2 border rounded"
                   >
                     <option value="">Select a Date</option>
-                    {availableDateOptions.map((date) => (
+                    {availableDates.map((date) => (
                       <option key={date.value} value={date.value}>
                         {date.label}
                       </option>
@@ -291,11 +330,20 @@ const BloodDonationAppointments: React.FC = () => {
                   onClick={handleAppointmentBooking}
                   className="w-full"
                   disabled={
-                    !selectedCamp || !appointmentDate || !appointmentTime
+                    !selectedCamp ||
+                    !appointmentDate ||
+                    !appointmentTime ||
+                    selectedCamp.status !== "Open"
                   }
                 >
                   Book Appointment
                 </Button>
+                {selectedCamp.status !== "Open" && (
+                  <p className="text-red-500 text-sm mt-2 text-center">
+                    This camp is currently {selectedCamp.status.toLowerCase()}.
+                    Please select another camp.
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-center text-gray-500">
@@ -305,21 +353,15 @@ const BloodDonationAppointments: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="my-10">
-        {camps.map((camp) => {
-          return (
-            <div key={camp._id}>
-              {camp.name} - {camp.distance} {camp.distanceUnit} away <br />
-              status : {camp.status} , Date {camp.availableDates}
-            </div>
-          );
-        })}
 
+      <div className="my-10">
         <MapComponent
           userLatitude={fallbackLatitude}
           userLongitude={fallbackLongitude}
           apiKey={apiKey}
           showNearbyCamps={true}
+          selectedCampId={selectedCampId}
+          onCampSelect={handleCampSelect}
         />
       </div>
       <Footer isDarkMode={false} />
