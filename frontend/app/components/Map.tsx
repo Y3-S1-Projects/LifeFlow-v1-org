@@ -6,6 +6,7 @@ import {
   InfoWindow,
 } from "@react-google-maps/api";
 import axios from "axios";
+import { MapPin, Clock, Phone, Calendar, Users, Info } from "lucide-react";
 
 // Previous interfaces remain the same
 interface Camp {
@@ -16,8 +17,14 @@ interface Camp {
     coordinates: [number, number];
   };
   status: string;
+  operatingHours?: string;
+  availableDates: string[]; // Array of date strings
+  slotsAvailable?: number;
+  contact?: {
+    phone?: string;
+    email?: string;
+  };
 }
-
 interface IMapProps {
   apiKey: string;
   userLatitude: number;
@@ -278,69 +285,165 @@ const MapComponent: React.FC<IMapProps> = ({
                       }}
                     >
                       <div
-                        className={`p-3 ${
-                          isMobile ? "max-w-[280px]" : "max-w-xs"
-                        } rounded-lg`}
+                        className={`p-4 ${
+                          isMobile ? "max-w-[300px]" : "max-w-md"
+                        } rounded-lg bg-white shadow-sm`}
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          {/* Modified blood donation icon container for better touch interaction */}
+                        {/* Header */}
+                        <div className="flex items-start gap-3 mb-3">
                           <button
-                            className="bg-red-100 p-2 rounded-full touch-manipulation cursor-pointer active:bg-red-200 transition-colors"
+                            className="bg-red-100 p-2.5 rounded-full touch-manipulation cursor-pointer hover:bg-red-200 active:bg-red-300 transition-colors flex-shrink-0"
                             onClick={() => handleScheduleClick(camp._id)}
                             aria-label="Blood Donation Icon"
                           >
-                            <span className="text-red-600 text-lg block leading-none select-none">
+                            <span className="text-red-600 text-xl block leading-none select-none">
                               🩸
                             </span>
                           </button>
-                          <h3
-                            className={`${
-                              isMobile ? "text-lg" : "text-xl"
-                            } font-bold text-gray-900`}
-                          >
-                            {camp.name}
-                          </h3>
+                          <div>
+                            <h3
+                              className={`${
+                                isMobile ? "text-lg" : "text-xl"
+                              } font-bold text-gray-900 mb-1`}
+                            >
+                              {camp.name}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`inline-block w-2.5 h-2.5 rounded-full ${
+                                  camp.status === "Open"
+                                    ? "bg-green-500"
+                                    : camp.status === "Closed"
+                                    ? "bg-red-500"
+                                    : camp.status === "Upcoming"
+                                    ? "bg-yellow-500"
+                                    : camp.status === "Full"
+                                    ? "bg-blue-500"
+                                    : "bg-gray-500"
+                                }`}
+                              ></span>
+                              <p
+                                className={`${
+                                  isMobile ? "text-xs" : "text-sm"
+                                } font-medium text-gray-700`}
+                              >
+                                {camp.status === "Open"
+                                  ? "Open for Donations"
+                                  : camp.status === "Closed"
+                                  ? "Closed for Donations"
+                                  : camp.status === "Full"
+                                  ? "Camp is Full"
+                                  : camp.status === "Upcoming"
+                                  ? "Upcoming Camp"
+                                  : "Status Unknown"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="space-y-2">
+                        {/* Info Grid */}
+                        <div className="grid grid-cols-1 gap-3 mb-4">
                           <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-500" />
                             <span
-                              className={`inline-block w-2.5 h-2.5 rounded-full ${
-                                camp.status === "Open"
-                                  ? "bg-green-500"
-                                  : camp.status === "Closed"
-                                  ? "bg-red-500"
-                                  : camp.status === "Upcoming"
-                                  ? "bg-yellow-500"
-                                  : camp.status === "Full"
-                                  ? "bg-blue-500"
-                                  : "bg-gray-500"
-                              }`}
-                            ></span>
+                              className={`${
+                                isMobile ? "text-xs" : "text-sm"
+                              } text-gray-600`}
+                            >
+                              {camp.operatingHours || "9:00 AM - 5:00 PM"}
+                            </span>
+                          </div>
+
+                          {/* Available Dates Section */}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-500" />
+                              <span
+                                className={`${
+                                  isMobile ? "text-xs" : "text-sm"
+                                } font-medium text-gray-700`}
+                              >
+                                Available Dates:
+                              </span>
+                            </div>
+                            <div className="ml-6 space-y-1">
+                              {camp.availableDates.map((date, index) => (
+                                <span
+                                  key={index}
+                                  className={`${
+                                    isMobile ? "text-xs" : "text-sm"
+                                  } text-gray-600 block`}
+                                >
+                                  {new Date(date).toLocaleDateString("en-US", {
+                                    weekday: "long",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-gray-500" />
+                            <span
+                              className={`${
+                                isMobile ? "text-xs" : "text-sm"
+                              } text-gray-600`}
+                            >
+                              {camp.slotsAvailable || "50"} slots available
+                            </span>
+                          </div> */}
+
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-gray-500" />
+                            <span
+                              className={`${
+                                isMobile ? "text-xs" : "text-sm"
+                              } text-gray-600`}
+                            >
+                              {camp.contact?.phone || "Phone TBD"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Requirements Note */}
+                        <div className="bg-blue-50 p-2.5 rounded-md mb-3">
+                          <div className="flex gap-2">
+                            <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                             <p
                               className={`${
                                 isMobile ? "text-xs" : "text-sm"
-                              } font-medium capitalize`}
+                              } text-blue-700`}
                             >
-                              {camp.status === "Open"
-                                ? "Open for Donations"
-                                : camp.status === "Closed"
-                                ? "Closed for Donations"
-                                : camp.status === "Full"
-                                ? "Camp is Full"
-                                : camp.status === "Upcoming"
-                                ? "Upcoming Camp"
-                                : "Status Unknown"}
+                              Please bring a valid ID and ensure you've had a
+                              meal before donation.
                             </p>
                           </div>
+                        </div>
 
-                          <button
-                            className={`w-full mt-2 bg-red-600 text-white py-1.5 px-3 rounded-md font-medium hover:bg-red-700 active:bg-red-800 transition-colors ${
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          {/* <button
+                            className={`flex-1 bg-red-600 text-white py-2 px-4 rounded-md font-medium hover:bg-red-700 active:bg-red-800 transition-colors ${
                               isMobile ? "text-sm" : "text-base"
                             }`}
                             onClick={() => handleScheduleClick(camp._id)}
                           >
                             Schedule Donation
+                          </button> */}
+                          <button
+                            className={`flex-1 bg-red-600 text-white py-2 px-4 rounded-md font-medium hover:bg-red-700 active:bg-red-800 transition-colors ${
+                              isMobile ? "text-sm" : "text-base"
+                            }`}
+                            onClick={() =>
+                              window.open(
+                                `https://maps.google.com/?q=${camp.location.coordinates[1]},${camp.location.coordinates[0]}`,
+                                "_blank"
+                              )
+                            }
+                          >
+                            Get Directions
                           </button>
                         </div>
                       </div>
