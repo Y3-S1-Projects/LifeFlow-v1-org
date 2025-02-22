@@ -20,7 +20,7 @@ interface User {
   };
   location?: {
     type: string;
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number];
   };
   dateOfBirth?: string;
   donatedBefore?: string;
@@ -31,24 +31,33 @@ interface User {
   isProfileComplete?: boolean;
   isAssessmentCompleted?: boolean;
 }
-const useUser = () => {
+
+interface UseUserReturn {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  isInitialized: boolean;
+}
+
+const useUser = (): UseUserReturn => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
     `http://localhost:${process.env.PORT || 3001}`;
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchUser = async () => {
       try {
         const token = getToken();
 
         if (!token || token === "undefined") {
-          setError("Authentication required");
-          setLoading(false);
-          return;
+          throw new Error("Authentication required");
         }
 
         const response = await axios.get(`${API_URL}/api/me`, {
@@ -59,13 +68,8 @@ const useUser = () => {
           timeout: 5000,
           validateStatus: (status) => status >= 200 && status < 300,
         });
-        console.log(response.data);
 
-        console.log("Raw API response:", response.data);
-        console.log(
-          "lastDonationDate from API:",
-          response.data.lastDonationDate
-        );
+        if (!isMounted) return;
 
         // Validate response data
         if (!response.data || !response.data.email) {
@@ -73,9 +77,10 @@ const useUser = () => {
         }
 
         setUser(response.data);
-        console.log("User state after setting:", response.data);
         setError(null);
       } catch (err) {
+        if (!isMounted) return;
+
         console.error("User fetch error:", err);
 
         if (axios.isAxiosError(err)) {
@@ -91,17 +96,26 @@ const useUser = () => {
             );
           }
         } else {
-          setError("An unexpected error occurred");
+          setError(
+            err instanceof Error ? err.message : "An unexpected error occurred"
+          );
         }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          setIsInitialized(true);
+        }
       }
     };
 
     fetchUser();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  return { user, loading, error };
+  return { user, loading, error, isInitialized };
 };
 
 export default useUser;
