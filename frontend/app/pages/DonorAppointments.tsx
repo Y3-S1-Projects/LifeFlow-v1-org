@@ -8,6 +8,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Loader from "../components/Loader";
 import { useRouter } from "next/navigation";
+import TimeSelector from "../components/TimeSelector";
 
 interface Address {
   street: string;
@@ -316,34 +317,46 @@ const BloodDonationAppointments: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="mb-4">
-                  <label className="block mb-2">Select Time:</label>
+                {/* <div className="mb-4">
+                  <label className="block mb-2 mt-4">Select Time:</label>
                   <input
                     type="time"
                     value={appointmentTime}
                     onChange={(e) => setAppointmentTime(e.target.value)}
                     className="w-full p-2 border rounded"
-                    disabled={!appointmentDate}
+                    disabled={!selectedCamp || !appointmentDate}
                   />
-                </div>
+                </div> */}
+                <TimeSelector
+                  operatingHours={
+                    selectedCamp?.operatingHours || "9:00 AM - 5:00 PM"
+                  }
+                  appointmentTime={appointmentTime}
+                  setAppointmentTime={setAppointmentTime}
+                  appointmentDate={appointmentDate}
+                />
+
                 <Button
                   onClick={handleAppointmentBooking}
-                  className="w-full"
+                  className="w-full mt-4"
                   disabled={
                     !selectedCamp ||
                     !appointmentDate ||
                     !appointmentTime ||
-                    selectedCamp.status !== "Open"
+                    (selectedCamp.status !== "Open" &&
+                      selectedCamp.status !== "Upcoming")
                   }
                 >
                   Book Appointment
                 </Button>
-                {selectedCamp.status !== "Open" && (
-                  <p className="text-red-500 text-sm mt-2 text-center">
-                    This camp is currently {selectedCamp.status.toLowerCase()}.
-                    Please select another camp.
-                  </p>
-                )}
+                {selectedCamp &&
+                  selectedCamp.status !== "Open" &&
+                  selectedCamp.status !== "Upcoming" && (
+                    <p className="text-red-500 text-sm mt-2 text-center">
+                      This camp is currently {selectedCamp.status.toLowerCase()}
+                      .
+                    </p>
+                  )}
               </div>
             ) : (
               <p className="text-center text-gray-500">

@@ -142,7 +142,7 @@ const DonorProfileAdvanced = () => {
                 </div>
                 <Badge className="text-lg px-4 py-2" variant="destructive">
                   <Droplet className="mr-2 h-4 w-4" />
-                  {profile.bloodType}
+                  {user?.bloodType}
                 </Badge>
               </div>
             </CardHeader>
