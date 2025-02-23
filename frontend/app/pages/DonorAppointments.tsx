@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 import { MapPin, Calendar, Clock, Hospital, Phone, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Toaster, toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import MapComponent from "../components/Map";
 import useUser from "../hooks/useUser";
@@ -9,6 +11,7 @@ import Footer from "../components/Footer";
 import Loader from "../components/Loader";
 import { useRouter } from "next/navigation";
 import TimeSelector from "../components/TimeSelector";
+import { getToken } from "../utils/auth";
 
 interface Address {
   street: string;
@@ -67,7 +70,7 @@ const BloodDonationAppointments: React.FC = () => {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedCampId, setSelectedCampId] = useState<string>("");
-
+  const [success, setSuccess] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -101,12 +104,12 @@ const BloodDonationAppointments: React.FC = () => {
             fetchNearbyCamps(latitude, longitude, radius);
           },
           (error) => {
-            setError("Unable to retrieve your location");
+            toast.error("Unable to retrieve your location");
             setLoading(false);
           }
         );
       } else {
-        setError("Geolocation is not supported by this browser");
+        toast.error("Geolocation is not supported by this browser");
         setLoading(false);
       }
     };
@@ -129,7 +132,7 @@ const BloodDonationAppointments: React.FC = () => {
         setCamps(data);
         setLoading(false);
       } catch (error) {
-        setError(
+        toast.error(
           error instanceof Error
             ? error.message
             : "Failed to fetch nearby camps"
@@ -156,17 +159,49 @@ const BloodDonationAppointments: React.FC = () => {
     setSelectedCampId(camp._id);
   };
 
-  const handleAppointmentBooking = () => {
-    if (selectedCamp && appointmentDate && appointmentTime) {
-      const newAppointment: Appointment = {
-        campId: selectedCamp._id,
-        date: appointmentDate,
-        time: appointmentTime,
-      };
-      console.log("Booking Appointment:", newAppointment);
-      alert("Appointment Booked Successfully!");
-    } else {
-      alert("Please select a camp, date, and time");
+  const handleAppointmentBooking = async () => {
+    if (!selectedCamp || !appointmentDate || !appointmentTime) {
+      toast.error("Please select a camp, date, and time", {
+        style: {
+          background: "#FEE2E2",
+          border: "1px solid #EF4444",
+          color: "#DC2626",
+        },
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3001/appointments/create",
+        {
+          userId: user?._id,
+          campId: selectedCamp._id,
+          date: appointmentDate,
+          time: appointmentTime,
+        },
+        {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        }
+      );
+
+      if (response.status === 201) {
+        toast.success("Appointment added to the waiting list", {
+          style: {
+            background: "#DCFCE7",
+            border: "1px solid #22C55E",
+            color: "#16A34A",
+          },
+        });
+      }
+    } catch (error) {
+      toast.error("Failed to book appointment. Please try again.", {
+        style: {
+          background: "#FEE2E2",
+          border: "1px solid #EF4444",
+          color: "#DC2626",
+        },
+      });
     }
   };
 
@@ -208,8 +243,16 @@ const BloodDonationAppointments: React.FC = () => {
   return (
     <div className="min-h-screen p-6 w-full mx-auto space-y-6 flex flex-col">
       <Header />
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            padding: "16px",
+          },
+        }}
+      />{" "}
       <h1 className="text-2xl font-bold mb-6">Blood Donation Appointments</h1>
-
       <div className="grid md:grid-cols-2 gap-6">
         {/* Nearest Camps Section */}
         <Card>
@@ -366,7 +409,6 @@ const BloodDonationAppointments: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
       <div className="my-10">
         <MapComponent
           userLatitude={fallbackLatitude}
