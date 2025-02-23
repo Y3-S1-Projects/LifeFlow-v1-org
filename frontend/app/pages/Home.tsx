@@ -21,14 +21,6 @@ const Home = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const menuItems = [
-    { title: "Home", href: "/" },
-    { title: "About", href: "/about" },
-    { title: "Donate", href: "/donate" },
-    { title: "Find Donors", href: "/find-donors" },
-    { title: "Contact", href: "/contact" },
-  ];
-
   const stats = [
     { label: "Active Donors", value: "10,000+" },
     { label: "Lives Saved", value: "25,000+" },
@@ -49,7 +41,6 @@ const Home = () => {
         isDarkMode={isDarkMode}
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
-        menuItems={menuItems}
       />
       {/*<header
         className={cn(
@@ -146,9 +137,9 @@ const Home = () => {
                   Become a Donor
                 </button>
               </Link>
-              <Link href="/find-donors">
+              <Link href="/organizer-registration">
                 <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base border-2 border-red-500 text-red-500 hover:bg-red-50 rounded-full font-medium transform hover:scale-105 transition-all duration-200">
-                  Find Donors
+                  Organize a Camp
                 </button>
               </Link>
             </div>
