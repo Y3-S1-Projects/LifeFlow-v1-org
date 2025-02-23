@@ -3,17 +3,11 @@ import Link from "next/link";
 import { Heart, X, Menu } from "lucide-react";
 import { cn } from "../libs/utils";
 
-interface MenuItem {
-  title: string;
-  href: string;
-}
-
 interface HeaderProps {
   scrolled: boolean;
   isDarkMode: boolean;
   isMenuOpen: boolean;
   setIsMenuOpen: (isOpen: boolean) => void;
-  menuItems: MenuItem[];
 }
 
 const GlobalHeader: React.FC<HeaderProps> = ({
@@ -21,8 +15,16 @@ const GlobalHeader: React.FC<HeaderProps> = ({
   isDarkMode,
   isMenuOpen,
   setIsMenuOpen,
-  menuItems,
 }) => {
+  // Define menuItems inside the component
+  const menuItems = [
+    { title: "Home", href: "/" },
+    { title: "About", href: "/about" },
+    { title: "Donate", href: "/donate" },
+    { title: "Contact", href: "/contact" },
+    { title: "Login", href: "/login" },
+  ];
+
   return (
     <header
       className={cn(
