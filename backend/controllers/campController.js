@@ -120,28 +120,27 @@ export const getCamps = async (req, res) => {
 // Update a blood donation camp by ID
 export const updateCamp = async (req, res) => {
   try {
-    const { id } = req.params; // Get camp ID from request parameters
-    const { name, address, date, lat, lng, status } = req.body; // New details to update
+    const { id } = req.params;
+    const updates = req.body;
 
-    // Find the camp by its ID
-    const camp = await Camp.findById(id);
-    if (!camp) {
-      return res.status(404).json({ error: "Camp not found" });
+    if (!id) {
+      return res.status(400).json({ message: "Camp ID is required" });
     }
 
-    // Update the camp's details
-    camp.name = name || camp.name;
-    camp.address = address || camp.address;
-    camp.date = date || camp.date;
-    camp.location =
-      lat && lng ? { type: "Point", coordinates: [lng, lat] } : camp.location;
-    camp.status = status || camp.status; // Update status if provided
+    const updatedCamp = await Camp.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
 
-    // Save the updated camp
-    await camp.save();
-    res.status(200).json({ message: "Camp updated successfully", camp });
+    if (!updatedCamp) {
+      return res.status(404).json({ message: "Camp not found" });
+    }
+
+    res.status(200).json(updatedCamp);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update camp" });
+    res
+      .status(500)
+      .json({ message: "Error updating camp", error: error.message });
   }
 };
 

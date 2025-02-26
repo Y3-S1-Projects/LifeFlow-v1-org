@@ -5,8 +5,11 @@ import Link from "next/link";
 import { cn } from "../libs/utils";
 import Footer from "../components/Footer";
 import GlobalHeader from "../components/GlobalHeader";
+import useUser from "../hooks/useUser";
+import Loader from "../components/Loader";
 
 const Home = () => {
+  const { user, loading, error } = useUser();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -27,6 +30,13 @@ const Home = () => {
     { label: "Blood Banks", value: "500+" },
     { label: "Cities Covered", value: "100+" },
   ];
+  if (loading) {
+    return (
+      <div className=" flex items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -42,81 +52,6 @@ const Home = () => {
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
       />
-      {/*<header
-        className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-300",
-          scrolled
-            ? "bg-white/90 shadow-md backdrop-blur-sm"
-            : "bg-transparent",
-          isDarkMode && "bg-gray-900/90"
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-
-            <Link href="/">
-              <div className="flex items-center space-x-2">
-                <Heart className="w-8 h-8 text-red-500 animate-pulse" />
-                <span className="text-2xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
-                  LifeFlow
-                </span>
-              </div>
-            </Link>
-
-
-            <nav className="hidden md:flex items-center space-x-8">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="relative group"
-                >
-                  <span
-                    className={cn(
-                      "text-sm font-medium transition-colors duration-200",
-                      isDarkMode
-                        ? "text-gray-300 hover:text-white"
-                        : "text-gray-600 hover:text-red-600"
-                    )}
-                  >
-                    {item.title}
-                  </span>
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-red-500 transition-all group-hover:w-full" />
-                </Link>
-              ))}
-            </nav>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              {isMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
-          </div>
-
-          {isMenuOpen && (
-            <div className="md:hidden">
-              <div className="px-2 pt-2 pb-3 space-y-1">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    className="block px-3 py-2 rounded-md text-base font-medium hover:bg-red-50 dark:hover:bg-gray-800"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-      */}
 
       {/* Hero Section */}
       <main className="flex flex-col items-center justify-center min-h-screen pt-20 pb-16">
@@ -131,18 +66,48 @@ const Home = () => {
               Your donation can save up to three lives. Join our community of
               heroes today.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 animate-fade-in">
-              <Link href="/donor-registration">
-                <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base bg-red-500 hover:bg-red-600 text-white rounded-full font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
-                  Become a Donor
-                </button>
-              </Link>
-              <Link href="/organizer-registration">
-                <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base border-2 border-red-500 text-red-500 hover:bg-red-50 rounded-full font-medium transform hover:scale-105 transition-all duration-200">
-                  Organize a Camp
-                </button>
-              </Link>
-            </div>
+            {!loading ? (
+              <>
+                {!user && (
+                  <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 animate-fade-in">
+                    <Link href="/donor/login">
+                      <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base bg-red-500 hover:bg-red-600 text-white rounded-full font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        Become a Donor
+                      </button>
+                    </Link>
+                    <Link href="/organizer/login">
+                      <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base border-2 border-red-500 text-red-500 hover:bg-red-50 rounded-full font-medium transform hover:scale-105 transition-all duration-200">
+                        Organize a Camp
+                      </button>
+                    </Link>
+                  </div>
+                )}
+
+                {user && user.role === "User" && (
+                  <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 animate-fade-in">
+                    <Link href="/donor/dashboard">
+                      <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base bg-red-500 hover:bg-red-600 text-white rounded-full font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        My Dashboard
+                      </button>
+                    </Link>
+                  </div>
+                )}
+
+                {user && user.role === "Organizer" && (
+                  <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 animate-fade-in">
+                    <Link href="/organizer/dashboard">
+                      <button className="w-full sm:w-auto px-6 py-4 text-sm sm:text-base bg-red-500 hover:bg-red-600 text-white rounded-full font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        My Dashboard
+                      </button>
+                    </Link>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify">
+                <Loader />
+              </div>
+            )}
           </div>
 
           {/* Stats Section */}

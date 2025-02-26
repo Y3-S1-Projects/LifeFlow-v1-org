@@ -5,6 +5,8 @@ import userRoutes from "./routes/userRoute.js";
 import loginUser from "./routes/loginRoute.js";
 import campRoutes from "./routes/campRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
+import organizerRoutes from "./routes/organizerRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -37,3 +39,5 @@ app.use("/users", userRoutes);
 app.use("/api", loginUser);
 app.use("/camps", campRoutes);
 app.use("/appointments", appointmentRoutes);
+app.use("/organizers", organizerRoutes);
+app.use("/auth", authRoutes);

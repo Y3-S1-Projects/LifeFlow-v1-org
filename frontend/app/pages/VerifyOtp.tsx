@@ -114,14 +114,14 @@ const VerifyOtp: React.FC = () => {
   useEffect(() => {
     if (!isModalOpen && timer === 0) {
       setTimer(5); // Reset the timer to initial value
-      router.push("/login"); // Redirect to login page when modal is closed
+      router.push("/donor/login"); // Redirect to login page when modal is closed
     }
   }, [isModalOpen, timer, router]);
 
   // Use useEffect to navigate to the login page after timer expires
   useEffect(() => {
     if (timer === 0) {
-      router.push("/login");
+      router.push("/donor/login");
     }
   }, [timer, router]);
 
