@@ -1,8 +1,9 @@
 import User from "../models/User.js";
+import Organizer from "../models/Organizer.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Otp from "../models/Otp.js";
-import { sendOTP } from "./userController.js";
+import { sendOTP } from "./authController.js";
 
 // Ensure JWT_SECRET is defined
 if (!process.env.JWT_SECRET) {
@@ -18,9 +19,13 @@ export const loginUser = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({
+          message:
+            "We couldn't find an account with that email. Please check your email or sign up.",
+        });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
@@ -37,7 +42,7 @@ export const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
+      { userId: user._id, email: user.email, role: user.role || "User" },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
@@ -99,8 +104,6 @@ export const verifyLoginOTP = async (req, res) => {
 
     // Delete the used OTP
     await Otp.deleteOne({ email });
-
-    console.log("Generated Token:", token);
 
     // Return success response with token and user data
     res.status(200).json({

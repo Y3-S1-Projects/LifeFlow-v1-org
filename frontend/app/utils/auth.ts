@@ -1,5 +1,7 @@
 // utils/auth.ts
 export const getToken = (): string | null => {
+  if (typeof window === "undefined") return null; // Check if running on server
+
   try {
     const token = localStorage.getItem("token");
     if (!token || token === "undefined") return null;

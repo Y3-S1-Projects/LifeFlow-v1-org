@@ -46,6 +46,18 @@ const CampSchema = new mongoose.Schema({
     },
   ],
 
+  organizer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Organizer", // Reference to the Organizer schema
+    required: true,
+  },
+  trackedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Reference to the User schema
+    },
+  ],
+
   createdAt: {
     type: Date,
     default: Date.now,
