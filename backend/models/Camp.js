@@ -57,6 +57,13 @@ const CampSchema = new mongoose.Schema({
       ref: "User", // Reference to the User schema
     },
   ],
+  reminders: [
+    {
+      type: String, // e.g., "Appointment", "Post-Donation"
+      sentAt: Date,
+      recipient: mongoose.Schema.Types.ObjectId,
+    },
+  ],
 
   createdAt: {
     type: Date,
