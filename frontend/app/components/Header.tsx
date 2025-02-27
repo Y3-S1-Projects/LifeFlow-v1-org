@@ -251,18 +251,39 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`
-                      flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium
-                      transition-colors duration-200
-                      ${
-                        darkMode
-                          ? "bg-gray-800 text-white hover:bg-gray-700"
-                          : "bg-gray-50 text-gray-800 hover:bg-gray-100"
-                      }
-                    `}
+                    flex items-center space-x-3 px-3 py-2 rounded-md text-sm
+                    transition-colors duration-200
+                    ${
+                      darkMode
+                        ? "bg-gray-800 text-white hover:bg-gray-700"
+                        : "bg-gray-50 text-gray-800 hover:bg-gray-100"
+                    }
+                  `}
                   >
-                    <User className="h-4 w-4 text-red-500" />
-                    <span>{user?.firstName || "Profile"}</span>
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <div
+                      className={`
+                      p-2 rounded-full
+                      ${darkMode ? "bg-gray-700" : "bg-gray-200"}
+                    `}
+                    >
+                      <User className="h-5 w-5 text-red-500" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">{user?.firstName}</div>
+                      <div
+                        className={`text-xs ${
+                          darkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        {user?.role}{" "}
+                        {user?.role === "User" && (
+                          <span>
+                            • {user?.bloodType || "Blood type not set"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-400 ml-auto" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent

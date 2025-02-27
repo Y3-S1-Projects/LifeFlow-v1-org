@@ -1,8 +1,11 @@
 import Camp from "../models/Camp.js";
+import mongoose from "mongoose";
+import Appointment from "../models/Appointment.js";
 
-// Create a new blood donation camp
 export const createCamp = async (req, res) => {
   try {
+    console.log("Request Body:", req.body);
+
     const {
       name,
       description,
@@ -13,9 +16,10 @@ export const createCamp = async (req, res) => {
       status,
       availableDates,
       contact,
+      organizer,
     } = req.body;
 
-    // Validation: Ensure required fields are provided
+    // Validate required fields
     if (
       !name ||
       !operatingHours ||
@@ -23,45 +27,54 @@ export const createCamp = async (req, res) => {
       !lng ||
       !address ||
       !contact ||
-      !availableDates
+      !availableDates ||
+      !organizer
     ) {
+      console.log("Validation Error: Missing required fields");
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Ensure that the address object has all necessary fields
     const { street, city, postalCode } = address;
     if (!street || !city || !postalCode) {
+      console.log("Validation Error: Incomplete address fields");
       return res.status(400).json({ error: "Address fields are incomplete" });
     }
 
-    // Create a new Camp instance with provided data
+    // Create location in GeoJSON format
+    const location = {
+      type: "Point",
+      coordinates: [parseFloat(lng), parseFloat(lat)], // [longitude, latitude]
+    };
+
+    console.log("Location Object:", location);
+
+    // Create new camp
     const newCamp = new Camp({
       name,
       description,
       operatingHours,
-      location: { type: "Point", coordinates: [lng, lat] }, // GeoJSON format
+      location, // Use the GeoJSON location object
       address,
-      status: status || "Upcoming", // Default to "Upcoming" if not provided
-      availableDates: availableDates,
+      status: status || "Upcoming",
+      availableDates,
       contact,
+      organizer,
     });
 
-    // Save the new camp to the database
     await newCamp.save();
+    console.log("Saved Camp:", newCamp);
 
-    // Respond with success message and the created camp data
     res
       .status(201)
       .json({ message: "Camp created successfully", camp: newCamp });
   } catch (error) {
-    // Handle errors
+    console.log("Error:", error.message);
     res
       .status(500)
       .json({ error: "Failed to create camp", details: error.message });
   }
 };
 
-// Fetch nearby blood donation camps using $geoNear
 export const getNearbyCamps = async (req, res) => {
   try {
     const { lat, lng, radius } = req.query;
@@ -107,7 +120,7 @@ export const getNearbyCamps = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch nearby camps" });
   }
 };
-// GET all camps
+
 export const getCamps = async (req, res) => {
   try {
     const camps = await Camp.find();
@@ -117,7 +130,6 @@ export const getCamps = async (req, res) => {
   }
 };
 
-// Update a blood donation camp by ID
 export const updateCamp = async (req, res) => {
   try {
     const { id } = req.params;
@@ -144,19 +156,99 @@ export const updateCamp = async (req, res) => {
   }
 };
 
-// Delete a blood donation camp by ID
+export const getCampsByOrganizer = async (req, res) => {
+  try {
+    const { organizerId } = req.params; // Extract organizerId from URL parameters
+
+    // Validate organizerId
+    if (!mongoose.Types.ObjectId.isValid(organizerId)) {
+      return res.status(400).json({ message: "Invalid organizer ID" });
+    }
+
+    // Find all camps organized by the specific organizer
+    const camps = await Camp.find({ organizer: organizerId });
+
+    // If no camps are found, return a 404
+    if (camps.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No camps found for this organizer" });
+    }
+
+    // Return the list of camps
+    res.status(200).json({ camps });
+  } catch (error) {
+    console.error("Error fetching camps by organizer:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getUpcomingCampsByOrganizer = async (req, res) => {
+  try {
+    const { organizerId } = req.params; // Extract organizerId from URL parameters
+
+    // Validate organizerId
+    if (!mongoose.Types.ObjectId.isValid(organizerId)) {
+      return res.status(400).json({ message: "Invalid organizer ID" });
+    }
+
+    // Get the current date
+    const currentDate = new Date();
+
+    // Find all camps organized by the specific organizer where at least one date in availableDates is greater than the current date
+    const camps = await Camp.find({
+      organizer: organizerId,
+      availableDates: { $elemMatch: { $gt: currentDate } }, // Check if any date in the array is in the future
+    });
+
+    // If no upcoming camps are found, return a 404
+    if (camps.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No upcoming camps found for this organizer" });
+    }
+
+    // Return the list of upcoming camps
+    res.status(200).json({ camps });
+  } catch (error) {
+    console.error("Error fetching upcoming camps by organizer:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getUsersRegisteredInCamp = async (req, res) => {
+  try {
+    const { campId } = req.params; // Extract campId from URL parameters
+
+    if (!mongoose.Types.ObjectId.isValid(campId)) {
+      return res.status(400).json({ message: "Invalid camp ID" });
+    }
+
+    const appointments = await Appointment.find({ campId }).populate("userId");
+
+    const users = appointments.map((appointment) => appointment.userId);
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found for this camp" });
+    }
+
+    res.status(200).json({ users });
+  } catch (error) {
+    console.error("Error fetching users for camp:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const deleteCamp = async (req, res) => {
   try {
-    const { id } = req.params; // Get camp ID from request parameters
+    const { id } = req.params;
 
-    // Check if the camp exists
     const camp = await Camp.findById(id);
     if (!camp) {
       return res.status(404).json({ error: "Camp not found" });
     }
 
-    // Delete the camp
-    await Camp.findByIdAndDelete(id); // Instead of camp.remove()
+    await Camp.findByIdAndDelete(id);
     res.status(200).json({ message: "Camp deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete camp" });
