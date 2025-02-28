@@ -139,7 +139,7 @@ const Header = () => {
       }
     `}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="w-full md:w-3/4 lg:w-3/4 mx-auto px-4 sm:px-6">
         <div className="h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
@@ -278,7 +278,10 @@ const Header = () => {
                         {user?.role}{" "}
                         {user?.role === "User" && (
                           <span>
-                            • {user?.bloodType || "Blood type not set"}
+                            •
+                            {user?.bloodType === "not sure"
+                              ? "Blood type not set"
+                              : user?.bloodType || "Blood type not set"}
                           </span>
                         )}
                       </div>
@@ -298,8 +301,9 @@ const Header = () => {
                   `}
                 >
                   {/* Profile for both roles */}
-                  <DropdownMenuItem
-                    className={`cursor-pointer flex items-center p-2 rounded-md
+                  {user?.role === "User" && !user.isEligible ? null : (
+                    <DropdownMenuItem
+                      className={`cursor-pointer flex items-center p-2 rounded-md
                       ${
                         isActive(
                           user?.role === "Organizer"
@@ -314,21 +318,23 @@ const Header = () => {
                           : "hover:bg-gray-50 focus:bg-gray-50"
                       }
                     `}
-                    onClick={() =>
-                      navigateTo(
-                        user?.role === "Organizer"
-                          ? "/organizer/profile"
-                          : "/donor/profile"
-                      )
-                    }
-                  >
-                    <User className="mr-2 h-4 w-4 text-red-500" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
+                      onClick={() =>
+                        navigateTo(
+                          user?.role === "Organizer"
+                            ? "/organizer/profile"
+                            : "/donor/profile"
+                        )
+                      }
+                    >
+                      <User className="mr-2 h-4 w-4 text-red-500" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                  )}
 
                   {/* Settings for both roles */}
-                  <DropdownMenuItem
-                    className={`cursor-pointer flex items-center p-2 rounded-md
+                  {user?.role === "User" && !user.isEligible ? null : (
+                    <DropdownMenuItem
+                      className={`cursor-pointer flex items-center p-2 rounded-md
                       ${
                         isActive(
                           user?.role === "Organizer"
@@ -343,17 +349,18 @@ const Header = () => {
                           : "hover:bg-gray-50 focus:bg-gray-50"
                       }
                     `}
-                    onClick={() =>
-                      navigateTo(
-                        user?.role === "Organizer"
-                          ? "/organizer/settings"
-                          : "/donor/settings"
-                      )
-                    }
-                  >
-                    <Settings className="mr-2 h-4 w-4 text-red-500" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
+                      onClick={() =>
+                        navigateTo(
+                          user?.role === "Organizer"
+                            ? "/organizer/settings"
+                            : "/donor/settings"
+                        )
+                      }
+                    >
+                      <Settings className="mr-2 h-4 w-4 text-red-500" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  )}
 
                   {/* Support */}
                   <DropdownMenuItem
@@ -482,7 +489,12 @@ const Header = () => {
                     >
                       {user?.role}{" "}
                       {user?.role === "User" && (
-                        <span>• {user?.bloodType || "Blood type not set"}</span>
+                        <span>
+                          •
+                          {user?.bloodType === "not sure"
+                            ? "Blood type not set"
+                            : user?.bloodType || "Blood type not set"}
+                        </span>
                       )}
                     </div>
                   </div>

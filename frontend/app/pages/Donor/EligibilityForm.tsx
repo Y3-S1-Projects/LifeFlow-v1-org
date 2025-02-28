@@ -19,6 +19,7 @@ import Loader from "../../components/Loader";
 import MapComponent from "../../components/Map";
 import { getToken } from "../../utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
+import { toast, Toaster } from "sonner";
 
 interface FormErrors {
   fullName?: string;
@@ -139,14 +140,31 @@ export default function EligibilityForm() {
 
   useEffect(() => {
     if (formData.dob) {
+      // Calculate and set age
       const calculatedAge = calculateAge(formData.dob);
       setAge(calculatedAge);
+
+      // Validate DOB and update errors state
+      const dobError = validateDOB(formData.dob);
+      setErrors((prev) => ({
+        ...prev,
+        dob: dobError,
+      }));
+
+      // If NIC validation depends on DOB, revalidate NIC when DOB changes
+      if (formData.nicNo) {
+        const nicError = validateNIC(formData.nicNo, formData.dob);
+        setErrors((prev) => ({
+          ...prev,
+          nicNo: nicError,
+        }));
+      }
     } else {
       setAge(null);
     }
-  }, [formData.dob]);
+  }, [formData.dob, formData.nicNo]);
 
-  const validateNIC = (nic: string, dob: string): string | null => {
+  const validateNIC = (nic: string, dob: string): string | undefined => {
     if (!nic) return "NIC is required";
 
     const nicLength = nic.length;
@@ -154,12 +172,12 @@ export default function EligibilityForm() {
     const birthYear = dobDate.getFullYear();
 
     // Validate NIC length
-    if (nicLength !== 9 && nicLength !== 12) {
-      return "NIC must be either 9 or 12 digits long";
+    if (nicLength !== 10 && nicLength !== 12) {
+      return "NIC must be either 10 or 12 digits long";
     }
 
     // Validate old NIC format
-    if (nicLength === 9) {
+    if (nicLength === 10) {
       const nicYear = parseInt(nic.substring(0, 2), 10);
       const expectedYear = birthYear % 100; // Last two digits of the birth year
 
@@ -189,76 +207,116 @@ export default function EligibilityForm() {
       }
     }
 
-    return null; // No error
+    return undefined; // No error - using undefined instead of null
   };
 
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
+    const errorMessages: string[] = [];
 
     if (!formData.fullName) {
       newErrors.fullName = "Full name is required";
+      errorMessages.push("Full name is required");
     }
+
     if (!formData.email) {
       newErrors.email = "Email is required";
+      errorMessages.push("Email is required");
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email address is invalid";
+      errorMessages.push("Email address is invalid");
     }
+
     if (!formData.nicNo) {
       newErrors.nicNo = "NIC is required";
+      errorMessages.push("NIC is required");
     } else {
       const nicError = validateNIC(formData.nicNo, formData.dob);
       if (nicError) {
         newErrors.nicNo = nicError;
+        errorMessages.push(nicError);
       }
     }
+
     if (!formData.phone) {
       newErrors.phone = "Phone number is required";
+      errorMessages.push("Phone number is required");
     } else if (!/^\d{10}$/.test(formData.phone)) {
       newErrors.phone = "Phone number is invalid";
+      errorMessages.push("Phone number is invalid");
     }
-    if (!formData.nicNo) {
-      newErrors.nicNo = "NIC is required";
-    }
+
     if (!formData.location.latitude || !formData.location.longitude) {
       newErrors.location = "You must select your location on the map";
+      errorMessages.push("Location selection is required");
     } else if (
-      // Check if using default Colombo coordinates
       Math.abs(formData.location.latitude - 6.9271) < 0.0001 &&
       Math.abs(formData.location.longitude - 79.8612) < 0.0001
     ) {
       newErrors.location = "Please select your actual location on the map";
+      errorMessages.push("Please select your actual location on the map");
     }
+
     if (!formData.bloodType) {
       newErrors.bloodType = "Blood type is required";
+      errorMessages.push("Blood type is required");
     }
+
     if (formData.weight === null || formData.weight === undefined) {
       newErrors.weight = "Weight is required";
+      errorMessages.push("Weight is required");
     }
+
     if (!formData.address.street) {
       newErrors.street = "Street is required";
+      errorMessages.push("Street address is required");
     }
+
     if (!formData.address.city) {
       newErrors.city = "City is required";
+      errorMessages.push("City is required");
     }
+
     if (!formData.address.state) {
       newErrors.state = "State is required";
+      errorMessages.push("State is required");
     }
 
     if (!formData.dob) {
       newErrors.dob = "Date of Birth is required";
+      errorMessages.push("Date of Birth is required");
     } else {
       const dobError = validateDOB(formData.dob);
       if (dobError) {
         newErrors.dob = dobError;
+        errorMessages.push(dobError);
       }
     }
+    if (!formData.bloodType) {
+      newErrors.bloodType = "Blood type is required";
+      errorMessages.push("Blood type is required");
+    }
+
     if (!termsAccepted) {
       newErrors.terms = "You must accept the terms and conditions";
+      errorMessages.push("Terms and conditions must be accepted");
     }
 
     setErrors(newErrors);
+
+    // Display a single toast for multiple errors or individual message if only one error
+    if (errorMessages.length > 0) {
+      if (errorMessages.length === 1) {
+        toast.error(errorMessages[0]);
+      } else {
+        toast.error(
+          `Please fill or check the following ${errorMessages.length} fields to continue`
+        );
+      }
+    }
+
     return Object.keys(newErrors).length === 0;
   };
   const handleSubmit = async (e: React.FormEvent) => {
@@ -380,12 +438,16 @@ export default function EligibilityForm() {
     return null;
   };
 
-  const validateDOB = (dob: string): string | null => {
+  const validateDOB = (dob: string): string | undefined => {
+    // If empty, return early
+    if (!dob) return "Date of birth is required";
+
     const today = new Date();
     const birthDate = new Date(dob);
 
+    // Check if valid date
     if (isNaN(birthDate.getTime())) {
-      return "Invalid date";
+      return "Invalid date format";
     }
 
     // Prevent future dates
@@ -400,13 +462,19 @@ export default function EligibilityForm() {
       return "Date of birth is too far in the past";
     }
 
-    // Ensure user is between 17 and 65 years old
-    const ageError = validateAgeRange(dob);
-    if (ageError) {
-      return ageError;
+    // Ensure user is within eligible age range (17-65)
+    const age = calculateAge(dob);
+    if (age === null) return "Invalid date of birth";
+
+    if (age < 17) {
+      return "You must be at least 17 years old to be eligible";
     }
 
-    return null;
+    if (age > 65) {
+      return "Maximum eligible age is 65 years";
+    }
+
+    return undefined; // No errors - using undefined instead of null
   };
 
   const handleInputChange = (
@@ -451,6 +519,15 @@ export default function EligibilityForm() {
       <div className="w-full">
         <Header />
         <div className="space-y-6 w-full mx-auto p-6 bg-white shadow-lg rounded-lg">
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                padding: "16px",
+              },
+            }}
+          />
           <form
             onSubmit={handleSubmit}
             className="space-y-6 max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg"
@@ -668,7 +745,7 @@ export default function EligibilityForm() {
                   <SelectValue placeholder="Select your blood type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>{" "}
+                  <SelectItem value="not sure">I'm not sure</SelectItem>{" "}
                   <SelectItem value="O-">O-</SelectItem>
                   <SelectItem value="O+">O+</SelectItem>
                   <SelectItem value="A-">A-</SelectItem>

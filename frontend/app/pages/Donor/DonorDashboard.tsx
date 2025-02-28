@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  SelectItem,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+} from "@/components/ui/select";
 import { useSearchParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import {
@@ -11,6 +24,14 @@ import {
   AlertCircle,
   User,
   Clipboard,
+  Heart,
+  Users,
+  Badge,
+  TrendingUp,
+  Droplets,
+  ArrowRight,
+  XCircle,
+  CheckCircle,
 } from "lucide-react";
 import Header from "../../components/Header";
 import useUser from "../../hooks/useUser";
@@ -21,12 +42,23 @@ import { ClipLoader } from "react-spinners";
 import Loader from "../../components/Loader";
 import Modal2 from "../../components/Modal2";
 import { RouteGuard } from "../../components/RouteGuard";
+import { getUserIdFromToken } from "@/app/utils/auth";
 
 interface Donation {
-  date: string;
-  location: string;
-  bloodType: string;
-  volume: string;
+  donationDate: string;
+  donationCenter: {
+    name: string;
+    address:
+      | {
+          street: string;
+          city: string;
+          postalCode: string;
+        }
+      | string;
+    contact: string;
+  };
+  donationType: string;
+  pintsDonated: number;
 }
 
 const DonorDashboard: React.FC = () => {
@@ -38,24 +70,34 @@ const DonorDashboard: React.FC = () => {
   const toastShownRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [nextEligibleDate, setNextEligibleDate] =
+    useState<string>("Loading...");
   const [authChecked, setAuthChecked] = useState(false);
 
-  // useEffect(() => {
-  //   const message = searchParams.get("message");
-  //   // Only show if we have a message and haven't shown it yet
-  //   if (message && !toastShown) {
-  //     // Single timeout to handle the toast
-  //     const timer = setTimeout(() => {
-  //       toast.success(message);
-  //       toastShownRef.current = true;
-  //       router.replace("/donor/dashboard");
-  //       setToastShown(true);
-  //     }, 500);
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message && !toastShown) {
+      const timer = setTimeout(() => {
+        toast.success(message);
+        toastShownRef.current = true;
+        router.replace("/donor/dashboard");
+        setToastShown(true);
+      }, 500);
 
-  //     // Cleanup function to prevent memory leaks
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [searchParams, toastShown]);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, toastShown]);
+  useEffect(() => {
+    console.log("Donation history state updated:", donationHistory);
+  }, [donationHistory]);
+  useEffect(() => {
+    if (user && user.isEligible) {
+      fetchDonationHistory();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -67,16 +109,72 @@ const DonorDashboard: React.FC = () => {
   }
   if (error) return <p className="text-red-500">{error}</p>;
 
+  const fetchDonationHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const userId = getUserIdFromToken();
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      const response = await fetch(
+        `http://localhost:3001/users/donation-history/${userId}`
+      );
+      console.log("history response:", response);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch donation history");
+      }
+
+      const data = await response.json();
+      console.log("Raw donation history:", data);
+      console.log("Donation array after setting:", donationHistory);
+
+      if (data && data.donationHistory && Array.isArray(data.donationHistory)) {
+        setDonationHistory(data.donationHistory);
+        console.log("Setting donation history:", data.donationHistory);
+      } else {
+        console.warn("Invalid donation history structure:", data);
+        setDonationHistory([]);
+      }
+
+      // Simply set a static eligible date for now to avoid date parsing issues
+      setNextEligibleDate("Eligible now");
+
+      //  enable this code later after fixing the date format in  backend
+      /*
+      if (data.nextEligibleDate) {
+        setNextEligibleDate(data.nextEligibleDate);
+      } else if (data.donationHistory && data.donationHistory.length > 0) {
+        // Format check - we expect data.donationHistory[0].date to be a valid date string
+        console.log("Last donation date format:", data.donationHistory[0].date);
+        
+        // For debugging
+        const dateAttempt = new Date(data.donationHistory[0].date);
+        console.log("Parsed date:", dateAttempt, "Valid?", !isNaN(dateAttempt.getTime()));
+        
+        // For now, just use a placeholder
+        setNextEligibleDate("Eligible now");
+      }
+      */
+    } catch (err) {
+      console.error("Error fetching donation history:", err);
+      setHistoryError((err as Error).message);
+      setDonationHistory([]); // Set empty array on error
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const handleEligibilityUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); // Start loading
-    setIsModalOpen(true); // Open the modal
+    setIsLoading(true);
+    setIsModalOpen(true);
 
     const dataToSubmit = { isEligible: true };
 
     try {
-      // Simulate a delay before making the API call
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2-second delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const response = await fetch(
         `http://localhost:3001/users/updateUser/${user?._id}`,
@@ -90,8 +188,7 @@ const DonorDashboard: React.FC = () => {
       );
 
       if (response.ok) {
-        // Simulate a delay before redirecting
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // 2-second delay
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
         router.push(
           "/donor/dashboard?message=" +
@@ -105,36 +202,13 @@ const DonorDashboard: React.FC = () => {
     } catch (error) {
       console.error("Error submitting data:", error);
     } finally {
-      setIsLoading(false); // Stop loading
-      setIsModalOpen(false); // Close the modal
+      setIsLoading(false);
+      setIsModalOpen(false);
     }
   };
 
-  // Default Values
-  const donationHistory: Donation[] = [
-    {
-      date: "2025-01-15",
-      location: "Central Blood Bank",
-      bloodType: "O+",
-      volume: "450ml",
-    },
-    {
-      date: "2024-10-03",
-      location: "LifeFlow Mobile Unit",
-      bloodType: "O+",
-      volume: "450ml",
-    },
-    {
-      date: "2024-07-22",
-      location: "City Hospital",
-      bloodType: "O+",
-      volume: "450ml",
-    },
-  ];
-
   const totalDonations = donationHistory.length;
   const impactLives = totalDonations * 3;
-  const nextEligibleDate = "2025-04-15";
 
   const customNavigate = (path: string) => {
     window.location.href = path;
@@ -143,20 +217,19 @@ const DonorDashboard: React.FC = () => {
   const handleClose = () => {
     setIsVisible(false);
   };
-
-  // if (!authChecked) {
-  //   return (
-  //     <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-  //       <Loader />
-  //     </div>
-  //   );
-  // }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Good Morning";
+    if (hour >= 12 && hour < 17) return "Good Afternoon";
+    if (hour >= 17 && hour < 21) return "Good Evening";
+    return "Happy Late Night";
+  };
 
   return (
     <RouteGuard requiredRoles={["User"]}>
       <div className="w-full">
         <Header />
-        <div className="min-h-screen p-6 w-screen mx-auto space-y-6 flex flex-col">
+        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col ">
           <Toaster
             toastOptions={{
               style: {
@@ -167,277 +240,302 @@ const DonorDashboard: React.FC = () => {
             }}
           />
 
-          {/* 3D Card Style Eligibility Message */}
-          {/* {!user?.isEligible && isVisible && (
-        <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700 relative">
-          <div className="flex items-center">
-            <div className="flex-grow">
-              <p className="font-bold mb-1">
-                You are Not Eligible to Donate Blood
-              </p>
-              <p className="text-sm">
-                Complete your profile to become eligible
-              </p>
+          {/* <div className="bg-gradient-to-r from-red-700 to-red-500 rounded-xl shadow-lg mb-8 overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center">
+              <div className="p-8 md:w-2/3">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  Donate Blood, Save Lives
+                </h1>
+                <p className="text-white text-lg mb-6">
+                  Your donation can make a difference. One pint of blood can
+                  save up to three lives.
+                </p>
+                <div className="flex space-x-4">
+                  <Button className="bg-white text-red-600 hover:bg-gray-100">
+                    Schedule Donation
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-white border-white hover:bg-red-600"
+                  >
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+              <div className="md:w-1/3 p-4 flex justify-center">
+                <div className="bg-white p-4 rounded-full shadow-inner">
+                  <Heart className="h-24 w-24 text-red-500" />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center">
-              <button className="mr-2 bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
-                Complete
-              </button>
-              <button
-                onClick={handleClose}
-                className="text-red-500 hover:text-red-700"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
+          </div> */}
+
+          {/* User Status Card */}
           {user?.isEligible === false && isVisible && (
-            <div
-              className={`rounded-lg p-6 shadow-md ${
-                user?.isAssessmentCompleted && user?.isProfileComplete
-                  ? "bg-gradient-to-r from-green-100 to-green-50" // Green gradient for "all setup"
-                  : "bg-gradient-to-r from-red-100 to-red-50" // Red gradient for "not eligible"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                {user?.isAssessmentCompleted && user?.isProfileComplete ? (
-                  <>
-                    <div>
-                      <h1 className="text-3xl font-bold text-green-800 mb-2">
-                        Welcome, {user?.firstName || "New Donor"}
-                      </h1>
-                      <p className="text-green-600">You are all set up!</p>
-                    </div>
+            <Card className="mb-8 shadow-md border-0 overflow-hidden">
+              <div
+                className={`p-6 ${
+                  user?.isAssessmentCompleted && user?.isProfileComplete
+                    ? "bg-gradient-to-r from-green-500 to-green-400 text-white"
+                    : "bg-gradient-to-r from-amber-500 to-amber-400 text-white"
+                }`}
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2">
+                      Welcome, {user?.firstName || "New Donor"}
+                    </h1>
+                    <p className="text-lg">
+                      {user?.isAssessmentCompleted && user?.isProfileComplete
+                        ? "You are all set up and ready to donate!"
+                        : "Complete your profile to begin your donation journey"}
+                    </p>
+                  </div>
+                  {user?.isAssessmentCompleted && user?.isProfileComplete ? (
                     <Button
-                      variant={"default"}
+                      className="bg-white text-green-600 hover:bg-gray-100 hover:text-green-700 font-semibold"
                       onClick={handleEligibilityUpdate}
                       disabled={isLoading}
                     >
-                      {isLoading ? (
-                        <ClipLoader size={20} color={"#ffffff"} /> // Spinner inside the button
-                      ) : (
-                        "Start my journey"
-                      )}
+                      {isLoading ? "Processing..." : "Start My Journey"}
                     </Button>
-                    <Modal2
-                      isOpen={isModalOpen}
-                      onClose={() => setIsModalOpen(false)}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          height: "100%", // Ensure the container takes full height of the modal
-                        }}
-                      >
-                        <Loader /> {/* Spinner */}
-                        <p style={{ marginTop: "10px" }}>
-                          Setting up your profile...
+                  ) : (
+                    <div className="flex items-center text-white bg-amber-600 px-4 py-2 rounded-lg">
+                      <XCircle className="h-6 w-6 mr-2" />
+                      <span>Profile Incomplete</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Main Content - Two Column Layout on Larger Screens */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Eligibility Checklist */}
+            {user?.isEligible === false && isVisible && (
+              <Card className="shadow-md border-0 h-full">
+                <CardHeader className="bg-gray-50 border-b">
+                  <CardTitle className="flex items-center text-gray-800">
+                    <Clipboard className="mr-3 text-red-600" />
+                    Donation Eligibility Checklist
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {/* Profile Completion Status */}
+                    <div className="flex items-start md:items-center flex-col md:flex-row md:gap-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 bg-red-100 p-3 rounded-full mb-4 md:mb-0">
+                        <User className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="flex-grow">
+                        <h3 className="font-semibold text-gray-800">
+                          Complete Personal Profile
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Ensure all required personal information is filled out
                         </p>
                       </div>
-                    </Modal2>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <h1 className="text-3xl font-bold text-red-800 mb-2">
-                        Welcome, {user?.firstName || "New Donor"}
-                      </h1>
-                      <p className="text-red-600">
-                        You're not yet eligible to donate. Let's get you
-                        started!
-                      </p>
+                      <div className="mt-4 md:mt-0">
+                        {user?.isProfileComplete ? (
+                          <span className="flex items-center text-sm font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Complete
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-sm font-medium text-red-600 bg-red-100 px-3 py-1 rounded-full">
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Incomplete
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <AlertCircle className="h-12 w-12 text-red-600" />
-                  </>
-                )}
-              </div>
-            </div>
-          )}
 
-          {user?.isEligible === false && isVisible && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Clipboard className="mr-2 text-red-600" />
-                  Donation Eligibility Checklist
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <User className="mr-3 text-gray-500" />
-                    <div>
-                      <h3 className="font-semibold">
-                        Complete Personal Profile
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Ensure all required information is filled out
-                      </p>
+                    {/* Self-Assessment Status */}
+                    <div className="flex items-start md:items-center flex-col md:flex-row md:gap-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 bg-red-100 p-3 rounded-full mb-4 md:mb-0">
+                        <Droplet className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="flex-grow">
+                        <h3 className="font-semibold text-gray-800">
+                          Health Self-Assessment
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Complete a short questionnaire about your health
+                          history
+                        </p>
+                      </div>
+                      <div className="mt-4 md:mt-0">
+                        {user?.isAssessmentCompleted ? (
+                          <span className="flex items-center text-sm font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Complete
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-sm font-medium text-red-600 bg-red-100 px-3 py-1 rounded-full">
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Incomplete
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="ml-auto">
-                      <span
-                        className={`
-                  px-3 py-1 rounded-full text-xs font-medium
-                  ${
-                    user?.isProfileComplete
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }
-                `}
-                      >
-                        {user?.isProfileComplete ? "Completed" : "Incomplete"}
-                      </span>
+
+                    {/* Age and Weight Requirements */}
+                    <div className="flex items-start md:items-center flex-col md:flex-row md:gap-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 bg-red-100 p-3 rounded-full mb-4 md:mb-0">
+                        <Calendar className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="flex-grow">
+                        <h3 className="font-semibold text-gray-800">
+                          Age and Weight Requirements
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Must be 18-65 years old and meet minimum weight
+                          criteria
+                        </p>
+                      </div>
+                      <div className="mt-4 md:mt-0">
+                        {user?.isProfileComplete ? (
+                          <span className="flex items-center text-sm font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Qualified
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-sm font-medium text-amber-600 bg-amber-100 px-3 py-1 rounded-full">
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Verify
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
 
-                  <div className="flex items-center">
-                    <Droplet className="mr-3 text-gray-500" />
-                    <div>
-                      <h3 className="font-semibold">Self-Assessment</h3>
-                      <p className="text-sm text-gray-600">
-                        Complete an online questionnaire to assess donation
-                        eligibility
-                      </p>
+            {/* Next Steps */}
+            {user?.isEligible === false && isVisible && (
+              <Card className="shadow-md border-0 h-full">
+                <CardHeader className="bg-gray-50 border-b">
+                  <CardTitle className="text-gray-800">
+                    Next Steps to Become a Donor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {/* Update Profile Step */}
+                    <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                      <div className="bg-red-50 p-4 border-l-4 border-red-500">
+                        <div className="flex items-center mb-2">
+                          <div className="bg-red-100 text-red-600 rounded-full h-8 w-8 flex items-center justify-center mr-3">
+                            1
+                          </div>
+                          <h3 className="font-semibold text-gray-800">
+                            Update Your Profile
+                          </h3>
+                        </div>
+                        <p className="text-sm text-gray-700 pl-11 mb-4">
+                          Complete all required fields in your donor profile
+                          including personal information and contact details.
+                        </p>
+                        <div className="pl-11">
+                          <Button
+                            className={`flex items-center ${
+                              user?.isProfileComplete
+                                ? "bg-green-500 hover:bg-green-600"
+                                : "bg-red-500 hover:bg-red-600"
+                            }`}
+                            onClick={() => {
+                              if (!user?.isProfileComplete) {
+                                customNavigate("/donor/eligibility-form");
+                              }
+                            }}
+                            disabled={user?.isProfileComplete}
+                          >
+                            {user?.isProfileComplete ? (
+                              <>Profile Completed</>
+                            ) : (
+                              <>
+                                Complete Profile
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="ml-auto">
-                      <span
-                        className={`
-                    px-3 py-1 rounded-full text-xs font-medium
-                    ${
-                      user?.isAssessmentCompleted
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }
-                  `}
-                      >
-                        {user?.isAssessmentCompleted
-                          ? "Completed"
-                          : "Incomplete"}
-                      </span>
+
+                    {/* Self-Assessment Step */}
+                    <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                      <div className="bg-red-50 p-4 border-l-4 border-red-500">
+                        <div className="flex items-center mb-2">
+                          <div className="bg-red-100 text-red-600 rounded-full h-8 w-8 flex items-center justify-center mr-3">
+                            2
+                          </div>
+                          <h3 className="font-semibold text-gray-800">
+                            Complete Health Assessment
+                          </h3>
+                        </div>
+                        <p className="text-sm text-gray-700 pl-11 mb-4">
+                          Answer a few health-related questions to determine
+                          your eligibility to donate blood safely.
+                        </p>
+                        <div className="pl-11">
+                          <Button
+                            className={`flex items-center ${
+                              user?.isAssessmentCompleted
+                                ? "bg-green-500 hover:bg-green-600"
+                                : "bg-red-500 hover:bg-red-600"
+                            }`}
+                            onClick={() => {
+                              if (!user?.isAssessmentCompleted) {
+                                customNavigate("/donor/self-assessment");
+                              }
+                            }}
+                            disabled={user?.isAssessmentCompleted}
+                          >
+                            {user?.isAssessmentCompleted ? (
+                              <>Assessment Completed</>
+                            ) : (
+                              <>
+                                Start Assessment
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center">
-                    <Calendar className="mr-3 text-gray-500" />
-                    <div>
-                      <h3 className="font-semibold">
-                        Age and Weight Requirements
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Must be 18-65 years old and meet weight criteria
-                      </p>
-                    </div>
-                    <div className="ml-auto">
-                      <span
-                        className={`
-                  px-3 py-1 rounded-full text-xs font-medium
-                  ${
-                    user?.isProfileComplete
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }
-                `}
-                      >
-                        {user?.isProfileComplete
-                          ? "Qualified"
-                          : "Not Qualified"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {user?.isEligible === false && isVisible && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Next Steps to Become a Donor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Update Your Profile Section */}
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-                    <h3 className="font-semibold text-blue-800 mb-2">
-                      1. Update Your Profile
-                    </h3>
-                    <p className="text-sm text-blue-700">
-                      Complete all required fields in your donor profile to
-                      start your journey.
+                </CardContent>
+                <CardFooter className="bg-gray-50 border-t p-4">
+                  <div className="w-full text-center">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Need help with your application?
                     </p>
-                    <button
-                      className={`mt-2 px-4 py-2 rounded text-sm flex items-center gap-2 ${
-                        user?.isProfileComplete
-                          ? "bg-green-500 text-white cursor-default"
-                          : "bg-blue-500 text-white hover:bg-blue-600"
-                      }`}
-                      onClick={() => {
-                        if (!user?.isProfileComplete) {
-                          customNavigate("/donor/eligibility-form");
-                        }
-                      }}
-                      disabled={user?.isProfileComplete}
+                    <Button
+                      variant="outline"
+                      className="text-red-600 border-red-600 hover:bg-red-50"
                     >
-                      {user?.isProfileComplete ? (
-                        <>
-                          <span>Profile Completed</span>
-                        </>
-                      ) : (
-                        "Complete Profile"
-                      )}
-                    </button>
+                      Contact Support
+                    </Button>
                   </div>
-
-                  {/* Complete Self-Assessment Section */}
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-                    <h3 className="font-semibold text-blue-800 mb-2">
-                      2. Complete Self-Assessment
-                    </h3>
-                    <p className="text-sm text-blue-700">
-                      Fill out a short online questionnaire to assess your
-                      eligibility for donation.
-                    </p>
-                    <button
-                      className={`mt-2 px-4 py-2 rounded text-sm flex items-center gap-2 ${
-                        user?.isAssessmentCompleted
-                          ? "bg-green-500 text-white cursor-default"
-                          : "bg-blue-500 text-white hover:bg-blue-600"
-                      }`}
-                      onClick={() => {
-                        if (!user?.isAssessmentCompleted) {
-                          customNavigate("/donor/self-assessment");
-                        }
-                      }}
-                      disabled={user?.isAssessmentCompleted}
-                    >
-                      {user?.isAssessmentCompleted ? (
-                        <>
-                          <span>Assessment Completed</span>
-                        </>
-                      ) : (
-                        "Start Assessment"
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+                </CardFooter>
+              </Card>
+            )}
+          </div>
           {user?.isEligible && (
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold text-red-600">
-                Good Morning {user?.firstName || "Donor"}
+                {getGreeting()}, {user?.firstName || "Donor"}
               </h1>
               <div className="flex items-center space-x-2">
-                <AlertCircle className="text-red-600" />
+                <Droplets className="text-red-600" />
                 <span className="font-medium">
-                  Blood Type: {user?.bloodType || "N/A"}
+                  Blood Type:{" "}
+                  {user?.bloodType && user.bloodType !== "not sure"
+                    ? user.bloodType
+                    : "Not set"}
                 </span>
               </div>
             </div>
@@ -445,47 +543,114 @@ const DonorDashboard: React.FC = () => {
 
           {/* Stats Grid */}
           {user?.isEligible && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute h-1 w-full bg-gradient-to-r from-red-400 to-red-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">
+                  <CardTitle className="text-sm font-medium text-gray-700">
                     Total Donations
                   </CardTitle>
-                  <Droplet className="h-4 w-4 text-red-600" />
+                  <div className="p-2 bg-red-50 rounded-full">
+                    <Droplet className="h-4 w-4 text-red-600" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalDonations}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Donations made
-                  </p>
+                  <div className="text-3xl font-bold text-red-700">
+                    {totalDonations}
+                  </div>
+                  <div className="flex items-center mt-1">
+                    <p className="text-xs text-gray-500">Donations made</p>
+                    {totalDonations > 0 && (
+                      <Badge className="ml-2 bg-red-50 text-red-700 border-red-200 text-xs">
+                        {totalDonations > 10 ? "Hero" : "Lifesaver"}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                      <span>
+                        {totalDonations > 0
+                          ? `${Math.min(
+                              totalDonations * 10,
+                              100
+                            )}% toward next milestone`
+                          : "Start your journey today"}
+                      </span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute h-1 w-full bg-gradient-to-r from-yellow-400 to-yellow-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">
+                  <CardTitle className="text-sm font-medium text-gray-700">
                     Lives Impacted
                   </CardTitle>
-                  <Award className="h-4 w-4 text-yellow-600" />
+                  <div className="p-2 bg-yellow-50 rounded-full">
+                    <Award className="h-4 w-4 text-yellow-600" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{impactLives}</div>
-                  <p className="text-xs text-muted-foreground">People helped</p>
+                  <div className="text-3xl font-bold text-yellow-700">
+                    {impactLives}
+                  </div>
+                  <div className="flex items-center mt-1">
+                    <p className="text-xs text-gray-500">People helped</p>
+                    {impactLives >= 3 && (
+                      <Badge className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+                        {impactLives > 20 ? "Community Hero" : "Life Champion"}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">Impact multiplier:</span>
+                      <span className="font-medium text-yellow-700">
+                        3x per donation
+                      </span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute h-1 w-full bg-gradient-to-r from-blue-400 to-blue-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">
+                  <CardTitle className="text-sm font-medium text-gray-700">
                     Next Eligible Date
                   </CardTitle>
-                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 bg-blue-50 rounded-full">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{nextEligibleDate}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Mark your calendar
-                  </p>
+                  <div className="text-3xl font-bold text-blue-700">
+                    {nextEligibleDate}
+                  </div>
+                  <div className="flex items-center mt-1">
+                    <p className="text-xs text-gray-500">Mark your calendar</p>
+                    {new Date(nextEligibleDate) <= new Date() ? (
+                      <Badge className="ml-2 bg-green-50 text-green-700 border-green-200 text-xs">
+                        Eligible now!
+                      </Badge>
+                    ) : (
+                      <Badge className="ml-2 bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                        Coming soon
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex items-center justify-center"
+                    >
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Schedule next donation
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -493,41 +658,221 @@ const DonorDashboard: React.FC = () => {
 
           {/* Donation History */}
           {user?.isEligible && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Donation History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {donationHistory.map((donation, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between border-b pb-4 last:border-0"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="p-2 bg-red-100 rounded-full">
-                          <Droplet className="h-4 w-4 text-red-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{donation.location}</p>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Clock className="h-4 w-4" />
-                            <span>{donation.date}</span>
-                            <MapPin className="h-4 w-4 ml-2" />
-                            <span>{donation.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{donation.bloodType}</p>
-                        <p className="text-sm text-gray-500">
-                          {donation.volume}
-                        </p>
-                      </div>
+            <Card className="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
+              <CardHeader className="bg-gradient-to-r from-red-100 to-white p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-500 p-2 rounded-full">
+                      <Droplet className="h-6 w-6 text-white" />
                     </div>
-                  ))}
+                    <div>
+                      <CardTitle className="text-2xl font-bold text-red-800">
+                        Your Donation Journey
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Thank you for your lifesaving contributions
+                      </p>
+                    </div>
+                  </div>
+                  <div className="hidden md:flex items-center gap-2 bg-red-50 p-2 rounded-lg">
+                    <Heart className="h-5 w-5 text-red-500" />
+                    <span className="font-bold text-red-700">
+                      {donationHistory.reduce(
+                        (sum, d) => sum + Math.round(d.pintsDonated * 3),
+                        0
+                      )}{" "}
+                      lives impacted
+                    </span>
+                  </div>
                 </div>
+              </CardHeader>
+
+              <CardContent className="p-6">
+                {donationHistory.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <Droplet className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium mb-2">
+                      No donations recorded yet
+                    </p>
+                    <p className="text-sm text-gray-400 max-w-md mx-auto mb-4">
+                      Your donation journey will appear here once you make your
+                      first contribution
+                    </p>
+                    <Button className="bg-red-600 hover:bg-red-700 text-white">
+                      Schedule Your First Donation
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium text-gray-700">
+                        Your donation timeline
+                      </h3>
+                      <Select defaultValue="newest">
+                        <SelectTrigger className="w-32 text-xs">
+                          <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest first</SelectItem>
+                          <SelectItem value="oldest">Oldest first</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-4">
+                      {donationHistory.map((donation, index) => {
+                        // Format date to a more readable format
+                        const formatDate = (dateString: string) => {
+                          try {
+                            const date = new Date(dateString);
+                            if (isNaN(date.getTime())) {
+                              throw new Error("Invalid date");
+                            }
+                            return date.toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            });
+                          } catch {
+                            return "Invalid Date";
+                          }
+                        };
+
+                        // Calculate days since donation
+                        const daysSince = (dateString: string) => {
+                          const donationDate = new Date(dateString).getTime();
+                          const today = new Date().getTime();
+                          const diffTime = Math.abs(today - donationDate);
+                          const days = Math.ceil(
+                            diffTime / (1000 * 60 * 60 * 24)
+                          );
+
+                          if (days < 30) return `${days} days ago`;
+                          if (days < 365)
+                            return `${Math.floor(days / 30)} months ago`;
+                          return `${Math.floor(days / 365)} years ago`;
+                        };
+
+                        // Determine if eligible for next donation
+                        const isEligibleForNext = (dateString: string) => {
+                          const donationDate = new Date(dateString).getTime();
+                          const today = new Date().getTime();
+                          const diffTime = Math.abs(today - donationDate);
+                          const days = Math.ceil(
+                            diffTime / (1000 * 60 * 60 * 24)
+                          );
+                          return days >= 56; // 56 days is typical minimum between whole blood donations
+                        };
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
+                          >
+                            <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
+                              <Droplet className="h-8 w-8 text-red-600" />
+                            </div>
+
+                            <div className="space-y-2 flex-grow">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <p className="font-semibold text-lg text-gray-800">
+                                    {donation.donationType}
+                                  </p>
+                                  <p className="text-red-800">
+                                    {donation.donationCenter.name}
+                                  </p>
+                                </div>
+                                <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
+                                  {donation.pintsDonated} pint
+                                  {donation.pintsDonated !== 1 ? "s" : ""}
+                                </Badge>
+                              </div>
+
+                              <div className="flex flex-col space-y-1 text-sm">
+                                <div className="flex items-center text-gray-600">
+                                  <Calendar className="h-4 w-4 mr-2 text-red-500" />
+                                  <span className="font-medium">
+                                    {formatDate(donation.donationDate)}
+                                  </span>
+                                  <span className="ml-2 text-gray-500">
+                                    ({daysSince(donation.donationDate)})
+                                  </span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                                  <span>
+                                    {typeof donation.donationCenter.address ===
+                                    "string"
+                                      ? donation.donationCenter.address
+                                      : `${
+                                          donation.donationCenter.address.street
+                                        }, ${
+                                          donation.donationCenter.address.city
+                                        }${
+                                          donation.donationCenter.address
+                                            .postalCode
+                                            ? ", " +
+                                              donation.donationCenter.address
+                                                .postalCode
+                                            : ""
+                                        }`}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex justify-between items-center pt-2">
+                                <div className="text-sm text-green-600 flex items-center">
+                                  <Users className="h-4 w-4 mr-1" />
+                                  <span>
+                                    Impact: ~
+                                    {Math.round(donation.pintsDonated * 3)}{" "}
+                                    lives
+                                  </span>
+                                </div>
+
+                                {isEligibleForNext(donation.donationDate) &&
+                                  index === 0 && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                    >
+                                      Donate again
+                                    </Button>
+                                  )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </CardContent>
+
+              <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-white border-t flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-red-500" />
+                  <p className="text-sm text-gray-700">
+                    Each donation can help save up to{" "}
+                    <span className="font-semibold">3 lives</span>
+                  </p>
+                </div>
+
+                <div className="flex md:flex-col items-center md:items-end">
+                  <p className="text-sm text-gray-600 mr-2 md:mr-0">
+                    Your total impact:
+                  </p>
+                  <p className="font-bold text-xl text-red-600">
+                    {donationHistory.reduce(
+                      (sum, d) => sum + Math.round(d.pintsDonated * 3),
+                      0
+                    )}{" "}
+                    lives saved
+                  </p>
+                </div>
+              </div>
             </Card>
           )}
         </div>

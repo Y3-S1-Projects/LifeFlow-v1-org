@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Save, Bell, Moon, Sun, Globe, Phone } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -8,7 +8,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import Loader from "../components/Loader";
-
+import useUser from "../hooks/useUser";
+import { useRouter } from "next/navigation";
 interface Settings {
   darkMode: boolean;
   emailNotifications: boolean;
@@ -22,6 +23,8 @@ interface Settings {
 type SettingKey = keyof Omit<Settings, "savedSuccess" | "language">;
 
 const DonorSettings = () => {
+  const { user } = useUser();
+  const router = useRouter();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [settings, setSettings] = useState<Settings>({
     darkMode: false,
@@ -34,6 +37,22 @@ const DonorSettings = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return; // Ensure user is available before proceeding
+
+    if (!user.isEligible) {
+      setLoading(true);
+      router.replace(
+        `/donor/dashboard?message=${encodeURIComponent(
+          "Complete your profile to access more features"
+        )}`
+      );
+      return;
+    }
+
+    setLoading(false);
+  }, [user, router]);
 
   const handleToggle = (setting: SettingKey) => {
     setSettings((prev) => ({

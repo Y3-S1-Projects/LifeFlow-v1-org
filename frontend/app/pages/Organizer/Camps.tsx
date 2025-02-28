@@ -84,7 +84,6 @@ const Camps = () => {
   const fetchCamps = async () => {
     const organizerId = getUserIdFromToken();
     try {
-      console.log("Fetching camps for organizerId:", organizerId); // Add this
       const response = await axios.get(
         `http://localhost:3001/camps/get-camps/${organizerId}`
       );
@@ -103,6 +102,7 @@ const Camps = () => {
       );
       setCampUsers(response.data.users || []);
       setIsUsersDialogOpen(true);
+      console.log("camp users", response.data);
 
       if (!response.data.users || response.data.users.length === 0) {
         toast.info("No users have registered for this camp yet");
@@ -155,7 +155,7 @@ const Camps = () => {
     <RouteGuard requiredRoles={["Organizer"]}>
       <div className="w-full">
         <Header />
-        <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4  mx-auto space-y-6 flex flex-col">
           <h1 className="text-2xl font-bold mb-6">
             Blood Donation Camps Dashboard
           </h1>

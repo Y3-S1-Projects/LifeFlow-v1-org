@@ -166,7 +166,14 @@ export const updateUser = async (req, res) => {
 // Add a donation record for a user
 export const addDonationRecord = async (req, res) => {
   const { id } = req.params;
-  const { donationDate, donationCenter, notes } = req.body;
+  const {
+    donationDate,
+    donationType,
+    donationCenter,
+    notes,
+    postDonationIssues,
+    pintsDonated,
+  } = req.body;
 
   try {
     const user = await User.findById(id);
@@ -174,13 +181,42 @@ export const addDonationRecord = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.donationHistory.push({ donationDate, donationCenter, notes });
+    user.donationHistory.push({
+      donationDate,
+      donationType,
+      donationCenter,
+      notes,
+      postDonationIssues,
+      pintsDonated,
+    });
     user.lastDonationDate = donationDate;
     await user.save();
 
     res.status(200).json({ message: "Donation record added", user });
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+};
+
+export const getUserDonationHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Use populate to get the camp information for each donation
+    const user = await User.findById(id).select("donationHistory").populate({
+      path: "donationHistory.donationCenter",
+      model: "Camp",
+      select: "name  contact address", // Select specific fields you want from Camp
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ donationHistory: user.donationHistory });
+  } catch (error) {
+    console.error("Error fetching donation history:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

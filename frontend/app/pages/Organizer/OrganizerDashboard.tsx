@@ -66,7 +66,7 @@ const OrganizerDashboard = () => {
     <RouteGuard requiredRoles={["organizer"]}>
       <div className="w-full">
         <Header />
-        <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4  mx-auto space-y-6 flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">
