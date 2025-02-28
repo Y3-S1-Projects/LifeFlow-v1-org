@@ -8,6 +8,7 @@ import {
   updateUser,
   addDonationRecord,
   deleteUser,
+  getUserDonationHistory,
 } from "../controllers/userController.js";
 import {
   authenticateUser,
@@ -24,14 +25,10 @@ router.post("/resend-otp", resendOTP);
 
 // Protected routes
 router.get("/allUsers", getUsers);
+router.get("/donation-history/:id", getUserDonationHistory);
 router.get("/getUserDetails/:id", getUserDetails);
 router.put("/updateUser/:id", updateUser);
-router.post(
-  "/addUserDonationRecord/:id/donations",
-  authenticateUser,
-  authorizeRole(["Camo Organizer", "Admin"]),
-  addDonationRecord
-);
+router.post("/addUserDonationRecord/:id", addDonationRecord);
 router.delete("/deleteUser/:id", deleteUser);
 
 export default router;

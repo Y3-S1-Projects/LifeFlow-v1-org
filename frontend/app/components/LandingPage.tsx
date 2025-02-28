@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,11 +14,12 @@ import {
   Gift,
   Award,
 } from "lucide-react";
-import Footer from "../components/Footer";
+import Header from "./Header";
+import Footer from "./Footer";
 import Link from "next/link";
-import GlobalHeader from "../components/GlobalHeader";
+import GlobalHeader from "./GlobalHeader";
 
-const Home = () => {
+const LandingPage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -209,11 +209,11 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen  bg-white">
+    <div className="min-h-screen bg-white">
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-red-600 to-red-800 text-white">
-        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 lg:py-24 flex flex-col md:flex-row items-center ">
+        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 lg:py-24 flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 md:pr-4 lg:pr-8 mb-8 md:mb-0">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4">
               Give Blood, Give Life
@@ -223,7 +223,7 @@ const Home = () => {
               someone in need.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-              <Link href="/donor/appointments">
+              <Link href="/appointments">
                 <Button className="w-full sm:w-auto bg-white text-red-700 hover:bg-red-100 px-4 py-2 md:px-6 md:py-3 text-base md:text-lg">
                   Donate Now
                 </Button>
@@ -231,7 +231,7 @@ const Home = () => {
               <Link href="#learn-more">
                 <Button
                   variant="outline"
-                  className="w-full sm:w-auto border-white text-black hover:bg-red-700 px-4 py-2 md:px-6 md:py-3 text-base md:text-lg"
+                  className="w-full sm:w-auto border-white text-white hover:bg-red-700 px-4 py-2 md:px-6 md:py-3 text-base md:text-lg"
                 >
                   Learn More
                 </Button>
@@ -550,4 +550,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default LandingPage;

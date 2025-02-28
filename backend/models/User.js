@@ -12,7 +12,8 @@ const DonationHistorySchema = new mongoose.Schema({
     required: true,
   },
   donationCenter: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Camp",
     required: true,
   },
   notes: {
@@ -83,8 +84,8 @@ const UserSchema = new mongoose.Schema({
   },
   bloodType: {
     type: String,
-    enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
-    default: null,
+    enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "not sure"],
+    default: "not sure",
   },
   dateOfBirth: {
     type: String,

@@ -200,7 +200,7 @@ const OrganizerProfile = () => {
           }
         >
           <Header />
-          <div className="container mx-auto px-4 py-6">
+          <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4  mx-auto space-y-6 flex flex-col">
             <Tabs
               defaultValue="view"
               value={activeTab}

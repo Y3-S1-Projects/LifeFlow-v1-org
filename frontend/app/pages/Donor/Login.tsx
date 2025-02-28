@@ -14,6 +14,7 @@ import {
 import { motion } from "framer-motion";
 import "../../styles/index.css";
 import GlobalHeader from "../../components/GlobalHeader";
+import Footer from "@/app/components/Footer";
 
 const Login = () => {
   const router = useRouter();
@@ -160,36 +161,19 @@ const Login = () => {
 
   return (
     <div className="w-screen">
-      <GlobalHeader
-        scrolled={scrolled}
-        isDarkMode={isDarkMode}
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
-      />
+      <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className={`h-screen w-screen ${isDarkMode ? "dark-mode" : ""} ${
+        className={`min-h-screen p-6 w-full md:w-3/4 lg:w-3/4  mx-auto space-y-6 flex flex-col ${
+          isDarkMode ? "dark-mode" : ""
+        } ${
           isDarkMode
             ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
             : "bg-gradient-to-br from-red-50 via-white to-red-50"
         } flex flex-col justify-center py-12 sm:px-6 lg:px-8`}
       >
-        {/* Dark Mode Toggle Button */}
-        {/* <motion.button
-          onClick={toggleDarkMode}
-          className="fixed bottom-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-lg hover:bg-gray-100 transition-colors duration-200 z-50"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          {isDarkMode ? (
-            <Sun className="h-6 w-6 text-yellow-500" />
-          ) : (
-            <Moon className="h-6 w-6 text-gray-800" />
-          )}
-        </motion.button> */}
-
         <motion.div
           className="sm:mx-auto sm:w-full sm:max-w-md"
           variants={itemVariants}
@@ -200,11 +184,11 @@ const Login = () => {
             whileTap={{ scale: 0.9 }}
             transition={{ duration: 0.5 }}
           >
-            <Heart
+            {/* <Heart
               className={`w-16 h-16 ${
                 isDarkMode ? "text-red-600" : "text-red-500"
               } drop-shadow-lg`}
-            />
+            /> */}
           </motion.div>
           <motion.h2
             variants={itemVariants}
@@ -457,6 +441,7 @@ const Login = () => {
           </motion.div>
         </motion.div>
       </motion.div>
+      <Footer isDarkMode={isDarkMode} />
     </div>
   );
 };

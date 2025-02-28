@@ -218,7 +218,7 @@ export const getUpcomingCampsByOrganizer = async (req, res) => {
 
 export const getUsersRegisteredInCamp = async (req, res) => {
   try {
-    const { campId } = req.params; // Extract campId from URL parameters
+    const { campId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(campId)) {
       return res.status(400).json({ message: "Invalid camp ID" });
@@ -226,7 +226,10 @@ export const getUsersRegisteredInCamp = async (req, res) => {
 
     const appointments = await Appointment.find({ campId }).populate("userId");
 
-    const users = appointments.map((appointment) => appointment.userId);
+    // Filter out any appointments with null userId before mapping
+    const users = appointments
+      .filter((appointment) => appointment.userId != null)
+      .map((appointment) => appointment.userId);
 
     if (users.length === 0) {
       return res.status(404).json({ message: "No users found for this camp" });

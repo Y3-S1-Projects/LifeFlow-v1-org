@@ -175,7 +175,7 @@ const MapComponent: React.FC<IMapProps> = ({
     }
   };
 
-  const defaultZoom = 10;
+  const defaultZoom = 12;
 
   if (loadError) {
     return <div>Error loading maps</div>;

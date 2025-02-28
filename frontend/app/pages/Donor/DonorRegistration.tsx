@@ -172,7 +172,7 @@ const DonorRegistration = () => {
   );
 
   return (
-    <div className="overflow-hidden ">
+    <div className="w-full ">
       <GlobalHeader
         scrolled={scrolled}
         isDarkMode={isDarkMode}
@@ -183,7 +183,7 @@ const DonorRegistration = () => {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className={`h-screen w-screen min-h-screen ${
+        className={`min-h-screen p-6 w-full md:w-3/4 lg:w-3/4  mx-auto space-y-6 flex flex-col ${
           isDarkMode
             ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
             : "bg-gradient-to-br from-red-50 via-white to-red-50"
@@ -213,11 +213,11 @@ const DonorRegistration = () => {
             whileTap={{ scale: 0.9 }}
             transition={{ duration: 0.5 }}
           >
-            <Heart
+            {/* <Heart
               className={`w-16 h-16 ${
                 isDarkMode ? "text-red-600" : "text-red-500"
               } drop-shadow-lg`}
-            />
+            /> */}
           </motion.div>
           <motion.h2
             variants={itemVariants}

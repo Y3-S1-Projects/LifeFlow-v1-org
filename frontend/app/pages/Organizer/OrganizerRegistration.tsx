@@ -157,12 +157,7 @@ const OrganizerRegistration: React.FC = () => {
   return (
     <div className="w-screen mx-auto p-6">
       <div className="max-w-4xl mx-auto p-6">
-        <GlobalHeader
-          scrolled={scrolled}
-          isDarkMode={isDarkMode}
-          isMenuOpen={isMenuOpen}
-          setIsMenuOpen={setIsMenuOpen}
-        />
+        <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
         <Card className="mt-10">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
