@@ -106,7 +106,7 @@ const Header = () => {
       },
       {
         label: "My Donations",
-        path: "/my-donations",
+        path: "/donor/donations",
         icon: <Heart size={18} />,
       },
     ],

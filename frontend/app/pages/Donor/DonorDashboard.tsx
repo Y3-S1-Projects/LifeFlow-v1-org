@@ -98,7 +98,17 @@ const DonorDashboard: React.FC = () => {
       fetchDonationHistory();
     }
   }, [user]);
-
+  // Update this useEffect to always sort by newest
+  useEffect(() => {
+    if (donationHistory.length > 0) {
+      const sortedDonations = [...donationHistory].sort((a, b) => {
+        const dateA = new Date(a.donationDate).getTime();
+        const dateB = new Date(b.donationDate).getTime();
+        return dateB - dateA; // Sort by newest first (descending)
+      });
+      setDonationHistory(sortedDonations);
+    }
+  }, [donationHistory.length]); // Only re-run if the number of donations changes
   if (loading) {
     return (
       <div style={{ textAlign: "center" }}>
@@ -108,6 +118,71 @@ const DonorDashboard: React.FC = () => {
     );
   }
   if (error) return <p className="text-red-500">{error}</p>;
+
+  const calculateNextEligibleDate = (donations: Donation[]) => {
+    if (!donations || donations.length === 0) return "Eligible now";
+
+    // Sort donations by date (newest first)
+    const sortedDonations = [...donations].sort((a, b) => {
+      return (
+        new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
+      );
+    });
+
+    const lastDonationDate = new Date(sortedDonations[0].donationDate);
+    const waitPeriod = 56; // 56 days is typical minimum between whole blood donations
+
+    const eligibleDate = new Date(lastDonationDate);
+    eligibleDate.setDate(lastDonationDate.getDate() + waitPeriod);
+
+    const today = new Date();
+
+    if (today >= eligibleDate) {
+      return "Eligible now";
+    } else {
+      return formatDate(eligibleDate);
+    }
+  };
+
+  const formatDate = (dateString: string | Date) => {
+    try {
+      const date =
+        typeof dateString === "string" ? new Date(dateString) : dateString;
+      if (isNaN(date.getTime())) {
+        throw new Error("Invalid date");
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return "Invalid Date";
+    }
+  };
+
+  const handleScheduleDonation = () => {
+    router.push("/donor/appointments");
+  };
+
+  const daysSince = (dateString: string) => {
+    const donationDate = new Date(dateString).getTime();
+    const today = new Date().getTime();
+    const diffTime = Math.abs(today - donationDate);
+    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (days < 30) return `${days} days ago`;
+    if (days < 365) return `${Math.floor(days / 30)} months ago`;
+    return `${Math.floor(days / 365)} years ago`;
+  };
+
+  const isEligibleForNext = (dateString: string) => {
+    const donationDate = new Date(dateString).getTime();
+    const today = new Date().getTime();
+    const diffTime = Math.abs(today - donationDate);
+    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return days >= 56; // 56 days is typical minimum between whole blood donations
+  };
 
   const fetchDonationHistory = async () => {
     setHistoryLoading(true);
@@ -627,11 +702,12 @@ const DonorDashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-700">
-                    {nextEligibleDate}
+                    {calculateNextEligibleDate(donationHistory)}
                   </div>
                   <div className="flex items-center mt-1">
                     <p className="text-xs text-gray-500">Mark your calendar</p>
-                    {new Date(nextEligibleDate) <= new Date() ? (
+                    {calculateNextEligibleDate(donationHistory) ===
+                    "Eligible now" ? (
                       <Badge className="ml-2 bg-green-50 text-green-700 border-green-200 text-xs">
                         Eligible now!
                       </Badge>
@@ -646,6 +722,7 @@ const DonorDashboard: React.FC = () => {
                       variant="outline"
                       size="sm"
                       className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex items-center justify-center"
+                      onClick={handleScheduleDonation}
                     >
                       <Calendar className="h-3 w-3 mr-1" />
                       Schedule next donation
@@ -698,7 +775,10 @@ const DonorDashboard: React.FC = () => {
                       Your donation journey will appear here once you make your
                       first contribution
                     </p>
-                    <Button className="bg-red-600 hover:bg-red-700 text-white">
+                    <Button
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={handleScheduleDonation}
+                    >
                       Schedule Your First Donation
                     </Button>
                   </div>
@@ -708,144 +788,115 @@ const DonorDashboard: React.FC = () => {
                       <h3 className="font-medium text-gray-700">
                         Your donation timeline
                       </h3>
-                      <Select defaultValue="newest">
-                        <SelectTrigger className="w-32 text-xs">
-                          <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="newest">Newest first</SelectItem>
-                          <SelectItem value="oldest">Oldest first</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
 
                     <div className="space-y-4">
-                      {donationHistory.map((donation, index) => {
-                        // Format date to a more readable format
-                        const formatDate = (dateString: string) => {
-                          try {
-                            const date = new Date(dateString);
-                            if (isNaN(date.getTime())) {
-                              throw new Error("Invalid date");
-                            }
-                            return date.toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            });
-                          } catch {
-                            return "Invalid Date";
-                          }
-                        };
+                      {/* Only show the first 2 donations */}
+                      {donationHistory
+                        .sort(
+                          (a, b) =>
+                            new Date(b.donationDate).getTime() -
+                            new Date(a.donationDate).getTime()
+                        )
+                        .slice(0, 2)
+                        .map((donation, index) => {
+                          return (
+                            <div
+                              key={index}
+                              className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
+                                <Droplet className="h-8 w-8 text-red-600" />
+                              </div>
 
-                        // Calculate days since donation
-                        const daysSince = (dateString: string) => {
-                          const donationDate = new Date(dateString).getTime();
-                          const today = new Date().getTime();
-                          const diffTime = Math.abs(today - donationDate);
-                          const days = Math.ceil(
-                            diffTime / (1000 * 60 * 60 * 24)
+                              <div className="space-y-2 flex-grow">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-semibold text-lg text-gray-800">
+                                      {donation.donationType}
+                                    </p>
+                                    <p className="text-red-800">
+                                      {donation.donationCenter.name}
+                                    </p>
+                                  </div>
+                                  <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
+                                    {donation.pintsDonated} pint
+                                    {donation.pintsDonated !== 1 ? "s" : ""}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex flex-col space-y-1 text-sm">
+                                  <div className="flex items-center text-gray-600">
+                                    <Calendar className="h-4 w-4 mr-2 text-red-500" />
+                                    <span className="font-medium">
+                                      {formatDate(donation.donationDate)}
+                                    </span>
+                                    <span className="ml-2 text-gray-500">
+                                      ({daysSince(donation.donationDate)})
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center text-gray-600">
+                                    <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                                    <span>
+                                      {typeof donation.donationCenter
+                                        .address === "string"
+                                        ? donation.donationCenter.address
+                                        : `${
+                                            donation.donationCenter.address
+                                              .street
+                                          }, ${
+                                            donation.donationCenter.address.city
+                                          }${
+                                            donation.donationCenter.address
+                                              .postalCode
+                                              ? ", " +
+                                                donation.donationCenter.address
+                                                  .postalCode
+                                              : ""
+                                          }`}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2">
+                                  <div className="text-sm text-green-600 flex items-center">
+                                    <Users className="h-4 w-4 mr-1" />
+                                    <span>
+                                      Impact: ~
+                                      {Math.round(donation.pintsDonated * 3)}{" "}
+                                      lives
+                                    </span>
+                                  </div>
+
+                                  {isEligibleForNext(donation.donationDate) &&
+                                    index === 0 && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                        onClick={handleScheduleDonation}
+                                      >
+                                        Donate again
+                                      </Button>
+                                    )}
+                                </div>
+                              </div>
+                            </div>
                           );
+                        })}
 
-                          if (days < 30) return `${days} days ago`;
-                          if (days < 365)
-                            return `${Math.floor(days / 30)} months ago`;
-                          return `${Math.floor(days / 365)} years ago`;
-                        };
-
-                        // Determine if eligible for next donation
-                        const isEligibleForNext = (dateString: string) => {
-                          const donationDate = new Date(dateString).getTime();
-                          const today = new Date().getTime();
-                          const diffTime = Math.abs(today - donationDate);
-                          const days = Math.ceil(
-                            diffTime / (1000 * 60 * 60 * 24)
-                          );
-                          return days >= 56; // 56 days is typical minimum between whole blood donations
-                        };
-
-                        return (
-                          <div
-                            key={index}
-                            className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
+                      {/* See All Button - only show if there are more than 2 donations */}
+                      {donationHistory.length > 2 && (
+                        <div className="text-center mt-4">
+                          <Button
+                            variant="outline"
+                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                            onClick={() => router.push("/donor/donations")}
                           >
-                            <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
-                              <Droplet className="h-8 w-8 text-red-600" />
-                            </div>
-
-                            <div className="space-y-2 flex-grow">
-                              <div className="flex flex-wrap items-start justify-between gap-2">
-                                <div>
-                                  <p className="font-semibold text-lg text-gray-800">
-                                    {donation.donationType}
-                                  </p>
-                                  <p className="text-red-800">
-                                    {donation.donationCenter.name}
-                                  </p>
-                                </div>
-                                <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
-                                  {donation.pintsDonated} pint
-                                  {donation.pintsDonated !== 1 ? "s" : ""}
-                                </Badge>
-                              </div>
-
-                              <div className="flex flex-col space-y-1 text-sm">
-                                <div className="flex items-center text-gray-600">
-                                  <Calendar className="h-4 w-4 mr-2 text-red-500" />
-                                  <span className="font-medium">
-                                    {formatDate(donation.donationDate)}
-                                  </span>
-                                  <span className="ml-2 text-gray-500">
-                                    ({daysSince(donation.donationDate)})
-                                  </span>
-                                </div>
-                                <div className="flex items-center text-gray-600">
-                                  <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                                  <span>
-                                    {typeof donation.donationCenter.address ===
-                                    "string"
-                                      ? donation.donationCenter.address
-                                      : `${
-                                          donation.donationCenter.address.street
-                                        }, ${
-                                          donation.donationCenter.address.city
-                                        }${
-                                          donation.donationCenter.address
-                                            .postalCode
-                                            ? ", " +
-                                              donation.donationCenter.address
-                                                .postalCode
-                                            : ""
-                                        }`}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex justify-between items-center pt-2">
-                                <div className="text-sm text-green-600 flex items-center">
-                                  <Users className="h-4 w-4 mr-1" />
-                                  <span>
-                                    Impact: ~
-                                    {Math.round(donation.pintsDonated * 3)}{" "}
-                                    lives
-                                  </span>
-                                </div>
-
-                                {isEligibleForNext(donation.donationDate) &&
-                                  index === 0 && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-xs border-red-300 text-red-600 hover:bg-red-50"
-                                    >
-                                      Donate again
-                                    </Button>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                            See All Donations ({donationHistory.length})
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

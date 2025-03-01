@@ -209,7 +209,7 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen  bg-white">
+    <div className="min-h-screen w-screen bg-white">
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-red-600 to-red-800 text-white">
