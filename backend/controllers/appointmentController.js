@@ -89,3 +89,29 @@ export const confirmAppointment = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+export const updateAppointment = async (req, res) => {
+  const { id } = req.params; // Extract the appointment ID from the request parameters
+  const updateData = req.body; // Extract the updated data from the request body
+
+  try {
+    // Find the appointment by ID and update it with the new data
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true } // Return the updated document and run schema validators
+    );
+
+    // If the appointment is not found, return a 404 error
+    if (!updatedAppointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Return the updated appointment
+    res.status(200).json(updatedAppointment);
+  } catch (error) {
+    // Handle any errors that occur during the update process
+    res
+      .status(500)
+      .json({ message: "Error updating appointment", error: error.message });
+  }
+};

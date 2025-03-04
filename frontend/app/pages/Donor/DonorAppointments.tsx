@@ -14,6 +14,7 @@ import {
   User,
   Map,
   MoreVertical,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toaster, toast } from "sonner";
@@ -398,6 +399,23 @@ const BloodDonationAppointments: React.FC = () => {
             >
               {showMap ? <X className="h-4 w-4" /> : <Map />}
               {showMap ? "Hide Map" : "View Map"}
+            </Button>
+          </div>
+          <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="h-4 w-4 text-blue-600 mr-2" />
+              <span className="text-sm text-blue-700">
+                Not seeing accurate donation centers near you? Check if your
+                location is set correctly!{" "}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-blue-700 border-blue-300 hover:bg-blue-100"
+              onClick={() => router.push("/donor/profile")}
+            >
+              Update Location
             </Button>
           </div>
 

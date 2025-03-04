@@ -95,6 +95,15 @@ export const getUserDetails = async (req, res) => {
       isProfileComplete: 1,
       isAssessmentCompleted: 1,
       role: 1,
+      emergencyContacts: 1,
+      donationHistory: 1,
+      totalPintsDonated: 1,
+      lastPintsDonated: 1,
+      healthConditions: 1,
+      drugUsage: 1,
+      donatedBefore: 1,
+      additionalInfo: 1,
+      createdAt: 1,
     });
 
     // If not found in User schema, try Organizer schema
@@ -117,7 +126,6 @@ export const getUserDetails = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Add a userType field to help frontend distinguish
     const userType =
       user.eligibleToOrganize !== undefined ? "organizer" : "user";
 
@@ -131,17 +139,15 @@ export const getUserDetails = async (req, res) => {
   }
 };
 
-// Update a user's information
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
-  // Check if lat and lng are provided in the request to update the location
   if (updates.lat && updates.lng) {
     // Make sure the location is stored in GeoJSON format
     updates.location = {
       type: "Point",
-      coordinates: [updates.lng, updates.lat], // [longitude, latitude]
+      coordinates: [updates.lng, updates.lat],
     };
   }
 

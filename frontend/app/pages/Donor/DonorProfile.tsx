@@ -1,39 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { format } from "date-fns";
+import { CalendarIcon, MapPinIcon, Edit, Save, X, User } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Droplet,
-  Calendar,
-  Clock,
-  Award,
-  Heart,
-  AlertCircle,
-  User,
-  Mail,
-  Phone,
-  Lock,
-  MapPin,
-  Edit,
-  Save,
-  X,
-  LockKeyhole,
-  Shield,
-  HeartPulse,
-  UserCog,
-  Stethoscope,
-  CheckCircle,
-} from "lucide-react";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import useUser from "../../hooks/useUser";
-import Loader from "../../components/Loader";
-import { useRouter } from "next/navigation";
-import { RouteGuard } from "@/app/components/RouteGuard";
+import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -41,102 +18,221 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import useUser from "../../hooks/useUser";
+import MapComponent from "@/app/components/Map";
+import Header from "@/app/components/Header";
+import Footer from "@/app/components/Footer";
+import Loader from "@/app/components/Loader";
+// Blood types options
+const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-interface DonorProfile {
-  name: string;
-  bloodType: string;
-  age: number;
-  lastDonationDate: string;
-  totalDonations: number;
-  nextEligibleDate: string;
-  medicalConditions: string[];
-  address: string;
-  contact: string;
-  email: string;
-  emergencyContact: {
-    name: string;
-    relationship: string;
-    phone: string;
-  };
-}
-
-const DonorProfileAdvanced = () => {
-  const { user, loading, error } = useUser();
+export default function DonorProfilePage() {
   const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace(
-        `/donor/login?message=${encodeURIComponent("Login to access")}`
-      );
-    } else if (!loading && user?.role !== "User") {
-      router.replace(
-        `/unauthorized?message=${encodeURIComponent(
-          "Insufficient permissions"
-        )}`
-      );
-    } else if (!loading && !user?.isEligible) {
-      router.replace(
-        `/donor/dashboard?message=${encodeURIComponent(
-          "Complete your profile to access more features"
-        )}`
-      );
-    }
-  }, [user, loading, router]);
-
-  const [editing, setEditing] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [profile, setProfile] = useState<DonorProfile>({
-    name: "John Doe",
-    bloodType: "O+",
-    age: 32,
-    lastDonationDate: "2024-01-15",
-    totalDonations: 8,
-    nextEligibleDate: "2025-04-15",
-    medicalConditions: ["None"],
-    address: "123 Main St, City, Country",
-    contact: "+1 234-567-8900",
-    email: "john.doe@email.com",
+  const { user, loading, error, refetch } = useUser();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
+  // Form state
+  const [formData, setFormData] = useState({
+    fullName: "",
+    firstName: "",
+    lastName: "",
+    bloodType: "",
+    phoneNumber: "",
+    weight: 0,
+    nicNo: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+    },
+    location: {
+      latitude: 0,
+      longitude: 0,
+    },
+    dateOfBirth: "",
     emergencyContact: {
-      name: "Jane Doe",
-      relationship: "Spouse",
-      phone: "+1 234-567-8901",
+      fullName: "",
+      relationship: "",
+      phone: "",
     },
   });
 
-  const [editedProfile, setEditedProfile] = useState<DonorProfile>(profile);
-  const [passwords, setPasswords] = useState({
-    current: "",
-    new: "",
-    confirm: "",
-  });
-
-  const handleProfileUpdate = () => {
-    setProfile(editedProfile);
-    setEditing(false);
-    setSuccessMessage("Profile updated successfully!");
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
-
-  const handlePasswordReset = () => {
-    if (passwords.new !== passwords.confirm) {
-      setSuccessMessage("New passwords do not match!");
-      return;
+  // Initialize form data when user data is loaded
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        bloodType: user.bloodType || "",
+        phoneNumber: user.phoneNumber || "",
+        weight: user.weight || 0,
+        nicNo: user.nicNo || "",
+        address: {
+          street: user.address?.street || "",
+          city: user.address?.city || "",
+          state: user.address?.state || "",
+        },
+        location: {
+          latitude: user.location?.coordinates?.[1] || 0,
+          longitude: user.location?.coordinates?.[0] || 0,
+        },
+        dateOfBirth: user.dateOfBirth || "",
+        emergencyContact: {
+          fullName: user.emergencyContact?.fullName || "",
+          relationship: user.emergencyContact?.relationship || "",
+          phone: user.emergencyContact?.phone || "",
+        },
+      });
     }
-    setPasswords({ current: "", new: "", confirm: "" });
-    setShowPasswordReset(false);
-    setSuccessMessage("Password updated successfully!");
-    setTimeout(() => setSuccessMessage(""), 3000);
+  }, [user]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...(prev as any)[parent],
+          [child]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
-  const calculateDaysUntilEligible = () => {
-    const nextDate = new Date(profile.nextEligibleDate);
-    const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setFormData((prev) => ({
+        ...prev,
+        dateOfBirth: date.toISOString().split("T")[0],
+      }));
+    }
+  };
+
+  const handleLocationSelect = (lat: number, lng: number): void => {
+    setFormData((prev) => ({
+      ...prev,
+      location: {
+        latitude: lat,
+        longitude: lng,
+      },
+    }));
+  };
+
+  const startEditing = () => {
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    // Reset form data to current user data
+    if (user) {
+      setFormData({
+        fullName: user.fullName || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        bloodType: user.bloodType || "",
+        phoneNumber: user.phoneNumber || "",
+        weight: user.weight || 0,
+        nicNo: user.nicNo || "",
+        address: {
+          street: user.address?.street || "",
+          city: user.address?.city || "",
+          state: user.address?.state || "",
+        },
+        location: {
+          latitude: user.location?.coordinates?.[1] || 0,
+          longitude: user.location?.coordinates?.[0] || 0,
+        },
+        dateOfBirth: user.dateOfBirth || "",
+        emergencyContact: {
+          fullName: user.emergencyContact?.fullName || "",
+          relationship: user.emergencyContact?.relationship || "",
+          phone: user.emergencyContact?.phone || "",
+        },
+      });
+    }
+    setFormError(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!user?._id) return;
+
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      // Prepare data for API
+      const updateData = {
+        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        bloodType: formData.bloodType,
+        phoneNumber: formData.phoneNumber,
+        weight: Number(formData.weight),
+        nicNo: formData.nicNo,
+        address: formData.address,
+        lat: formData.location.latitude,
+        lng: formData.location.longitude,
+        dateOfBirth: formData.dateOfBirth,
+        emergencyContact: formData.emergencyContact,
+      };
+
+      // Call API to update user
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const response = await axios.put(
+        `${API_URL}/users/updateUser/${user._id}`,
+        updateData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Refresh user data
+      await refetch();
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      setFormError(
+        err instanceof Error ? err.message : "Failed to update profile"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: "center" }}>
@@ -145,622 +241,706 @@ const DonorProfileAdvanced = () => {
       </div>
     );
   }
-  if (error) return <p className="text-red-500">{error}</p>;
+
+  if (error && !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-lg p-6">
+          <CardHeader>
+            <CardTitle className="text-center text-red-500">
+              Error Loading Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center">{error}</p>
+            <Button className="w-full mt-4" onClick={() => refetch()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-lg p-6">
+          <CardHeader>
+            <CardTitle className="text-center">Profile Not Available</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center">Please log in to view your profile.</p>
+            <Button
+              className="w-full mt-4"
+              onClick={() => router.push("/login")}
+            >
+              Log In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <RouteGuard requiredRoles={["User"]}>
-      <div className="w-full">
-        <Header />
-        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">
-          <Tabs defaultValue="profile" className="w-full mt-4 mb-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="profile" className="flex-1 text-center">
-                Profile
-              </TabsTrigger>
-              <TabsTrigger value="edit" className="flex-1 text-center">
-                Edit Profile
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex-1 text-center">
-                Security
-              </TabsTrigger>
-            </TabsList>
+    <div className="w-full">
+      <Header />
+      <div className="container mx-auto py-8 px-4 md:px-6">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            {/* <TabsTrigger value="profile">Profile</TabsTrigger> */}
+            {/* <TabsTrigger value="donation-history">Donation History</TabsTrigger> */}
+          </TabsList>
 
-            {successMessage && (
-              <Alert className="mt-4 bg-green-50 border border-green-200">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <AlertDescription className="text-green-700">
-                  {successMessage}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <TabsContent value="profile">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Profile Header Card */}
-                <Card className="md:col-span-3 shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-red-400 to-red-600 top-0"></div>
-                  <CardHeader className="pt-8">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle className="text-2xl font-bold text-gray-800">
-                          {user?.fullName}
-                        </CardTitle>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Donor ID: {user?._id}
-                        </p>
-                      </div>
-                      <Badge className="px-4 py-2 bg-red-50 text-red-700 border-red-200">
-                        <Droplet className="mr-2 h-4 w-4 text-red-500" />
-                        {user?.bloodType && user.bloodType !== "not sure"
-                          ? user.bloodType
-                          : "Blood Type not set"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                </Card>
-
-                {/* Donation Stats Cards */}
-                <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-blue-400 to-blue-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-700">
-                      Total Donations
-                    </CardTitle>
-                    <div className="p-2 bg-blue-50 rounded-full">
-                      <Award className="h-4 w-4 text-blue-600" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-blue-700">
-                      {profile.totalDonations}
-                    </div>
-                    <div className="flex items-center mt-1">
-                      <p className="text-xs text-gray-500">Lives saved</p>
-                      <Badge className="ml-2 bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                        {profile.totalDonations * 3}+
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-green-400 to-green-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-700">
-                      Last Donation
-                    </CardTitle>
-                    <div className="p-2 bg-green-50 rounded-full">
-                      <Calendar className="h-4 w-4 text-green-600" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-green-700">
-                      {user?.lastDonationDate
-                        ? new Date(user.lastDonationDate).toLocaleDateString(
-                            "en-US",
-                            { month: "short", day: "numeric" }
-                          )
-                        : new Date().toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                    </div>
-                    <div className="flex items-center mt-1">
-                      <p className="text-xs text-gray-500">Thank you!</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-orange-400 to-orange-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-700">
-                      Days Until Eligible
-                    </CardTitle>
-                    <div className="p-2 bg-orange-50 rounded-full">
-                      <Clock className="h-4 w-4 text-orange-600" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-orange-700">
-                      {calculateDaysUntilEligible()}
-                    </div>
-                    <div className="flex items-center mt-1">
-                      <p className="text-xs text-gray-500">
-                        {calculateDaysUntilEligible() <= 0
-                          ? "Eligible now!"
-                          : "Days remaining"}
-                      </p>
-                      {calculateDaysUntilEligible() <= 0 ? (
-                        <Badge className="ml-2 bg-green-50 text-green-700 border-green-200 text-xs">
-                          Ready!
-                        </Badge>
+          <TabsContent value="profile" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left column - Basic Info */}
+              <Card className="col-span-1">
+                <CardHeader className="relative pb-2">
+                  <div className="flex justify-center mb-4">
+                    <Avatar className="h-24 w-24">
+                      <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                        {user.firstName?.charAt(0) ||
+                          user.fullName?.charAt(0) ||
+                          "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <CardTitle className="text-center text-xl">
+                    {user.fullName ||
+                      `${user.firstName || ""} ${user.lastName || ""}`}
+                  </CardTitle>
+                  <div className="flex justify-center mt-2">
+                    <Badge variant="outline" className="text-center">
+                      {user.bloodType ? (
+                        <span className="flex items-center font-semibold">
+                          Blood Type:{" "}
+                          <span className="ml-1 text-primary">
+                            {user.bloodType}
+                          </span>
+                        </span>
                       ) : (
-                        <Badge className="ml-2 bg-orange-50 text-orange-700 border-orange-200 text-xs">
-                          Waiting
-                        </Badge>
+                        "Blood Type Not Set"
                       )}
-                    </div>
-                    {calculateDaysUntilEligible() <= 0 && (
-                      <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50 flex items-center justify-center"
-                        >
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Schedule now
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </Badge>
+                  </div>
+                </CardHeader>
 
-                {/* Contact Information */}
-                <Card className="md:col-span-2 shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-indigo-400 to-indigo-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="font-medium text-gray-800">
-                      Contact Information
-                    </CardTitle>
-                    <div className="p-2 bg-indigo-50 rounded-full">
-                      <User className="h-4 w-4 text-indigo-600" />
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Email
+                      </h3>
+                      <p>{user.email}</p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <Mail className="h-5 w-5 text-gray-500" />
-                        <div>
-                          <p className="text-xs text-gray-500">Email</p>
-                          <p className="font-medium text-gray-800">
-                            {user?.email}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <Phone className="h-5 w-5 text-gray-500" />
-                        <div>
-                          <p className="text-xs text-gray-500">Phone</p>
-                          <p className="font-medium text-gray-800">
-                            {user?.phoneNumber}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="md:col-span-2 flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <MapPin className="h-5 w-5 text-gray-500 mt-1" />
-                        <div>
-                          <p className="text-xs text-gray-500">Address</p>
-                          <p className="font-medium text-gray-800">
-                            {profile.address}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Emergency Contact */}
-                <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-red-400 to-red-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="font-medium text-gray-800">
-                      Emergency Contact
-                    </CardTitle>
-                    <div className="p-2 bg-red-50 rounded-full">
-                      <HeartPulse className="h-4 w-4 text-red-600" />
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Phone
+                      </h3>
+                      <p>{user.phoneNumber || "Not provided"}</p>
                     </div>
-                  </CardHeader>
-                  <CardContent className="pb-6">
-                    <div className="space-y-3">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500">Name</p>
-                        <p className="font-medium text-gray-800">
-                          {profile.emergencyContact.name}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500">Relationship</p>
-                        <p className="font-medium text-gray-800">
-                          {profile.emergencyContact.relationship}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500">Phone</p>
-                        <p className="font-medium text-gray-800">
-                          {profile.emergencyContact.phone}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Medical Information */}
-                <Card className="md:col-span-3 shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-purple-400 to-purple-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="font-medium text-gray-800">
-                      Medical Information
-                    </CardTitle>
-                    <div className="p-2 bg-purple-50 rounded-full">
-                      <Stethoscope className="h-4 w-4 text-purple-600" />
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Date of Birth
+                      </h3>
+                      <p>
+                        {user.dateOfBirth
+                          ? format(new Date(user.dateOfBirth), "MMMM d, yyyy")
+                          : "Not provided"}
+                      </p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="flex items-start space-x-3">
-                        <AlertCircle className="h-5 w-5 text-purple-500 mt-1" />
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            Medical Conditions
-                          </p>
-                          {profile.medicalConditions.length > 0 ? (
-                            <ul className="mt-2 space-y-1">
-                              {profile.medicalConditions.map(
-                                (condition, index) => (
-                                  <li
-                                    key={index}
-                                    className="text-gray-700 flex items-center"
-                                  >
-                                    <div className="h-1.5 w-1.5 bg-purple-500 rounded-full mr-2"></div>
-                                    {condition}
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          ) : (
-                            <p className="text-gray-500 mt-1">
-                              No medical conditions reported
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Next Donation */}
-                <Card className="md:col-span-3 shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                  <div className="absolute h-1 w-full bg-gradient-to-r from-green-400 to-green-600 top-0"></div>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="font-medium text-gray-800">
-                      Next Eligible Donation
-                    </CardTitle>
-                    <div className="p-2 bg-green-50 rounded-full">
-                      <Heart className="h-4 w-4 text-green-600" />
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        NIC Number
+                      </h3>
+                      <p>{user.nicNo || "Not provided"}</p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gradient-to-r from-green-50 to-white p-6 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between">
-                      <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                        <div className="bg-green-100 p-3 rounded-full">
-                          <Calendar className="h-8 w-8 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Next Eligible Date
-                          </p>
-                          <p className="text-2xl font-bold text-green-700">
-                            {new Date(
-                              profile.nextEligibleDate
-                            ).toLocaleDateString("en-US", {
-                              month: "long",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <Badge className="px-4 py-2 bg-green-100 border-green-200">
-                          <Clock className="mr-2 h-4 w-4 text-green-700" />
-                          {calculateDaysUntilEligible() <= 0
-                            ? "Eligible now!"
-                            : `${calculateDaysUntilEligible()} days remaining`}
-                        </Badge>
-                        {calculateDaysUntilEligible() <= 0 && (
-                          <Button className="ml-3 bg-green-600 hover:bg-green-700">
-                            Schedule Donation
-                          </Button>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Weight
+                      </h3>
+                      <p>
+                        {user.weight ? `${user.weight} kg` : "Not provided"}
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Address
+                      </h3>
+                      <p className="mt-1">
+                        {user.address?.street ? (
+                          <>
+                            {user.address.street}
+                            <br />
+                            {user.address.city}
+                            {user.address.state
+                              ? `, ${user.address.state}`
+                              : ""}
+                          </>
+                        ) : (
+                          "No address provided"
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Status
+                      </h3>
+                      <div className="flex mt-1 space-x-2">
+                        {user.isVerified && (
+                          <Badge variant="default">Verified</Badge>
+                        )}
+                        {user.isEligible && (
+                          <Badge variant="secondary">Eligible Donor</Badge>
+                        )}
+                        {!user.isVerified && (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500 text-amber-500"
+                          >
+                            Unverified
+                          </Badge>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <TabsContent value="edit">
-              <Card className="shadow-lg overflow-hidden border-gray-100">
-                <div className="absolute h-1 w-full bg-gradient-to-r from-blue-400 to-blue-600 top-0"></div>
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-50 rounded-full">
-                      <UserCog className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <CardTitle className="text-xl font-bold text-gray-800">
+              {/* Right column - Details & Emergency Contact */}
+              <Card className="col-span-1 lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle>Donor Information</CardTitle>
+                  {!isEditing ? (
+                    <Button variant="outline" size="sm" onClick={startEditing}>
+                      <Edit className="h-4 w-4 mr-2" />
                       Edit Profile
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">Full Name</Label>
-                        <Input
-                          className="border-gray-300 focus:border-blue-500"
-                          value={user?.fullName}
-                          onChange={(e) =>
-                            setEditedProfile({
-                              ...editedProfile,
-                              name: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">Email</Label>
-                        <Input
-                          className="border-gray-300 focus:border-blue-500"
-                          value={user?.email}
-                          onChange={(e) =>
-                            setEditedProfile({
-                              ...editedProfile,
-                              email: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">Phone</Label>
-                        <Input
-                          className="border-gray-300 focus:border-blue-500"
-                          value={user?.phoneNumber}
-                          onChange={(e) =>
-                            setEditedProfile({
-                              ...editedProfile,
-                              contact: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">Blood Type</Label>
-                        <Select
-                          value={user?.bloodType}
-                          onValueChange={(value) =>
-                            setEditedProfile({
-                              ...editedProfile,
-                              bloodType: value,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="border-gray-300">
-                            <SelectValue placeholder="Select blood type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="A+">A+</SelectItem>
-                            <SelectItem value="A-">A-</SelectItem>
-                            <SelectItem value="B+">B+</SelectItem>
-                            <SelectItem value="B-">B-</SelectItem>
-                            <SelectItem value="AB+">AB+</SelectItem>
-                            <SelectItem value="AB-">AB-</SelectItem>
-                            <SelectItem value="O+">O+</SelectItem>
-                            <SelectItem value="O-">O-</SelectItem>
-                            <SelectItem value="not sure">Not Sure</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-gray-700">Address</Label>
-                      <Input
-                        className="border-gray-300 focus:border-blue-500"
-                        value={editedProfile.address}
-                        onChange={(e) =>
-                          setEditedProfile({
-                            ...editedProfile,
-                            address: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="border-t pt-6">
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="p-2 bg-red-50 rounded-full">
-                          <HeartPulse className="h-4 w-4 text-red-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          Emergency Contact
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-gray-700">Name</Label>
-                          <Input
-                            className="border-gray-300 focus:border-blue-500"
-                            value={editedProfile.emergencyContact.name}
-                            onChange={(e) =>
-                              setEditedProfile({
-                                ...editedProfile,
-                                emergencyContact: {
-                                  ...editedProfile.emergencyContact,
-                                  name: e.target.value,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-gray-700">Relationship</Label>
-                          <Input
-                            className="border-gray-300 focus:border-blue-500"
-                            value={editedProfile.emergencyContact.relationship}
-                            onChange={(e) =>
-                              setEditedProfile({
-                                ...editedProfile,
-                                emergencyContact: {
-                                  ...editedProfile.emergencyContact,
-                                  relationship: e.target.value,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-gray-700">Phone</Label>
-                          <Input
-                            className="border-gray-300 focus:border-blue-500"
-                            value={editedProfile.emergencyContact.phone}
-                            onChange={(e) =>
-                              setEditedProfile({
-                                ...editedProfile,
-                                emergencyContact: {
-                                  ...editedProfile.emergencyContact,
-                                  phone: e.target.value,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-3 mt-6">
+                    </Button>
+                  ) : (
+                    <div className="flex space-x-2">
                       <Button
                         variant="outline"
-                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                        onClick={() => {
-                          setEditedProfile(profile);
-                          setEditing(false);
-                        }}
+                        size="sm"
+                        onClick={cancelEditing}
                       >
+                        <X className="h-4 w-4 mr-2" />
                         Cancel
                       </Button>
                       <Button
-                        className="bg-blue-600 hover:bg-blue-700"
-                        onClick={handleProfileUpdate}
+                        size="sm"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Changes
+                        {isSubmitting ? (
+                          <div className="flex items-center">
+                            <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                            Saving...
+                          </div>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Changes
+                          </>
+                        )}
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="security">
-              <Card className="shadow-lg overflow-hidden border-gray-100">
-                <div className="absolute h-1 w-full bg-gradient-to-r from-purple-400 to-purple-600 top-0"></div>
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-purple-50 rounded-full">
-                      <Lock className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <CardTitle className="text-xl font-bold text-gray-800">
-                      Security Settings
-                    </CardTitle>
-                  </div>
+                  )}
                 </CardHeader>
+
                 <CardContent>
+                  {formError && (
+                    <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md">
+                      {formError}
+                    </div>
+                  )}
+
                   <div className="space-y-6">
-                    <div className="p-4 bg-purple-50 rounded-lg mb-6">
-                      <div className="flex items-start space-x-3">
-                        <Shield className="h-5 w-5 text-purple-600 mt-1" />
+                    {isEditing ? (
+                      /* Edit Mode */
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input
+                              id="firstName"
+                              name="firstName"
+                              value={formData.firstName}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input
+                              id="lastName"
+                              name="lastName"
+                              value={formData.lastName}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="fullName">Full Name</Label>
+                            <Input
+                              id="fullName"
+                              name="fullName"
+                              value={formData.fullName}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="bloodType">Blood Type</Label>
+                            <Select
+                              value={formData.bloodType}
+                              onValueChange={(value) =>
+                                handleSelectChange("bloodType", value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select blood type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {bloodTypes.map((type) => (
+                                  <SelectItem key={type} value={type}>
+                                    {type}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="phoneNumber">Phone Number</Label>
+                            <Input
+                              id="phoneNumber"
+                              name="phoneNumber"
+                              value={formData.phoneNumber}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="nicNo">NIC Number</Label>
+                            <Input
+                              id="nicNo"
+                              name="nicNo"
+                              value={formData.nicNo}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="weight">Weight (kg)</Label>
+                            <Input
+                              id="weight"
+                              name="weight"
+                              type="number"
+                              value={formData.weight}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !formData.dateOfBirth &&
+                                      "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {formData.dateOfBirth
+                                    ? format(
+                                        new Date(formData.dateOfBirth),
+                                        "PPP"
+                                      )
+                                    : "Pick a date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={
+                                    formData.dateOfBirth
+                                      ? new Date(formData.dateOfBirth)
+                                      : undefined
+                                  }
+                                  onSelect={handleDateChange}
+                                  initialFocus
+                                  captionLayout="dropdown-buttons"
+                                  fromYear={1920}
+                                  toYear={2010}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+
+                        <Separator />
+
                         <div>
-                          <p className="font-medium text-gray-800">
-                            Password Protection
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Update your password regularly to keep your account
-                            secure.
-                          </p>
+                          <h3 className="text-lg font-semibold mb-3">
+                            Address
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="street">Street Address</Label>
+                              <Input
+                                id="street"
+                                name="address.street"
+                                value={formData.address.street}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="city">City</Label>
+                              <Input
+                                id="city"
+                                name="address.city"
+                                value={formData.address.city}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="state">State/Province</Label>
+                              <Input
+                                id="state"
+                                name="address.state"
+                                value={formData.address.state}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">
-                          Current Password
-                        </Label>
-                        <Input
-                          type="password"
-                          className="border-gray-300 focus:border-purple-500"
-                          value={passwords.current}
-                          onChange={(e) =>
-                            setPasswords({
-                              ...passwords,
-                              current: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">New Password</Label>
-                        <Input
-                          type="password"
-                          className="border-gray-300 focus:border-purple-500"
-                          value={passwords.new}
-                          onChange={(e) =>
-                            setPasswords({
-                              ...passwords,
-                              new: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-gray-700">
-                          Confirm New Password
-                        </Label>
-                        <Input
-                          type="password"
-                          className="border-gray-300 focus:border-purple-500"
-                          value={passwords.confirm}
-                          onChange={(e) =>
-                            setPasswords({
-                              ...passwords,
-                              confirm: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">
+                            Location
+                          </h3>
+                          <div className="border rounded-md bg-slate-50 relative overflow-hidden ">
+                            {/* Add overflow-hidden to contain the map and relative for proper positioning */}
+                            {process.env.NEXT_PUBLIC_GOOGLE_API ? (
+                              <MapComponent
+                                apiKey={apiKey}
+                                showNearbyCamps={false}
+                                userLatitude={formData.location.latitude}
+                                userLongitude={formData.location.longitude}
+                                onLocationSelect={(lat, lng) => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    location: {
+                                      latitude: lat,
+                                      longitude: lng,
+                                    },
+                                  }));
+                                }}
+                              />
+                            ) : (
+                              <div className="text-center h-full flex flex-col items-center justify-center">
+                                <MapPinIcon className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                                <p className="text-muted-foreground">
+                                  Google Maps API key is missing
+                                </p>
+                                <p className="text-sm mt-2">
+                                  Current coordinates:{" "}
+                                  {formData.location.latitude.toFixed(6)},{" "}
+                                  {formData.location.longitude.toFixed(6)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                    <div className="flex justify-end space-x-3 mt-6">
-                      <Button
-                        variant="outline"
-                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                        onClick={() => {
-                          setPasswords({ current: "", new: "", confirm: "" });
-                          setShowPasswordReset(false);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        className="bg-purple-600 hover:bg-purple-700"
-                        onClick={handlePasswordReset}
-                      >
-                        <LockKeyhole className="h-4 w-4 mr-2" />
-                        Update Password
-                      </Button>
-                    </div>
+                        <Separator />
+
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">
+                            Emergency Contact
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="emergencyFullName">
+                                Full Name
+                              </Label>
+                              <Input
+                                id="emergencyFullName"
+                                name="emergencyContact.fullName"
+                                value={formData.emergencyContact.fullName}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="emergencyRelationship">
+                                Relationship
+                              </Label>
+                              <Input
+                                id="emergencyRelationship"
+                                name="emergencyContact.relationship"
+                                value={formData.emergencyContact.relationship}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="emergencyPhone">
+                                Phone Number
+                              </Label>
+                              <Input
+                                id="emergencyPhone"
+                                name="emergencyContact.phone"
+                                value={formData.emergencyContact.phone}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* View Mode */
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground">
+                              Full Legal Name
+                            </h3>
+                            <p className="mt-1 font-medium">
+                              {user.fullName ||
+                                `${user.firstName || ""} ${
+                                  user.lastName || ""
+                                }`}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground">
+                              Last Donation Date
+                            </h3>
+                            <p className="mt-1 font-medium">
+                              {user.lastDonationDate
+                                ? format(
+                                    new Date(user.lastDonationDate),
+                                    "MMMM d, yyyy"
+                                  )
+                                : "No previous donations"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground">
+                              Eligibility Status
+                            </h3>
+                            <div className="mt-1">
+                              {user.isEligible ? (
+                                <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                                  Eligible to Donate
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-red-200 text-red-700"
+                                >
+                                  Not Currently Eligible
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground">
+                              Profile Status
+                            </h3>
+                            <div className="mt-1">
+                              {user.isProfileComplete ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-green-200 text-green-700"
+                                >
+                                  Complete
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-amber-200 text-amber-700"
+                                >
+                                  Incomplete
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">
+                            Location
+                          </h3>
+                          {user.location?.coordinates ? (
+                            <div className="border rounded-md bg-slate-50 relative overflow-hidden h-100">
+                              {/* Increased height significantly to 320px */}
+                              <MapComponent
+                                apiKey={apiKey}
+                                userLatitude={user.location.coordinates[1]}
+                                userLongitude={user.location.coordinates[0]}
+                                showNearbyCamps={false}
+                                isClickable={false}
+                                // Optional: You can set a higher default zoom to make location more visible
+                                // defaultZoom={14} // If your MapComponent accepts this prop
+                              />
+                              <div className="absolute bottom-3 right-3 bg-white px-3 py-2 rounded-md shadow-md text-sm">
+                                <div className="flex items-center">
+                                  <MapPinIcon className="h-4 w-4 mr-1 text-primary" />
+                                  <span>
+                                    {user.location.coordinates[1].toFixed(6)},{" "}
+                                    {user.location.coordinates[0].toFixed(6)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border rounded-md p-4 bg-slate-50 h-24 flex items-center justify-center">
+                              <div className="text-center text-muted-foreground">
+                                <MapPinIcon className="h-6 w-6 mx-auto mb-2" />
+                                <p>No location information available</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">
+                            Emergency Contact
+                          </h3>
+                          {user.emergencyContact?.fullName ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
+                              <div>
+                                <h4 className="text-sm font-medium text-muted-foreground">
+                                  Name
+                                </h4>
+                                <p className="mt-1">
+                                  {user.emergencyContact.fullName}
+                                </p>
+                              </div>
+
+                              <div>
+                                <h4 className="text-sm font-medium text-muted-foreground">
+                                  Relationship
+                                </h4>
+                                <p className="mt-1">
+                                  {user.emergencyContact.relationship ||
+                                    "Not specified"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <h4 className="text-sm font-medium text-muted-foreground">
+                                  Phone
+                                </h4>
+                                <p className="mt-1">
+                                  {user.emergencyContact.phone ||
+                                    "Not provided"}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-muted-foreground italic">
+                              No emergency contact information provided
+                            </div>
+                          )}
+                        </div>
+
+                        {user.healthConditions &&
+                          user.healthConditions.length > 0 && (
+                            <>
+                              <Separator />
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3">
+                                  Health Conditions
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                  {user.healthConditions.map(
+                                    (condition, index) => (
+                                      <Badge key={index} variant="outline">
+                                        {condition}
+                                      </Badge>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                        {user.additionalInfo && (
+                          <>
+                            <Separator />
+
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3">
+                                Additional Information
+                              </h3>
+                              <p className="text-muted-foreground">
+                                {user.additionalInfo}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-        <Footer isDarkMode={false} />
-      </div>
-    </RouteGuard>
-  );
-};
+            </div>
+          </TabsContent>
 
-export default DonorProfileAdvanced;
+          <TabsContent value="donation-history" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Donation History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="mb-4">
+                    <User className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  </div>
+                  {user.donatedBefore === "yes" ? (
+                    <p>Your donation history will appear here.</p>
+                  ) : (
+                    <p>
+                      You haven't made any donations yet. Start your journey as
+                      a donor today!
+                    </p>
+                  )}
+                  <Button className="mt-4" variant="secondary">
+                    Find Donation Opportunities
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+      <Footer isDarkMode={isDarkMode} />
+    </div>
+  );
+}

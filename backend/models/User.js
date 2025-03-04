@@ -1,5 +1,29 @@
-// Import Mongoose
 import mongoose from "mongoose";
+
+const EmergencyContactSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  relationship: {
+    type: String,
+    enum: ["Spouse", "Parent", "Sibling", "Friend", "Guardian", "Other"],
+    required: true,
+  },
+  customRelationship: {
+    type: String,
+    required: function () {
+      return this.relationship === "Other";
+    },
+    trim: true,
+  },
+  phoneNumber: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+});
 
 const DonationHistorySchema = new mongoose.Schema({
   donationDate: {
@@ -21,16 +45,15 @@ const DonationHistorySchema = new mongoose.Schema({
     default: "",
   },
   postDonationIssues: {
-    type: String, // Stores any issues like dizziness, nausea, fatigue, etc.
+    type: String,
     default: "None",
   },
   pintsDonated: {
     type: Number,
-    required: true, // Ensures each donation logs the amount donated
+    required: true,
   },
 });
 
-// Define the User schema
 const UserSchema = new mongoose.Schema({
   fullName: {
     type: String,
@@ -48,7 +71,7 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["Organizer", "Admin", "Support Agent", "User"],
-    default: "User", // Default role for new users
+    default: "User",
   },
   email: {
     type: String,
@@ -66,7 +89,7 @@ const UserSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ["Point"],
-      required: false, // Make the whole field optional
+      required: false,
     },
     coordinates: {
       type: [Number],
@@ -77,7 +100,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // Fields for blood donation eligibility
   nicNo: {
     type: String,
     default: null,
@@ -98,11 +120,11 @@ const UserSchema = new mongoose.Schema({
   },
   totalPintsDonated: {
     type: Number,
-    default: 0, // Tracks cumulative pints donated by the user
+    default: 0,
   },
   lastPintsDonated: {
     type: Number,
-    default: 0, // Stores the amount from the last donation
+    default: 0,
   },
 
   address: {
@@ -111,11 +133,11 @@ const UserSchema = new mongoose.Schema({
     state: { type: String, default: null },
   },
   healthConditions: {
-    type: [String], // List of conditions (e.g., ["Diabetes", "Hypertension"])
+    type: [String],
     default: [],
   },
   drugUsage: {
-    type: Boolean, // True if the user is using drugs
+    type: Boolean,
     default: false,
   },
   lastDonationDate: {
@@ -131,6 +153,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  emergencyContacts: [EmergencyContactSchema],
   isVerified: { type: Boolean, default: false },
   donationHistory: [DonationHistorySchema],
   isEligible: {
@@ -162,9 +185,9 @@ UserSchema.index(
     },
   }
 );
+
 // Pre-save middleware to check eligibility
 UserSchema.pre("save", function (next) {
-  // Check if the user has filled all required fields for eligibility
   if (
     this.nicNo &&
     this.bloodType &&
@@ -172,7 +195,6 @@ UserSchema.pre("save", function (next) {
     this.address.street &&
     this.address.city &&
     this.address.state &&
-    this.address.zipCode &&
     !this.drugUsage
   ) {
     this.isEligible = true;
@@ -182,5 +204,4 @@ UserSchema.pre("save", function (next) {
   next();
 });
 
-// Export the model
 export default mongoose.model("User", UserSchema);

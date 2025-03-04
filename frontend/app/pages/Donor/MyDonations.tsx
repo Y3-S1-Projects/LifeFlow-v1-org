@@ -429,90 +429,92 @@ const MyDonationsPage: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                      <div className="h-screen overflow-y-auto">
+                        <div className="space-y-4">
+                          {donationHistory.map((donation, index) => (
+                            <div
+                              key={index}
+                              className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
+                                <Droplet className="h-8 w-8 text-red-600" />
+                              </div>
 
-                      <div className="space-y-4">
-                        {donationHistory.map((donation, index) => (
-                          <div
-                            key={index}
-                            className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
-                          >
-                            <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
-                              <Droplet className="h-8 w-8 text-red-600" />
+                              <div className="space-y-2 flex-grow">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-semibold text-lg text-gray-800">
+                                      {donation.donationType}
+                                    </p>
+                                    <p className="text-red-800">
+                                      {donation.donationCenter.name}
+                                    </p>
+                                  </div>
+                                  <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
+                                    {donation.pintsDonated} pint
+                                    {donation.pintsDonated !== 1 ? "s" : ""}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex flex-col space-y-1 text-sm">
+                                  <div className="flex items-center text-gray-600">
+                                    <Calendar className="h-4 w-4 mr-2 text-red-500" />
+                                    <span className="font-medium">
+                                      {formatDate(donation.donationDate)}
+                                    </span>
+                                    <span className="ml-2 text-gray-500">
+                                      ({daysSince(donation.donationDate)})
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center text-gray-600">
+                                    <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                                    <span>
+                                      {typeof donation.donationCenter
+                                        .address === "string"
+                                        ? donation.donationCenter.address
+                                        : `${
+                                            donation.donationCenter.address
+                                              .street
+                                          }, ${
+                                            donation.donationCenter.address.city
+                                          }${
+                                            donation.donationCenter.address
+                                              .postalCode
+                                              ? ", " +
+                                                donation.donationCenter.address
+                                                  .postalCode
+                                              : ""
+                                          }`}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2">
+                                  <div className="text-sm text-green-600 flex items-center">
+                                    <Users className="h-4 w-4 mr-1" />
+                                    <span>
+                                      Impact: ~
+                                      {Math.round(donation.pintsDonated * 3)}{" "}
+                                      lives
+                                    </span>
+                                  </div>
+
+                                  {isEligibleForNext(donation.donationDate) &&
+                                    index === 0 && (
+                                      <Button
+                                        onClick={handleScheduleDonation}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                      >
+                                        Donate again
+                                      </Button>
+                                    )}
+                                </div>
+                              </div>
                             </div>
-
-                            <div className="space-y-2 flex-grow">
-                              <div className="flex flex-wrap items-start justify-between gap-2">
-                                <div>
-                                  <p className="font-semibold text-lg text-gray-800">
-                                    {donation.donationType}
-                                  </p>
-                                  <p className="text-red-800">
-                                    {donation.donationCenter.name}
-                                  </p>
-                                </div>
-                                <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
-                                  {donation.pintsDonated} pint
-                                  {donation.pintsDonated !== 1 ? "s" : ""}
-                                </Badge>
-                              </div>
-
-                              <div className="flex flex-col space-y-1 text-sm">
-                                <div className="flex items-center text-gray-600">
-                                  <Calendar className="h-4 w-4 mr-2 text-red-500" />
-                                  <span className="font-medium">
-                                    {formatDate(donation.donationDate)}
-                                  </span>
-                                  <span className="ml-2 text-gray-500">
-                                    ({daysSince(donation.donationDate)})
-                                  </span>
-                                </div>
-                                <div className="flex items-center text-gray-600">
-                                  <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                                  <span>
-                                    {typeof donation.donationCenter.address ===
-                                    "string"
-                                      ? donation.donationCenter.address
-                                      : `${
-                                          donation.donationCenter.address.street
-                                        }, ${
-                                          donation.donationCenter.address.city
-                                        }${
-                                          donation.donationCenter.address
-                                            .postalCode
-                                            ? ", " +
-                                              donation.donationCenter.address
-                                                .postalCode
-                                            : ""
-                                        }`}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex justify-between items-center pt-2">
-                                <div className="text-sm text-green-600 flex items-center">
-                                  <Users className="h-4 w-4 mr-1" />
-                                  <span>
-                                    Impact: ~
-                                    {Math.round(donation.pintsDonated * 3)}{" "}
-                                    lives
-                                  </span>
-                                </div>
-
-                                {isEligibleForNext(donation.donationDate) &&
-                                  index === 0 && (
-                                    <Button
-                                      onClick={handleScheduleDonation}
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-xs border-red-300 text-red-600 hover:bg-red-50"
-                                    >
-                                      Donate again
-                                    </Button>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}

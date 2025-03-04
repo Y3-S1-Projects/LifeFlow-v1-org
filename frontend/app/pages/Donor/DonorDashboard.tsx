@@ -315,36 +315,6 @@ const DonorDashboard: React.FC = () => {
             }}
           />
 
-          {/* <div className="bg-gradient-to-r from-red-700 to-red-500 rounded-xl shadow-lg mb-8 overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center">
-              <div className="p-8 md:w-2/3">
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  Donate Blood, Save Lives
-                </h1>
-                <p className="text-white text-lg mb-6">
-                  Your donation can make a difference. One pint of blood can
-                  save up to three lives.
-                </p>
-                <div className="flex space-x-4">
-                  <Button className="bg-white text-red-600 hover:bg-gray-100">
-                    Schedule Donation
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-white border-white hover:bg-red-600"
-                  >
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              <div className="md:w-1/3 p-4 flex justify-center">
-                <div className="bg-white p-4 rounded-full shadow-inner">
-                  <Heart className="h-24 w-24 text-red-500" />
-                </div>
-              </div>
-            </div>
-          </div> */}
-
           {/* User Status Card */}
           {user?.isEligible === false && isVisible && (
             <Card className="mb-8 shadow-md border-0 overflow-hidden">
