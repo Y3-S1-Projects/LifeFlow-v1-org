@@ -27,6 +27,7 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
     { title: "Home", href: "/" },
     { title: "About", href: "/about" },
     { title: "Donate", href: "/donate" },
+    { title: "Find Camps", href: "/find-camps" },
     { title: "Contact", href: "/contact" },
   ];
 

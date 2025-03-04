@@ -98,14 +98,14 @@ export default function EligibilityForm() {
     longitude: 79.8612, // Colombo's longitude
   });
 
-  // useEffect(() => {
-  //   if (user && user.isProfileComplete) {
-  //     router.push(
-  //       "/donor/dashboard?message=" +
-  //         encodeURIComponent("You have already completed the profile")
-  //     );
-  //   }
-  // }, [user, router]);
+  useEffect(() => {
+    if (user && user.isProfileComplete) {
+      router.push(
+        "/donor/dashboard?message=" +
+          encodeURIComponent("You have already completed the profile")
+      );
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (user) {

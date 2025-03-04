@@ -30,6 +30,7 @@ interface IMapProps {
   userLatitude: number;
   userLongitude: number;
   showNearbyCamps?: boolean;
+  showAllCamps?: boolean;
   onLocationSelect?: (lat: number, lng: number) => void;
   selectedCampId?: string;
   onCampSelect?: (campId: string) => void;
@@ -41,6 +42,7 @@ const MapComponent: React.FC<IMapProps> = ({
   userLatitude,
   userLongitude,
   showNearbyCamps = false,
+  showAllCamps = false,
   onLocationSelect,
   selectedCampId,
   onCampSelect,
@@ -118,6 +120,45 @@ const MapComponent: React.FC<IMapProps> = ({
       stylers: [{ color: "#a0d3e8" }],
     },
   ];
+
+  useEffect(() => {
+    const fetchCamps = async () => {
+      try {
+        let url = "http://localhost:3001/camps";
+
+        if (showNearbyCamps) {
+          url += `/nearby?lat=${userLatitude}&lng=${userLongitude}&radius=20`;
+        } else if (showAllCamps) {
+          // If showAllCamps is true, fetch all camps
+          url = "http://localhost:3001/camps/all";
+        } else {
+          return; // Do nothing if no camp fetching is required
+        }
+
+        const response = await axios.get(url);
+        setCamps(response.data);
+
+        if (selectedCampId) {
+          setSelectedCamp(selectedCampId);
+        }
+      } catch (error) {
+        console.error("Error fetching camps:", error);
+      }
+    };
+
+    if (
+      (showNearbyCamps || showAllCamps) &&
+      ((userLatitude && userLongitude) || showAllCamps)
+    ) {
+      fetchCamps();
+    }
+  }, [
+    userLatitude,
+    userLongitude,
+    showNearbyCamps,
+    showAllCamps,
+    selectedCampId,
+  ]);
 
   useEffect(() => {
     const fetchNearbyCamps = async () => {
@@ -245,7 +286,7 @@ const MapComponent: React.FC<IMapProps> = ({
             clickable={isClickable} // Disable marker click if map is not clickable
           />
         )}
-        {showNearbyCamps &&
+        {(showNearbyCamps || showAllCamps) &&
           camps.map((camp) => {
             let labelColor, borderColor;
             switch (camp.status) {

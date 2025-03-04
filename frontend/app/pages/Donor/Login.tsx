@@ -15,9 +15,12 @@ import { motion } from "framer-motion";
 import "../../styles/index.css";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "@/app/components/Footer";
+import useUser from "@/app/hooks/useUser";
+import Loader from "@/app/components/Loader";
 
 const Login = () => {
   const router = useRouter();
+  const { user, error, loading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [focusedInput, setFocusedInput] = useState("");
@@ -55,6 +58,16 @@ const Login = () => {
     transition: background-color 5000s ease-in-out 0s;
   }
 `;
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (user && user.role === "User") {
+        router.push("/donor/dashboard");
+      } else if (user && user.role === "Organizer") {
+        router.push("/organizer/dashboard");
+      }
+    }
+  }, [loading, user, router]);
 
   useEffect(() => {
     const styleSheet = document.createElement("style");

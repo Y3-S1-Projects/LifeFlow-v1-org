@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import MapComponent from "../../components/Map";
 import useUser from "../../hooks/useUser";
 import Header from "../../components/Header";
+import RescheduleModal from "../../components/RescheduleModal";
 import Footer from "../../components/Footer";
 import Loader from "../../components/Loader";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -102,6 +103,8 @@ const BloodDonationAppointments: React.FC = () => {
   const [selectedCampId, setSelectedCampId] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
+  const [rescheduleAppointment, setRescheduleAppointment] =
+    useState<Appointment | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -248,6 +251,34 @@ const BloodDonationAppointments: React.FC = () => {
   const handleCampClick = (camp: Camp) => {
     setSelectedCamp(camp);
     setSelectedCampId(camp._id);
+  };
+
+  const hanldeRescheduleAppointment = async (
+    appointmentId: string,
+    newDate: string,
+    newTime: string
+  ) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3001/appointments/reschedule/${appointmentId}`,
+        { date: newDate, time: newTime },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+
+      if (response.status === 200) {
+        // Update local state
+        setAppointments((currentAppointments) =>
+          currentAppointments.map((app) =>
+            app._id === appointmentId
+              ? { ...app, date: newDate, time: newTime }
+              : app
+          )
+        );
+        toast.success("Appointment rescheduled successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to reschedule appointment");
+    }
   };
 
   const handleCancelAppointment = async (appointmentId: string) => {
@@ -670,9 +701,18 @@ const BloodDonationAppointments: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs border-gray-300"
+                          onClick={() => setRescheduleAppointment(appointment)}
                         >
                           Reschedule
                         </Button>
+                        {rescheduleAppointment && (
+                          <RescheduleModal
+                            isOpen={!!rescheduleAppointment}
+                            onClose={() => setRescheduleAppointment(null)}
+                            appointment={rescheduleAppointment}
+                            onReschedule={hanldeRescheduleAppointment}
+                          />
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

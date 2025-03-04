@@ -143,14 +143,7 @@ const Header = () => {
         <div className="h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link
-              href={
-                user?.role === "Organizer"
-                  ? "/organizer/dashboard"
-                  : "/donor/dashboard"
-              }
-              className="flex items-center space-x-2"
-            >
+            <Link href="/" className="flex items-center space-x-2">
               <Heart
                 className="w-8 h-8 text-red-600 fill-current"
                 strokeWidth={1.5}
