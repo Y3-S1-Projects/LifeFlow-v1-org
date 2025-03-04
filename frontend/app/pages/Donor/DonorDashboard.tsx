@@ -90,9 +90,7 @@ const DonorDashboard: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [searchParams, toastShown]);
-  useEffect(() => {
-    console.log("Donation history state updated:", donationHistory);
-  }, [donationHistory]);
+
   useEffect(() => {
     if (user && user.isEligible) {
       fetchDonationHistory();
@@ -195,19 +193,15 @@ const DonorDashboard: React.FC = () => {
       const response = await fetch(
         `http://localhost:3001/users/donation-history/${userId}`
       );
-      console.log("history response:", response);
 
       if (!response.ok) {
         throw new Error("Failed to fetch donation history");
       }
 
       const data = await response.json();
-      console.log("Raw donation history:", data);
-      console.log("Donation array after setting:", donationHistory);
 
       if (data && data.donationHistory && Array.isArray(data.donationHistory)) {
         setDonationHistory(data.donationHistory);
-        console.log("Setting donation history:", data.donationHistory);
       } else {
         console.warn("Invalid donation history structure:", data);
         setDonationHistory([]);
@@ -217,21 +211,12 @@ const DonorDashboard: React.FC = () => {
       setNextEligibleDate("Eligible now");
 
       //  enable this code later after fixing the date format in  backend
-      /*
       if (data.nextEligibleDate) {
         setNextEligibleDate(data.nextEligibleDate);
       } else if (data.donationHistory && data.donationHistory.length > 0) {
-        // Format check - we expect data.donationHistory[0].date to be a valid date string
-        console.log("Last donation date format:", data.donationHistory[0].date);
-        
-        // For debugging
-        const dateAttempt = new Date(data.donationHistory[0].date);
-        console.log("Parsed date:", dateAttempt, "Valid?", !isNaN(dateAttempt.getTime()));
-        
         // For now, just use a placeholder
         setNextEligibleDate("Eligible now");
       }
-      */
     } catch (err) {
       console.error("Error fetching donation history:", err);
       setHistoryError((err as Error).message);
@@ -269,7 +254,6 @@ const DonorDashboard: React.FC = () => {
           "/donor/dashboard?message=" +
             encodeURIComponent("You are now eligible for more features")
         );
-        console.log("Eligibility status updated");
         window.location.reload();
       } else {
         console.error("Failed to update eligibility status");

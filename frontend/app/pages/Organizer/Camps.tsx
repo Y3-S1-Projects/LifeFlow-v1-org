@@ -87,10 +87,8 @@ const Camps = () => {
       const response = await axios.get(
         `http://localhost:3001/camps/get-camps/${organizerId}`
       );
-      console.log("Response data:", response.data); // Add this
       setCamps(response.data.camps);
     } catch (error) {
-      console.error("Fetch error:", error); // Add this
       toast.error("Failed to fetch camps");
     }
   };
@@ -102,7 +100,6 @@ const Camps = () => {
       );
       setCampUsers(response.data.users || []);
       setIsUsersDialogOpen(true);
-      console.log("camp users", response.data);
 
       if (!response.data.users || response.data.users.length === 0) {
         toast.info("No users have registered for this camp yet");

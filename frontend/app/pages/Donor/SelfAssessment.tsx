@@ -98,7 +98,6 @@ const BloodDonationForm = () => {
     if (validateSection(section2Fields)) {
       setShowError(false);
       setShowSuccess(true);
-      console.log(formData);
     } else {
       setShowError(true);
       setShowSuccess(false);
@@ -128,7 +127,6 @@ const BloodDonationForm = () => {
           "/donor/dashboard?message=" +
             encodeURIComponent("You have  completed the Assessment")
         );
-        console.log("Assessment completed status updated");
       } else {
         console.error("Failed to update assessment status");
       }

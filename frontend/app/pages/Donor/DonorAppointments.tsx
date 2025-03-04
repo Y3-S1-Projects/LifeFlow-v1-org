@@ -123,7 +123,6 @@ const BloodDonationAppointments: React.FC = () => {
         const [longitude, latitude] = location?.coordinates || [null, null];
 
         if (typeof latitude === "number" && typeof longitude === "number") {
-          console.log("Using stored location:", { latitude, longitude });
           setLatitude(latitude);
           setLongitude(longitude);
           fetchNearbyCamps(latitude, longitude, 20);
@@ -140,7 +139,6 @@ const BloodDonationAppointments: React.FC = () => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
-            console.log("Using browser location:", { latitude, longitude });
             fetchNearbyCamps(latitude, longitude, 50);
           },
           (error) => {
@@ -210,7 +208,6 @@ const BloodDonationAppointments: React.FC = () => {
           toast.error("User not authenticated");
           return;
         }
-        console.log("User ID:", userId);
         const response = await fetch(
           `http://localhost:3001/appointments/getByUser/${userId}`,
           {
@@ -221,7 +218,6 @@ const BloodDonationAppointments: React.FC = () => {
             },
           }
         );
-        console.log("Response:", response);
 
         if (!response.ok) {
           throw new Error("Failed to fetch appointments");
@@ -311,7 +307,6 @@ const BloodDonationAppointments: React.FC = () => {
           headers: { Authorization: `Bearer ${getToken()}` },
         }
       );
-      console.log("create appointment response", response);
 
       if (response.status === 201) {
         toast.success("Appointment added to the waiting list", {

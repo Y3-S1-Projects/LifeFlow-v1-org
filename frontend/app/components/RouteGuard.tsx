@@ -31,7 +31,6 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
 
       // Then check if user has required role - make case-insensitive
       const userRole = getRoleFromToken();
-      console.log("UserRole", userRole);
       // Case-insensitive role checking
       const hasRequiredRole =
         userRole &&

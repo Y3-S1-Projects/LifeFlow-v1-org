@@ -4,8 +4,6 @@ import Appointment from "../models/Appointment.js";
 
 export const createCamp = async (req, res) => {
   try {
-    console.log("Request Body:", req.body);
-
     const {
       name,
       description,
@@ -46,8 +44,6 @@ export const createCamp = async (req, res) => {
       coordinates: [parseFloat(lng), parseFloat(lat)], // [longitude, latitude]
     };
 
-    console.log("Location Object:", location);
-
     // Create new camp
     const newCamp = new Camp({
       name,
@@ -62,7 +58,6 @@ export const createCamp = async (req, res) => {
     });
 
     await newCamp.save();
-    console.log("Saved Camp:", newCamp);
 
     res
       .status(201)
