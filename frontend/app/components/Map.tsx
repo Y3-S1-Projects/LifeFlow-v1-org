@@ -33,6 +33,7 @@ interface IMapProps {
   onLocationSelect?: (lat: number, lng: number) => void;
   selectedCampId?: string;
   onCampSelect?: (campId: string) => void;
+  isClickable?: boolean; // New prop to control if the map is interactive
 }
 
 const MapComponent: React.FC<IMapProps> = ({
@@ -43,6 +44,7 @@ const MapComponent: React.FC<IMapProps> = ({
   onLocationSelect,
   selectedCampId,
   onCampSelect,
+  isClickable = true, // Default to true for backward compatibility
 }) => {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedLocation, setSelectedLocation] =
@@ -140,6 +142,9 @@ const MapComponent: React.FC<IMapProps> = ({
   }, [userLatitude, userLongitude, showNearbyCamps, selectedCampId]);
 
   const handleMapClick = (event: google.maps.MapMouseEvent) => {
+    // Only handle clicks if the map is clickable
+    if (!isClickable) return;
+
     if (showNearbyCamps) {
       setSelectedCamp(null);
       if (onCampSelect) {
@@ -163,6 +168,9 @@ const MapComponent: React.FC<IMapProps> = ({
   };
 
   const handleMarkerClick = (campId: string) => {
+    // Only handle marker clicks if the map is clickable
+    if (!isClickable) return;
+
     setSelectedCamp(campId);
     if (onCampSelect) {
       onCampSelect(campId);
@@ -170,6 +178,9 @@ const MapComponent: React.FC<IMapProps> = ({
   };
 
   const handleScheduleClick = (campId: string) => {
+    // Only handle schedule clicks if the map is clickable
+    if (!isClickable) return;
+
     if (onCampSelect) {
       onCampSelect(campId);
     }
@@ -203,12 +214,20 @@ const MapComponent: React.FC<IMapProps> = ({
             strictBounds: true,
           },
           disableDefaultUI: isMobile,
-          zoomControl: !isMobile,
+          zoomControl: isClickable && !isMobile,
           streetViewControl: false,
           mapTypeControl: false,
-          fullscreenControl: !isMobile,
+          fullscreenControl: isClickable && !isMobile,
           styles: mapStyles,
-          gestureHandling: isMobile ? "greedy" : "cooperative",
+          gestureHandling: isClickable
+            ? isMobile
+              ? "greedy"
+              : "cooperative"
+            : "none", // Disable gestures if not clickable
+          draggable: isClickable, // Disable dragging if not clickable
+          clickableIcons: isClickable, // Disable POI clicks if not clickable
+          scrollwheel: isClickable, // Disable zoom on scroll if not clickable
+          keyboardShortcuts: isClickable, // Disable keyboard shortcuts if not clickable
         }}
       >
         {userLatitude && userLongitude && (
@@ -223,6 +242,7 @@ const MapComponent: React.FC<IMapProps> = ({
                 "font-poppins bg-white px-2 py-1 rounded-full shadow-md border-2 border-blue-500",
             }}
             zIndex={1000}
+            clickable={isClickable} // Disable marker click if map is not clickable
           />
         )}
         {showNearbyCamps &&
@@ -267,8 +287,9 @@ const MapComponent: React.FC<IMapProps> = ({
                   color: labelColor,
                   fontSize: isMobile ? "12px" : "14px",
                 }}
+                clickable={isClickable} // Disable marker click if map is not clickable
               >
-                {selectedCamp === camp._id && (
+                {selectedCamp === camp._id && isClickable && (
                   <InfoWindow
                     position={{
                       lat: camp.location.coordinates[1],
@@ -391,21 +412,6 @@ const MapComponent: React.FC<IMapProps> = ({
                         </div>
                       </div>
 
-                      {/* Requirements Note */}
-                      {/* <div className="bg-blue-50 p-2.5 rounded-md mb-3">
-                        <div className="flex gap-2">
-                          <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <p
-                            className={`${
-                              isMobile ? "text-xs" : "text-sm"
-                            } text-blue-700`}
-                          >
-                            Please bring a valid ID and ensure you've had a meal
-                            before donation.
-                          </p>
-                        </div>
-                      </div> */}
-
                       {/* Action Button*/}
                       <div className="flex gap-2">
                         <button
@@ -429,7 +435,10 @@ const MapComponent: React.FC<IMapProps> = ({
             );
           })}
         {selectedLocation && !showNearbyCamps && (
-          <Marker position={selectedLocation} />
+          <Marker
+            position={selectedLocation}
+            clickable={isClickable} // Disable marker click if map is not clickable
+          />
         )}
       </GoogleMap>
     </div>
