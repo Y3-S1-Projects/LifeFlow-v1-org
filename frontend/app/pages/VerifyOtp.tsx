@@ -38,7 +38,7 @@ const VerifyOtp: React.FC = () => {
   const [otp, setOtp] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [attempts, setAttempts] = useState<number>(0); // Track OTP attempts
+  const [attempts, setAttempts] = useState<number>(0);
   const [message, setMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState(5);
@@ -62,14 +62,14 @@ const VerifyOtp: React.FC = () => {
       const data: ApiResponse = await response.json();
       if (!response.ok) {
         if (data.message === "Too many attempts") {
-          setAttempts(3); // Set attempts to max if limit is reached
+          setAttempts(3);
         }
         throw new Error(data.message);
       }
 
       setMessage("OTP Verified successfully!");
       setIsModalOpen(true);
-      startTimer(); // Start the timer once OTP is verified
+      startTimer();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Invalid OTP");
     } finally {
@@ -78,7 +78,7 @@ const VerifyOtp: React.FC = () => {
   };
 
   const handleInputChange = (value: string): void => {
-    const cleanedValue = value.replace(/[^0-9]/g, ""); // Only allow numbers
+    const cleanedValue = value.replace(/[^0-9]/g, "");
     if (cleanedValue.length <= 6) {
       setOtp(cleanedValue);
     }
@@ -93,11 +93,11 @@ const VerifyOtp: React.FC = () => {
       });
 
       if (response.ok) {
-        setAttempts(0); // Reset attempts after successful resend
-        setError(""); // Clear any previous errors
+        setAttempts(0);
+        setError("");
         setMessage("OTP sent successfully!");
         setIsModalOpen(true);
-        startTimer(); // Start the timer after resend
+        startTimer();
       } else {
         throw new Error("Failed to resend OTP");
       }
@@ -107,35 +107,25 @@ const VerifyOtp: React.FC = () => {
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false); // Close the modal
+    // Immediately navigate to login page when modal is closed
+    router.push("/donor/login");
   };
 
-  // Use useEffect to handle redirect and reset timer once the modal is closed
-  useEffect(() => {
-    if (!isModalOpen && timer === 0) {
-      setTimer(5); // Reset the timer to initial value
-      router.push("/donor/login"); // Redirect to login page when modal is closed
-    }
-  }, [isModalOpen, timer, router]);
-
-  // Use useEffect to navigate to the login page after timer expires
-  useEffect(() => {
-    if (timer === 0) {
-      router.push("/donor/login");
-    }
-  }, [timer, router]);
+  // Remove the first useEffect that was managing redirection based on the timer
+  // Now the redirection happens directly in handleCloseModal
 
   // Start the 5-second timer
   const startTimer = () => {
     const interval = setInterval(() => {
       setTimer((prevTimer) => {
         if (prevTimer === 1) {
-          clearInterval(interval); // Clear the interval to stop the timer
+          clearInterval(interval);
         }
         return prevTimer - 1;
       });
     }, 1000);
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex flex-col items-center justify-center p-4">
       <div className="mb-8 flex items-center">
@@ -209,7 +199,7 @@ const VerifyOtp: React.FC = () => {
               variant="link"
               className="text-sm text-gray-600"
               onClick={handleResendCode}
-              disabled={attempts >= 3} // Disable resend button when limit is reached
+              disabled={attempts >= 3}
             >
               Didn't receive the code? Resend
             </Button>

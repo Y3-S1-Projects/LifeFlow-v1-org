@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Organizer from "../models/Organizer.js";
 import bcrypt from "bcrypt";
 import { sendOTP } from "./authController.js";
+import emailService from "../services/emailService.js";
 
 // User registration with OTP verification
 export const registerUser = async (req, res) => {
@@ -44,6 +45,14 @@ export const registerUser = async (req, res) => {
     await newUser.save();
     await sendOTP(email);
 
+    // Send registration confirmation email
+    await emailService.sendDonorRegistrationEmail({
+      email,
+      userName: `${firstName} ${lastName}`,
+      bloodType,
+      donorId: newUser._id.toString(),
+    });
+
     res
       .status(201)
       .json({ message: "User registered. Please verify your email with OTP." });
@@ -51,7 +60,6 @@ export const registerUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 // Get all users
 export const getUsers = async (req, res) => {
   try {
