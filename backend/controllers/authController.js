@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import nodemailer from "nodemailer";
+import emailService from "../services/emailService.js";
 import dotenv from "dotenv";
 
 // Nodemailer configuration
@@ -17,18 +18,34 @@ const transporter = nodemailer.createTransport({
 // OTP Configuration
 const MAX_OTP_ATTEMPTS = 3;
 const OTP_COOLDOWN = 60 * 1000; // 1 minute
+const OTP_EXPIRATION = 5 * 60 * 1000; // 5 minutes
 
 export const sendOTP = async (email) => {
+  const recentOtp = await Otp.findOne({
+    email,
+    createdAt: { $gte: new Date(Date.now() - OTP_COOLDOWN) },
+  });
+
+  if (recentOtp) {
+    throw new Error("Please wait before requesting a new OTP");
+  }
+
   const generateNumericOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   // Then use it in your sendOTP function:
   const otp = generateNumericOTP();
-
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
   await Otp.deleteMany({ email });
-  await new Otp({ email, otp, expiresAt }).save();
+  await new Otp({
+    email,
+    otp,
+    expiresAt,
+    createdAt: new Date(),
+    attempts: 0,
+  }).save();
 
   // HTML email template with styling
   const htmlContent = `
@@ -123,7 +140,7 @@ export const verifyOTP = async (req, res) => {
     // Check if too many attempts have been made
     if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
       await Otp.deleteOne({ email }); // Delete OTP after too many attempts
-      res.status(429).json({
+      return res.status(429).json({
         message: "Too many attempts. Please request a new OTP.",
         attempts: otpRecord.attempts, // Include the current attempts count in the response
       });
@@ -136,16 +153,28 @@ export const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
+    const totalLifetime = 15 * 60 * 1000; // 15 minutes total
+
     // Check if OTP is expired
-    if (otpRecord.expiresAt < Date.now()) {
-      await Otp.deleteOne({ email }); // Delete expired OTP
-      return res
-        .status(400)
-        .json({ message: "OTP expired, please request a new one" });
+    if (
+      otpRecord.createdAt &&
+      Date.now() - otpRecord.createdAt.getTime() > totalLifetime
+    ) {
+      await Otp.deleteOne({ email });
+      return res.status(400).json({
+        message: "OTP request has expired. Please request a new OTP.",
+      });
+    }
+
+    // Find the user to get their name for personalization
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Mark user as verified and reset attempts count
-    const user = await User.findOneAndUpdate(
+    const updatedUser = await User.findOneAndUpdate(
       { email },
       { isVerified: true },
       { new: true }
@@ -157,12 +186,36 @@ export const verifyOTP = async (req, res) => {
     // Delete OTP after successful verification
     await Otp.deleteOne({ email });
 
+    // Send verification confirmation email
+    try {
+      await emailService.sendTemplateEmail({
+        to: email,
+        subject: "Email Verification Successful",
+        templateParams: {
+          title: "Email Verified",
+          preheader: "Your Account is Now Verified",
+          userName: user.firstName || "Valued User",
+          mainMessage:
+            "Your email has been successfully verified. You can now access your account.",
+          details: [{ label: "Verified Email", value: email }],
+          actionButton: {
+            text: "Go to Dashboard",
+            link: "http://localhost/donor/dashboard",
+          },
+          additionalInfo:
+            "If you did not perform this verification, please contact our support team.",
+        },
+      });
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      // Note: We don't return an error here as the OTP verification was successful
+    }
+
     res.status(200).json({
       message: "OTP verified successfully. You can now log in.",
-      user,
+      user: updatedUser,
     });
   } catch (err) {
-    console.error(err); // Log the error for debugging
     res
       .status(500)
       .json({ message: "Internal server error, please try again later" });

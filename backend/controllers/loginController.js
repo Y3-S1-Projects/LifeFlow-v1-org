@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Otp from "../models/Otp.js";
 import { sendOTP } from "./authController.js";
+import emailService from "../services/emailService.js";
 
 // Ensure JWT_SECRET is defined
 if (!process.env.JWT_SECRET) {
@@ -20,12 +21,10 @@ export const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res
-        .status(404)
-        .json({
-          message:
-            "We couldn't find an account with that email. Please check your email or sign up.",
-        });
+      return res.status(404).json({
+        message:
+          "We couldn't find an account with that email. Please check your email or sign up.",
+      });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
@@ -46,6 +45,34 @@ export const loginUser = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
+
+    // Send login notification email
+    try {
+      await emailService.sendTemplateEmail({
+        to: user.email,
+        subject: "Login Notification",
+        templateParams: {
+          title: "Login Detected",
+          preheader: "New Login to Your Account",
+          userName: user.firstName || "Valued User",
+          mainMessage:
+            "A new login has been detected on your LifeFlow account.",
+          details: [
+            { label: "Login Time", value: new Date().toLocaleString() },
+            { label: "IP Address", value: req.ip || "Unknown" },
+          ],
+          additionalInfo:
+            "If this was not you, please contact our support team immediately.",
+          actionButton: {
+            text: "View Account Security",
+            link: "http://localhost/account/security",
+          },
+        },
+      });
+    } catch (emailError) {
+      console.error("Login notification email failed:", emailError);
+      // Non-critical error, so we'll still return successful login response
+    }
 
     res.status(200).json({
       message: "Login successful",
