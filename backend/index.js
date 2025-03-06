@@ -6,9 +6,9 @@ import loginUser from "./routes/loginRoute.js";
 import campRoutes from "./routes/campRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import organizerRoutes from "./routes/organizerRoutes.js";
+import chatbotRoutes from "./routes/chatbotRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
-
 dotenv.config();
 
 const app = express();
@@ -41,3 +41,4 @@ app.use("/camps", campRoutes);
 app.use("/appointments", appointmentRoutes);
 app.use("/organizers", organizerRoutes);
 app.use("/auth", authRoutes);
+app.use("/chatbot", chatbotRoutes);

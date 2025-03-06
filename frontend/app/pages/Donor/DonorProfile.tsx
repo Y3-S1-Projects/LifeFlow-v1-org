@@ -324,7 +324,7 @@ export default function DonorProfilePage() {
   return (
     <div className={`w-full ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
       <Header />
-      <div className="container mx-auto py-8 px-4 md:px-6">
+      <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">
         <Tabs defaultValue="profile" className="w-full">
           <TabsContent value="profile" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -781,7 +781,7 @@ export default function DonorProfilePage() {
                               Eligibility Status
                             </h3>
                             <div className="mt-1">
-                              {user.isEligible ? (
+                              {user.isEligibleToDonate ? (
                                 <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                                   Eligible to Donate
                                 </Badge>
