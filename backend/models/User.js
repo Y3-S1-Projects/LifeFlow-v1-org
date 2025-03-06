@@ -161,6 +161,10 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isEligibleToDonate: {
+    type: Boolean,
+    default: false,
+  },
   isProfileComplete: {
     type: Boolean,
     default: false,
@@ -218,9 +222,70 @@ UserSchema.methods.calculateNextEligibleDonationDate = function (
   return nextEligibleDate;
 };
 
-// Pre-save middleware to update next eligible donation date
+// Method to update donation statistics
+UserSchema.methods.updateDonationStats = function () {
+  // Calculate total pints donated from donation history
+  let total = 0;
+  let lastDonated = 0;
+
+  if (this.donationHistory && this.donationHistory.length > 0) {
+    // Sort donation history by date (newest first)
+    const sortedHistory = [...this.donationHistory].sort(
+      (a, b) => new Date(b.donationDate) - new Date(a.donationDate)
+    );
+
+    // Calculate total pints
+    total = this.donationHistory.reduce(
+      (sum, donation) => sum + (donation.pintsDonated || 0),
+      0
+    );
+
+    // Get the most recent donation amount
+    lastDonated = sortedHistory[0].pintsDonated || 0;
+
+    // Set lastDonationDate as string (matching existing schema format)
+    this.lastDonationDate = moment(sortedHistory[0].donationDate).format(
+      "YYYY-MM-DD"
+    );
+
+    // Update donatedBefore flag
+    this.donatedBefore = "yes";
+  }
+
+  this.totalPintsDonated = total;
+  this.lastPintsDonated = lastDonated;
+
+  return {
+    totalPintsDonated: total,
+    lastPintsDonated: lastDonated,
+  };
+};
+
+// Method to check if user is eligible to donate based on next eligible date
+UserSchema.methods.checkDonationEligibility = function () {
+  // Check if user is eligible at profile level
+  if (!this.isEligible) {
+    this.isEligibleToDonate = false;
+    return false;
+  }
+
+  // If no nextEligibleDonationDate is set, user hasn't donated before or it wasn't calculated
+  if (!this.nextEligibleDonationDate) {
+    // If user has necessary profile data, they are eligible
+    this.isEligibleToDonate = true;
+    return true;
+  }
+
+  // Compare nextEligibleDonationDate with current date
+  const currentDate = new Date();
+  this.isEligibleToDonate = currentDate >= this.nextEligibleDonationDate;
+
+  return this.isEligibleToDonate;
+};
+
+// Pre-save middleware to update all donation-related fields
 UserSchema.pre("save", function (next) {
-  // Previous pre-save logic for eligibility
+  // Check base eligibility (profile completeness)
   if (
     this.nicNo &&
     this.bloodType &&
@@ -235,14 +300,21 @@ UserSchema.pre("save", function (next) {
     this.isEligible = false;
   }
 
-  // If there's a donation history, calculate next eligible donation date
+  // If there's a donation history, calculate stats and eligibility
   if (this.donationHistory.length > 0) {
+    // Update donation statistics
+    this.updateDonationStats();
+
+    // Calculate next eligible donation date
     const lastDonation = this.donationHistory[this.donationHistory.length - 1];
     this.calculateNextEligibleDonationDate(
       lastDonation.donationType,
       lastDonation.donationDate
     );
   }
+
+  // Check if eligible to donate now
+  this.checkDonationEligibility();
 
   next();
 });

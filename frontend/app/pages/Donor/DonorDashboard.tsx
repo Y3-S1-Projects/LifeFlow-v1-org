@@ -44,6 +44,7 @@ import Modal2 from "../../components/Modal2";
 import { RouteGuard } from "../../components/RouteGuard";
 import { getUserIdFromToken } from "@/app/utils/auth";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
+import BloodDonationChatbot from "@/app/components/ChatBot";
 
 interface Settings {
   darkMode: boolean;
@@ -326,6 +327,8 @@ const DonorDashboard: React.FC = () => {
               },
             }}
           />
+
+          <BloodDonationChatbot />
 
           {/* User Status Card */}
           {user?.isEligible === false && isVisible && (

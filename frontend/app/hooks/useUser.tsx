@@ -26,6 +26,7 @@ interface UserData {
   dateOfBirth?: string;
   donatedBefore?: string;
   additionalInfo?: string;
+  isEligibleToDonate?: boolean;
   healthConditions?: string[];
   lastDonationDate?: string;
   isEligible?: boolean;
