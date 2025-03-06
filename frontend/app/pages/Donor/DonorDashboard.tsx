@@ -43,6 +43,17 @@ import Loader from "../../components/Loader";
 import Modal2 from "../../components/Modal2";
 import { RouteGuard } from "../../components/RouteGuard";
 import { getUserIdFromToken } from "@/app/utils/auth";
+import { useDarkMode } from "@/app/contexts/DarkModeContext";
+
+interface Settings {
+  darkMode: boolean;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  donationReminders: boolean;
+  bloodShortageAlerts: boolean;
+  language: string;
+  savedSuccess: boolean;
+}
 
 interface Donation {
   donationDate: string;
@@ -70,6 +81,16 @@ const DonorDashboard: React.FC = () => {
   const toastShownRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { darkMode, toggleDarkMode } = useDarkMode();
+  const [settings, setSettings] = useState<Settings>({
+    darkMode: false,
+    emailNotifications: true,
+    smsNotifications: false,
+    donationReminders: true,
+    bloodShortageAlerts: true,
+    language: "english",
+    savedSuccess: false,
+  });
   const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -96,7 +117,14 @@ const DonorDashboard: React.FC = () => {
       fetchDonationHistory();
     }
   }, [user]);
-  // Update this useEffect to always sort by newest
+
+  useEffect(() => {
+    setSettings((prev) => ({
+      ...prev,
+      darkMode,
+    }));
+  }, [darkMode]);
+
   useEffect(() => {
     if (donationHistory.length > 0) {
       const sortedDonations = [...donationHistory].sort((a, b) => {
@@ -286,9 +314,9 @@ const DonorDashboard: React.FC = () => {
 
   return (
     <RouteGuard requiredRoles={["User"]}>
-      <div className="w-full">
+      <div className={`w-full ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
         <Header />
-        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col ">
+        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">
           <Toaster
             toastOptions={{
               style: {
@@ -572,27 +600,43 @@ const DonorDashboard: React.FC = () => {
 
           {/* Stats Grid */}
           {user?.isEligible && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div
+              className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 ${
+                darkMode ? "bg-gray-900 border-gray-800" : "bg-gray-100"
+              }`}
+            >
+              <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
                 <div className="absolute h-1 w-full bg-gradient-to-r from-red-400 to-red-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-700">
+                  <CardTitle
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
                     Total Donations
                   </CardTitle>
-                  <div className="p-2 bg-red-50 rounded-full">
+                  <div className="p-2  rounded-full">
                     <Droplet className="h-4 w-4 text-red-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-red-700">
+                  <div
+                    className={`text-3xl font-bold ${
+                      darkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
                     {totalDonations}
                   </div>
                   <div className="flex items-center mt-1">
-                    <p className="text-xs text-gray-500">Donations made</p>
+                    <p
+                      className={`text-xs ${
+                        darkMode ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      Donations made
+                    </p>
                     {totalDonations > 0 && (
-                      <Badge className="ml-2 bg-red-50 text-red-700 border-red-200 text-xs">
-                        {totalDonations > 10 ? "Hero" : "Lifesaver"}
-                      </Badge>
+                      <Badge className="ml-2   text-xs">Hero</Badge>
                     )}
                   </div>
                   <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
@@ -611,62 +655,58 @@ const DonorDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
+              <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
                 <div className="absolute h-1 w-full bg-gradient-to-r from-yellow-400 to-yellow-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-700">
+                  <CardTitle className="text-sm font-medium ">
                     Lives Impacted
                   </CardTitle>
-                  <div className="p-2 bg-yellow-50 rounded-full">
-                    <Award className="h-4 w-4 text-yellow-600" />
+                  <div className="p-2  rounded-full">
+                    <Award className="h-4 w-4 " />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-yellow-700">
-                    {impactLives}
-                  </div>
+                  <div className="text-3xl font-bold ">{impactLives}</div>
                   <div className="flex items-center mt-1">
-                    <p className="text-xs text-gray-500">People helped</p>
+                    <p className="text-xs ">People helped</p>
                     {impactLives >= 3 && (
-                      <Badge className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+                      <Badge className="ml-2 bg-yellow-50   text-xs">
                         {impactLives > 20 ? "Community Hero" : "Life Champion"}
                       </Badge>
                     )}
                   </div>
                   <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500">Impact multiplier:</span>
-                      <span className="font-medium text-yellow-700">
-                        3x per donation
-                      </span>
+                      <span className="">Impact multiplier:</span>
+                      <span className="font-medium ">3x per donation</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg overflow-hidden border-gray-100 hover:shadow-xl transition-shadow duration-300">
+              <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
                 <div className="absolute h-1 w-full bg-gradient-to-r from-blue-400 to-blue-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-700">
+                  <CardTitle className="text-sm font-medium ">
                     Next Eligible Date
                   </CardTitle>
-                  <div className="p-2 bg-blue-50 rounded-full">
-                    <Calendar className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 rounded-full">
+                    <Calendar className="h-4 w-4 " />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-blue-700">
+                  <div className="text-3xl font-bold ">
                     {calculateNextEligibleDate(donationHistory)}
                   </div>
                   <div className="flex items-center mt-1">
-                    <p className="text-xs text-gray-500">Mark your calendar</p>
+                    <p className="text-xs ">Mark your calendar</p>
                     {calculateNextEligibleDate(donationHistory) ===
                     "Eligible now" ? (
-                      <Badge className="ml-2 bg-green-50 text-green-700 border-green-200 text-xs">
+                      <Badge className="ml-2  text-green-700 border-green-200 text-xs">
                         Eligible now!
                       </Badge>
                     ) : (
-                      <Badge className="ml-2 bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                      <Badge className="ml-2  text-blue-700 border-blue-200 text-xs">
                         Coming soon
                       </Badge>
                     )}
@@ -675,7 +715,9 @@ const DonorDashboard: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex items-center justify-center"
+                      className={`w-full text-xs    flex items-center justify-center ${
+                        darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                      }`}
                       onClick={handleScheduleDonation}
                     >
                       <Calendar className="h-3 w-3 mr-1" />
@@ -689,25 +731,35 @@ const DonorDashboard: React.FC = () => {
 
           {/* Donation History */}
           {user?.isEligible && (
-            <Card className="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
-              <CardHeader className="bg-gradient-to-r from-red-100 to-white p-6">
+            <Card
+              className={` shadow-xl rounded-xl overflow-hidden border ${
+                darkMode ? "bg-black text-white" : "bg-gray-50 text-gray-900"
+              }`}
+            >
+              <CardHeader
+                className={` p-6 ${
+                  darkMode
+                    ? "bg-gray-700 text-white"
+                    : "bg-gradient-to-r from-red-100 to-white text-gray-900"
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="bg-red-500 p-2 rounded-full">
                       <Droplet className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl font-bold text-red-800">
+                      <CardTitle className="text-2xl font-bold">
                         Your Donation Journey
                       </CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm mt-1">
                         Thank you for your lifesaving contributions
                       </p>
                     </div>
                   </div>
-                  <div className="hidden md:flex items-center gap-2 bg-red-50 p-2 rounded-lg">
+                  <div className="hidden md:flex items-center gap-2 p-2 rounded-lg">
                     <Heart className="h-5 w-5 text-red-500" />
-                    <span className="font-bold text-red-700">
+                    <span className="font-bold ">
                       {donationHistory.reduce(
                         (sum, d) => sum + Math.round(d.pintsDonated * 3),
                         0
@@ -739,9 +791,7 @@ const DonorDashboard: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-medium text-gray-700">
-                        Your donation timeline
-                      </h3>
+                      <h3 className="font-medium ">Your donation timeline</h3>
                     </div>
 
                     <div className="space-y-4">
@@ -757,16 +807,16 @@ const DonorDashboard: React.FC = () => {
                           return (
                             <div
                               key={index}
-                              className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
+                              className="flex flex-col sm:flex-row items-start gap-4  rounded-xl p-4 border  hover:border-red-200 hover:shadow-md transition-all"
                             >
-                              <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
+                              <div className="flex items-center justify-center  rounded-full h-16 w-16 flex-shrink-0">
                                 <Droplet className="h-8 w-8 text-red-600" />
                               </div>
 
                               <div className="space-y-2 flex-grow">
                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                   <div>
-                                    <p className="font-semibold text-lg text-gray-800">
+                                    <p className="font-semibold text-lg ">
                                       {donation.donationType}
                                     </p>
                                     <p className="text-red-800">
@@ -780,16 +830,16 @@ const DonorDashboard: React.FC = () => {
                                 </div>
 
                                 <div className="flex flex-col space-y-1 text-sm">
-                                  <div className="flex items-center text-gray-600">
+                                  <div className="flex items-center ">
                                     <Calendar className="h-4 w-4 mr-2 text-red-500" />
                                     <span className="font-medium">
                                       {formatDate(donation.donationDate)}
                                     </span>
-                                    <span className="ml-2 text-gray-500">
+                                    <span className="ml-2 ">
                                       ({daysSince(donation.donationDate)})
                                     </span>
                                   </div>
-                                  <div className="flex items-center text-gray-600">
+                                  <div className="flex items-center ">
                                     <MapPin className="h-4 w-4 mr-2 text-red-500" />
                                     <span>
                                       {typeof donation.donationCenter
@@ -844,7 +894,11 @@ const DonorDashboard: React.FC = () => {
                         <div className="text-center mt-4">
                           <Button
                             variant="outline"
-                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                            className={`w-full border-red-200  hover:bg-red-50 ${
+                              darkMode
+                                ? "hover:bg-gray-800"
+                                : "hover:bg-gray-100"
+                            }`}
                             onClick={() => router.push("/donor/donations")}
                           >
                             See All Donations ({donationHistory.length})
@@ -856,10 +910,10 @@ const DonorDashboard: React.FC = () => {
                 )}
               </CardContent>
 
-              <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-white border-t flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="px-6 py-4  border-t flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-red-500" />
-                  <p className="text-sm text-gray-700">
+                  <Heart className="h-5 w-5 " />
+                  <p className="text-sm ">
                     Each donation can help save up to{" "}
                     <span className="font-semibold">3 lives</span>
                   </p>
@@ -881,7 +935,7 @@ const DonorDashboard: React.FC = () => {
             </Card>
           )}
         </div>
-        <Footer isDarkMode={false} />
+        <Footer isDarkMode={darkMode} />
       </div>
     </RouteGuard>
   );

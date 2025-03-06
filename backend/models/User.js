@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import moment from "moment";
 
 const EmergencyContactSchema = new mongoose.Schema({
   fullName: {
@@ -168,6 +169,10 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  nextEligibleDonationDate: {
+    type: Date,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -186,8 +191,36 @@ UserSchema.index(
   }
 );
 
-// Pre-save middleware to check eligibility
+UserSchema.methods.calculateNextEligibleDonationDate = function (
+  lastDonationType,
+  lastDonationDate
+) {
+  if (!lastDonationDate) return null;
+
+  const donationWaitPeriods = {
+    "Whole Blood": 56, // 8 weeks
+    Plasma: 14, // 2 weeks
+    Platelets: 7, // 1 week
+    "Double Red Cells": 112, // 16 weeks
+  };
+
+  // If donation type is not recognized, default to Whole Blood wait period
+  const waitPeriod = donationWaitPeriods[lastDonationType] || 56;
+
+  // Calculate next eligible date
+  const nextEligibleDate = moment(lastDonationDate)
+    .add(waitPeriod, "days")
+    .toDate();
+
+  // Update the nextEligibleDonationDate field
+  this.nextEligibleDonationDate = nextEligibleDate;
+
+  return nextEligibleDate;
+};
+
+// Pre-save middleware to update next eligible donation date
 UserSchema.pre("save", function (next) {
+  // Previous pre-save logic for eligibility
   if (
     this.nicNo &&
     this.bloodType &&
@@ -201,6 +234,16 @@ UserSchema.pre("save", function (next) {
   } else {
     this.isEligible = false;
   }
+
+  // If there's a donation history, calculate next eligible donation date
+  if (this.donationHistory.length > 0) {
+    const lastDonation = this.donationHistory[this.donationHistory.length - 1];
+    this.calculateNextEligibleDonationDate(
+      lastDonation.donationType,
+      lastDonation.donationDate
+    );
+  }
+
   next();
 });
 

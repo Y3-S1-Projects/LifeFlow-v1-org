@@ -173,12 +173,8 @@ const DonorRegistration = () => {
 
   return (
     <div className="w-full ">
-      <GlobalHeader
-        scrolled={scrolled}
-        isDarkMode={isDarkMode}
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
-      />
+      <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+
       <motion.div
         initial="hidden"
         animate="visible"

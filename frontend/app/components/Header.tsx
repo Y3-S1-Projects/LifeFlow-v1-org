@@ -139,79 +139,54 @@ const Header = () => {
       }
     `}
     >
-      <div className="w-full md:w-3/4 lg:w-3/4 mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
+          <div className="flex-shrink-0">
             <Link href="/" className="flex items-center space-x-2">
-              <Heart
-                className="w-8 h-8 text-red-600 fill-current"
-                strokeWidth={1.5}
-              />
-              <span className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
+              <Heart className="w-6 h-6 text-primary" strokeWidth={1.5} />
+              <span className="text-lg font-semibold text-gray-800 dark:text-white">
                 LifeFlow
               </span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden md:flex items-center space-x-4">
             {currentNav.map((item, index) => (
               <Link
                 key={index}
                 href={item.path}
                 className={`
-                  px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1
-                  transition-colors duration-200 relative
+                  px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2
+                  transition-colors duration-200
                   ${
                     isActive(item.path)
-                      ? darkMode
-                        ? "bg-gray-800 text-white"
-                        : "bg-red-50 text-red-700"
-                      : darkMode
-                      ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   }
                 `}
               >
-                <span
-                  className={`${
-                    isActive(item.path) ? "text-red-600" : "text-red-600"
-                  }`}
-                >
-                  {item.icon}
-                </span>
+                <span>{item.icon}</span>
                 <span>{item.label}</span>
-
-                {/* Active indicator line */}
-                {isActive(item.path) && (
-                  <span className="absolute -bottom-px left-0 w-full h-0.5 bg-red-600 rounded-t"></span>
-                )}
               </Link>
             ))}
           </nav>
 
           {/* Right side actions */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {/* Dark mode toggle */}
             <button
               onClick={toggleDarkMode}
-              className={`
-                p-2 rounded-full transition-colors duration-200
-                ${
-                  darkMode
-                    ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }
-              `}
+              className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               {darkMode ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  className="w-5 h-5"
                 >
                   <path
                     strokeLinecap="round"
@@ -223,10 +198,10 @@ const Header = () => {
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  className="w-5 h-5"
                 >
                   <path
                     strokeLinecap="round"
@@ -242,154 +217,70 @@ const Header = () => {
             <div className="hidden md:block">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    className={`
-                    flex items-center space-x-3 px-3 py-2 rounded-md text-sm
-                    transition-colors duration-200
-                    ${
-                      darkMode
-                        ? "bg-gray-800 text-white hover:bg-gray-700"
-                        : "bg-gray-50 text-gray-800 hover:bg-gray-100"
-                    }
-                  `}
-                  >
-                    <div
-                      className={`
-                      p-2 rounded-full
-                      ${darkMode ? "bg-gray-700" : "bg-gray-200"}
-                    `}
-                    >
-                      <User className="h-5 w-5 text-red-500" />
+                  <button className="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <div className="bg-gray-200 dark:bg-gray-700 p-1.5 rounded-full">
+                      <User className="h-4 w-4 text-primary" />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium">{user?.firstName}</div>
-                      <div
-                        className={`text-xs ${
-                          darkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        {user?.role}{" "}
-                        {user?.role === "User" && (
-                          <span>
-                            •
-                            {user?.bloodType === "not sure"
-                              ? "Blood type not set"
-                              : user?.bloodType || "Blood type not set"}
-                          </span>
-                        )}
+                      <div className="text-sm font-medium text-gray-800 dark:text-white">
+                        {user?.firstName}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {user?.role}
                       </div>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-gray-400 ml-auto" />
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className={`
-                    w-56 p-1 
-                    ${
-                      darkMode
-                        ? "bg-gray-800 border-gray-700"
-                        : "bg-white border-gray-200"
-                    }
-                  `}
+                  className="w-56 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-md shadow-lg"
                 >
-                  {/* Profile for both roles */}
-                  {user?.role === "User" && !user.isEligible ? null : (
-                    <DropdownMenuItem
-                      className={`cursor-pointer flex items-center p-2 rounded-md
-                      ${
-                        isActive(
-                          user?.role === "Organizer"
-                            ? "/organizer/profile"
-                            : "/donor/profile"
-                        )
-                          ? darkMode
-                            ? "bg-gray-700"
-                            : "bg-red-50 text-red-700"
-                          : darkMode
-                          ? "hover:bg-gray-700 focus:bg-gray-700"
-                          : "hover:bg-gray-50 focus:bg-gray-50"
-                      }
-                    `}
-                      onClick={() =>
-                        navigateTo(
-                          user?.role === "Organizer"
-                            ? "/organizer/profile"
-                            : "/donor/profile"
-                        )
-                      }
-                    >
-                      <User className="mr-2 h-4 w-4 text-red-500" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                  )}
+                  {/* Dropdown menu items */}
+                  {user?.role !== "User" || user.isEligible ? (
+                    <>
+                      <DropdownMenuItem
+                        className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() =>
+                          navigateTo(
+                            user?.role === "Organizer"
+                              ? "/organizer/profile"
+                              : "/donor/profile"
+                          )
+                        }
+                      >
+                        <User className="mr-2 h-4 w-4 text-primary" />
+                        <span>Profile</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() =>
+                          navigateTo(
+                            user?.role === "Organizer"
+                              ? "/organizer/settings"
+                              : "/donor/settings"
+                          )
+                        }
+                      >
+                        <Settings className="mr-2 h-4 w-4 text-primary" />
+                        <span>Settings</span>
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
 
-                  {/* Settings for both roles */}
-                  {user?.role === "User" && !user.isEligible ? null : (
-                    <DropdownMenuItem
-                      className={`cursor-pointer flex items-center p-2 rounded-md
-                      ${
-                        isActive(
-                          user?.role === "Organizer"
-                            ? "/organizer/settings"
-                            : "/donor/settings"
-                        )
-                          ? darkMode
-                            ? "bg-gray-700"
-                            : "bg-red-50 text-red-700"
-                          : darkMode
-                          ? "hover:bg-gray-700 focus:bg-gray-700"
-                          : "hover:bg-gray-50 focus:bg-gray-50"
-                      }
-                    `}
-                      onClick={() =>
-                        navigateTo(
-                          user?.role === "Organizer"
-                            ? "/organizer/settings"
-                            : "/donor/settings"
-                        )
-                      }
-                    >
-                      <Settings className="mr-2 h-4 w-4 text-red-500" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-                  )}
-
-                  {/* Support */}
                   <DropdownMenuItem
-                    className={`cursor-pointer flex items-center p-2 rounded-md
-                      ${
-                        isActive("/support")
-                          ? darkMode
-                            ? "bg-gray-700"
-                            : "bg-red-50 text-red-700"
-                          : darkMode
-                          ? "hover:bg-gray-700 focus:bg-gray-700"
-                          : "hover:bg-gray-50 focus:bg-gray-50"
-                      }
-                    `}
+                    className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => navigateTo("/support")}
                   >
-                    <HelpCircle className="mr-2 h-4 w-4 text-red-500" />
+                    <HelpCircle className="mr-2 h-4 w-4 text-primary" />
                     <span>Support</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuSeparator
-                    className={
-                      darkMode ? "bg-gray-700 my-1" : "bg-gray-200 my-1"
-                    }
-                  />
+                  <DropdownMenuSeparator className="my-1 bg-gray-200 dark:bg-gray-700" />
 
-                  {/* Logout */}
                   <DropdownMenuItem
                     onClick={logOut}
-                    className={`cursor-pointer flex items-center p-2 rounded-md text-red-600
-                      ${
-                        darkMode
-                          ? "hover:bg-red-900/20 focus:bg-red-900/20"
-                          : "hover:bg-red-50 focus:bg-red-50"
-                      }
-                    `}
+                    className="cursor-pointer px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>
@@ -401,13 +292,7 @@ const Header = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className={`md:hidden p-2 rounded-md
-                ${
-                  darkMode
-                    ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                }
-              `}
+              className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
             >
               <Menu className="h-5 w-5" />
             </button>

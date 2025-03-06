@@ -262,7 +262,7 @@ const MyDonationsPage: React.FC = () => {
     <RouteGuard requiredRoles={["User"]}>
       <div className="w-full">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">

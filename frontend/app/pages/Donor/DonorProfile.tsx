@@ -33,8 +33,19 @@ import MapComponent from "@/app/components/Map";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import Loader from "@/app/components/Loader";
+import { useDarkMode } from "@/app/contexts/DarkModeContext";
 // Blood types options
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+interface Settings {
+  darkMode: boolean;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  donationReminders: boolean;
+  bloodShortageAlerts: boolean;
+  language: string;
+  savedSuccess: boolean;
+}
 
 export default function DonorProfilePage() {
   const router = useRouter();
@@ -43,7 +54,19 @@ export default function DonorProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { darkMode, toggleDarkMode } = useDarkMode();
+  const [settings, setSettings] = useState<Settings>({
+    darkMode: false,
+    emailNotifications: true,
+    smsNotifications: false,
+    donationReminders: true,
+    bloodShortageAlerts: true,
+    language: "english",
+    savedSuccess: false,
+  });
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
+  const minDate = new Date(1920, 0, 1); // January 1, 1920
+  const maxDate = new Date(2010, 11, 31); // December 31, 2010
   // Form state
   const [formData, setFormData] = useState({
     fullName: "",
@@ -69,6 +92,12 @@ export default function DonorProfilePage() {
       phone: "",
     },
   });
+  useEffect(() => {
+    setSettings((prev) => ({
+      ...prev,
+      darkMode,
+    }));
+  }, [darkMode]);
 
   // Initialize form data when user data is loaded
   useEffect(() => {
@@ -244,7 +273,12 @@ export default function DonorProfilePage() {
 
   if (error && !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div
+        className={`flex items-center justify-center min-h-screen ${
+          darkMode ? "bg-gray-900" : "bg-gray-100"
+        }`}
+      >
+        {" "}
         <Card className="w-full max-w-lg p-6">
           <CardHeader>
             <CardTitle className="text-center text-red-500">
@@ -264,7 +298,11 @@ export default function DonorProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div
+        className={`flex items-center justify-center min-h-screen ${
+          darkMode ? "bg-gray-900" : "bg-gray-100"
+        }`}
+      >
         <Card className="w-full max-w-lg p-6">
           <CardHeader>
             <CardTitle className="text-center">Profile Not Available</CardTitle>
@@ -284,15 +322,10 @@ export default function DonorProfilePage() {
   }
 
   return (
-    <div className="w-full">
+    <div className={`w-full ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
       <Header />
       <div className="container mx-auto py-8 px-4 md:px-6">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            {/* <TabsTrigger value="profile">Profile</TabsTrigger> */}
-            {/* <TabsTrigger value="donation-history">Donation History</TabsTrigger> */}
-          </TabsList>
-
           <TabsContent value="profile" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left column - Basic Info */}
@@ -582,9 +615,9 @@ export default function DonorProfilePage() {
                                   }
                                   onSelect={handleDateChange}
                                   initialFocus
-                                  captionLayout="dropdown-buttons"
-                                  fromYear={1920}
-                                  toYear={2010}
+                                  captionLayout="dropdown"
+                                  fromDate={minDate}
+                                  toDate={maxDate}
                                 />
                               </PopoverContent>
                             </Popover>
@@ -940,7 +973,7 @@ export default function DonorProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
-      <Footer isDarkMode={isDarkMode} />
+      <Footer isDarkMode={darkMode} />
     </div>
   );
 }

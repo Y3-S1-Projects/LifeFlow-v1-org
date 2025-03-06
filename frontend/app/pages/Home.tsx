@@ -212,8 +212,8 @@ const Home = () => {
     <div className="min-h-screen w-screen bg-white">
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-red-600 to-red-800 text-white">
-        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 lg:py-24 flex flex-col md:flex-row items-center ">
+      <div className="bg-gradient-to-r from-red-600 to-red-800 text-white ">
+        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 lg:py-24 flex flex-col md:flex-row items-center w-full md:w-3/4 lg:w-3/4">
           <div className="md:w-1/2 md:pr-4 lg:pr-8 mb-8 md:mb-0">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4">
               Give Blood, Give Life
@@ -310,8 +310,8 @@ const Home = () => {
       </div>
 
       {/* Stats Section */}
-      <div id="learn-more" className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
+      <div id="learn-more" className="py-16 w-full md:w-3/4 lg:w-3/4 mx-auto">
+        <div className="container mx-auto px-4 ">
           <h2 className="text-center text-3xl font-bold text-gray-800 mb-12">
             Why Your Donation Matters
           </h2>
@@ -370,7 +370,7 @@ const Home = () => {
       </div>
 
       {/* Blood Types Section */}
-      <div className="py-16">
+      <div className="py-16 w-full md:w-3/4 lg:w-3/4 mx-auto">
         <div className="container mx-auto px-4">
           <h2 className="text-center text-3xl font-bold text-gray-800 mb-4">
             Know Your Blood Type
