@@ -34,6 +34,7 @@ import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import Loader from "@/app/components/Loader";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
+import BloodDonationChatbot from "@/app/components/ChatBot";
 // Blood types options
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -325,6 +326,7 @@ export default function DonorProfilePage() {
     <div className={`w-full ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
       <Header />
       <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">
+        <BloodDonationChatbot />
         <Tabs defaultValue="profile" className="w-full">
           <TabsContent value="profile" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
