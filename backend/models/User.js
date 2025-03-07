@@ -163,7 +163,7 @@ const UserSchema = new mongoose.Schema({
   },
   isEligibleToDonate: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   isProfileComplete: {
     type: Boolean,

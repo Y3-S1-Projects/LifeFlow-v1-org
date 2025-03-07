@@ -35,6 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import BloodDonationChatbot from "@/app/components/ChatBot";
 
 interface Address {
   street: string;
@@ -409,6 +410,7 @@ const BloodDonationAppointments: React.FC = () => {
               },
             }}
           />
+          <BloodDonationChatbot />
 
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-2">
             <div>
