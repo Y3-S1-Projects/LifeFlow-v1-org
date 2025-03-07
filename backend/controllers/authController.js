@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import Otp from "../models/Otp.js";
+import Otp from "../models/OTP.js";
 import nodemailer from "nodemailer";
 import emailService from "../services/emailService.js";
 import dotenv from "dotenv";
