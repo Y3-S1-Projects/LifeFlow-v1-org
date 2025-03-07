@@ -103,6 +103,7 @@ const BloodDonationAppointments: React.FC = () => {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedCampId, setSelectedCampId] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
   const [rescheduleAppointment, setRescheduleAppointment] =
     useState<Appointment | null>(null);
@@ -163,7 +164,7 @@ const BloodDonationAppointments: React.FC = () => {
     ) => {
       try {
         const response = await fetch(
-          `http://localhost:3001/camps/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
+          `${publicApi}/camps/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
         );
 
         if (!response.ok) {
@@ -213,7 +214,7 @@ const BloodDonationAppointments: React.FC = () => {
           return;
         }
         const response = await fetch(
-          `http://localhost:3001/appointments/getByUser/${userId}`,
+          `${publicApi}/appointments/getByUser/${userId}`,
           {
             method: "GET",
             headers: {
@@ -261,7 +262,7 @@ const BloodDonationAppointments: React.FC = () => {
   ) => {
     try {
       const response = await axios.put(
-        `http://localhost:3001/appointments/reschedule/${appointmentId}`,
+        `${publicApi}/appointments/reschedule/${appointmentId}`,
         { date: newDate, time: newTime },
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
@@ -287,7 +288,7 @@ const BloodDonationAppointments: React.FC = () => {
       setLoading(true);
 
       const response = await fetch(
-        `http://localhost:3001/appointments/cancel/${appointmentId}`,
+        `${publicApi}/appointments/cancel/${appointmentId}`,
         {
           method: "DELETE",
           headers: {
@@ -328,7 +329,7 @@ const BloodDonationAppointments: React.FC = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3001/appointments/create",
+        `${publicApi}/appointments/create`,
         {
           userId: user?._id,
           campId: selectedCamp._id,

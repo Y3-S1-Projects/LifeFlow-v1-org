@@ -75,6 +75,7 @@ const Camps = () => {
   const [campUsers, setCampUsers] = useState<User[]>([]);
   const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const router = useRouter();
 
   useEffect(() => {
@@ -85,7 +86,7 @@ const Camps = () => {
     const organizerId = getUserIdFromToken();
     try {
       const response = await axios.get(
-        `http://localhost:3001/camps/get-camps/${organizerId}`
+        `${publicApi}/camps/get-camps/${organizerId}`
       );
       setCamps(response.data.camps);
     } catch (error) {
@@ -95,9 +96,7 @@ const Camps = () => {
 
   const fetchCampUsers = async (campId: string) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/camps/${campId}/users`
-      );
+      const response = await axios.get(`${publicApi}/camps/${campId}/users`);
       setCampUsers(response.data.users || []);
       setIsUsersDialogOpen(true);
 
@@ -115,7 +114,7 @@ const Camps = () => {
     if (confirm("Are you sure you want to delete this camp?")) {
       setIsDeleting(true);
       try {
-        await axios.delete(`http://localhost:3001/camps/delete/${campId}`);
+        await axios.delete(`${publicApi}/camps/delete/${campId}`);
         setCamps(camps.filter((camp) => camp._id !== campId));
         if (selectedCamp && selectedCamp._id === campId) {
           setSelectedCamp(null);
@@ -130,7 +129,7 @@ const Camps = () => {
   };
 
   const handleEditCamp = (campId: string) => {
-    router.push(`http://localhost:3001/camps/edit/${campId}`);
+    router.push(`${publicApi}/camps/edit/${campId}`);
   };
 
   const getStatusColor = (status: string) => {

@@ -27,6 +27,7 @@ const BloodDonationForm = () => {
   const token = getToken();
   const [currentSection, setCurrentSection] = useState(1);
   const { user, loading, error } = useUser();
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [formData, setFormData] = useState<FormData>({
     understandsBenefits: false,
     awareOfSideEffects: false,
@@ -110,7 +111,7 @@ const BloodDonationForm = () => {
     try {
       // Perform the PUT request to update the user
       const response = await fetch(
-        `http://localhost:3001/users/updateUser/${user?._id}`,
+        `${publicApi}/users/updateUser/${user?._id}`,
         {
           method: "PUT",
           headers: {

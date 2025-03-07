@@ -71,9 +71,7 @@ const useUser = (): UseUserReturn => {
     lastResponse: null as any,
   });
 
-  const API_URL =
-    process.env.REACT_APP_API_URL ||
-    `http://localhost:${process.env.PORT || 3001}`;
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const fetchUser = async () => {
     try {
@@ -81,7 +79,11 @@ const useUser = (): UseUserReturn => {
       const token = getToken();
 
       // Store token for debugging (you might want to mask this in production)
-      setDebugInfo((prev) => ({ ...prev, token, apiUrl: `${API_URL}/api/me` }));
+      setDebugInfo((prev) => ({
+        ...prev,
+        token,
+        apiUrl: `${publicApi}/api/me`,
+      }));
 
       // If no token is present, we're dealing with a guest user
       // Set user to null and exit early without making the API call
@@ -94,7 +96,7 @@ const useUser = (): UseUserReturn => {
       }
 
       // Only proceed with API call if we have a valid token
-      const response = await axios.get(`${API_URL}/api/me`, {
+      const response = await axios.get(`${publicApi}/api/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

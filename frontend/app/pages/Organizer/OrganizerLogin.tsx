@@ -14,6 +14,7 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const router = useRouter();
 
   useEffect(() => {
@@ -35,7 +36,7 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3001/organizers/login",
+        `${publicApi}/organizers/login`,
         formData
       );
 

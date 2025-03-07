@@ -98,6 +98,7 @@ const DonorDashboard: React.FC = () => {
   const [nextEligibleDate, setNextEligibleDate] =
     useState<string>("Loading...");
   const [authChecked, setAuthChecked] = useState(false);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   useEffect(() => {
     const message = searchParams.get("message");
@@ -220,7 +221,7 @@ const DonorDashboard: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:3001/users/donation-history/${userId}`
+        `${publicApi}/users/donation-history/${userId}`
       );
 
       if (!response.ok) {
@@ -266,7 +267,7 @@ const DonorDashboard: React.FC = () => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const response = await fetch(
-        `http://localhost:3001/users/updateUser/${user?._id}`,
+        `${publicApi}/users/updateUser/${user?._id}`,
         {
           method: "PUT",
           headers: {

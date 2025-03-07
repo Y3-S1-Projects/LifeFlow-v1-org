@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import Otp from "../models/OTP.js";
 import { sendOTP } from "./authController.js";
 import emailService from "../services/emailService.js";
+import axios from "axios";
 
 // Ensure JWT_SECRET is defined
 if (!process.env.JWT_SECRET) {
@@ -17,7 +18,6 @@ export const loginUser = async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
-
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -26,12 +26,10 @@ export const loginUser = async (req, res) => {
           "We couldn't find an account with that email. Please check your email or sign up.",
       });
     }
-
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
     if (!user.isVerified) {
       await sendOTP(email);
       return res.status(403).json({
@@ -39,12 +37,28 @@ export const loginUser = async (req, res) => {
         requiresVerification: true,
       });
     }
-
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role || "User" },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
+
+    // Get proper IP address - specifically handle ::ffff: prefix
+    const clientIP = getClientIP(req);
+
+    // Get location data based on IP
+    let locationInfo = "Unknown";
+    try {
+      const geoData = await getLocationFromIP(clientIP);
+      locationInfo = geoData.country || "Unknown";
+
+      // Add city if available
+      if (geoData.city) {
+        locationInfo = `${geoData.city}, ${locationInfo}`;
+      }
+    } catch (geoError) {
+      console.error("Error fetching location data:", geoError);
+    }
 
     // Send login notification email
     try {
@@ -59,7 +73,8 @@ export const loginUser = async (req, res) => {
             "A new login has been detected on your LifeFlow account.",
           details: [
             { label: "Login Time", value: new Date().toLocaleString() },
-            { label: "IP Address", value: req.ip || "Unknown" },
+            { label: "IP Address", value: clientIP },
+            { label: "Location", value: locationInfo },
           ],
           additionalInfo:
             "If this was not you, please contact our support team immediately.",
@@ -73,7 +88,6 @@ export const loginUser = async (req, res) => {
       console.error("Login notification email failed:", emailError);
       // Non-critical error, so we'll still return successful login response
     }
-
     res.status(200).json({
       message: "Login successful",
       token,
@@ -93,6 +107,63 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Improved helper function to get the client's IP address
+function getClientIP(req) {
+  let ip;
+
+  // Check for x-forwarded-for header (common in proxies and load balancers)
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (forwardedFor) {
+    // Take the first IP from the list
+    ip = forwardedFor.split(",")[0].trim();
+  } else {
+    // Fallback to other headers or direct IP
+    ip =
+      req.headers["x-real-ip"] || req.ip || req.connection.remoteAddress || "";
+  }
+
+  // Handle IPv6 to IPv4 mapped addresses (::ffff:)
+  if (ip && ip.includes("::ffff:")) {
+    ip = ip.replace("::ffff:", "");
+  }
+
+  // Final validation
+  if (!ip || ip === "127.0.0.1" || ip === "::1") {
+    return "Local Development";
+  }
+
+  return ip;
+}
+
+// Function to get location data from IP
+async function getLocationFromIP(ip) {
+  if (
+    ip === "Unknown" ||
+    ip === "127.0.0.1" ||
+    ip.includes("192.168.") ||
+    ip.includes("10.")
+  ) {
+    return { country: "Unknown (Local Network)" };
+  }
+
+  try {
+    // Using ipapi.co free service - consider using a paid service for production
+    const response = await axios.get(`https://ipapi.co/${ip}/json/`);
+    if (response.data && response.data.country_name) {
+      return {
+        country: response.data.country_name,
+        city: response.data.city,
+        region: response.data.region,
+      };
+    }
+    return { country: "Unknown" };
+  } catch (error) {
+    console.error("IP geolocation error:", error.message);
+    return { country: "Unknown" };
+  }
+}
+
 // Verify login OTP
 export const verifyLoginOTP = async (req, res) => {
   const { email, otp } = req.body;

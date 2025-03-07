@@ -65,6 +65,7 @@ const MyDonationsPage: React.FC = () => {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<string>("newest");
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [nextEligibleDate, setNextEligibleDate] =
     useState<string>("Loading...");
   const [donationStats, setDonationStats] = useState<DonationStats>({
@@ -123,7 +124,7 @@ const MyDonationsPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:3001/users/donation-history/${userId}`
+        `${publicApi}/users/donation-history/${userId}`
       );
 
       if (!response.ok) {

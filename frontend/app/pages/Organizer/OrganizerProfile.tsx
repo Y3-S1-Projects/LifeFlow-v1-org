@@ -59,6 +59,7 @@ const OrganizerProfile = () => {
     },
     additionalInfo: "",
   });
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -140,9 +141,6 @@ const OrganizerProfile = () => {
     setSaveSuccess(false);
 
     try {
-      const API_URL =
-        process.env.REACT_APP_API_URL ||
-        `http://localhost:${process.env.PORT || 3001}`;
       const token = localStorage.getItem("token");
 
       if (!token) {
@@ -150,7 +148,7 @@ const OrganizerProfile = () => {
       }
 
       await axios.put(
-        `${API_URL}/organizers/update`,
+        `${publicApi}/organizers/update`,
         {
           ...formData,
           lastDonationDate: date ? format(date, "yyyy-MM-dd") : undefined,

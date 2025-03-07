@@ -71,6 +71,7 @@ export default function EligibilityForm() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const [age, setAge] = useState<number | null>(null);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
     email: "",
@@ -343,7 +344,7 @@ export default function EligibilityForm() {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/users/updateUser/${user?._id}`,
+        `${publicApi}/users/updateUser/${user?._id}`,
         {
           method: "PUT",
           headers: {

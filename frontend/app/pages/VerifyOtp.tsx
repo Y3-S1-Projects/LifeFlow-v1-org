@@ -42,7 +42,7 @@ const VerifyOtp: React.FC = () => {
   const [message, setMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState(5);
-
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const handleVerifyOtp = async (): Promise<void> => {
     setLoading(true);
     setError("");
@@ -53,7 +53,8 @@ const VerifyOtp: React.FC = () => {
         otp,
       };
 
-      const response = await fetch("http://localhost:3001/users/verify-otp", {
+      const response = await fetch(`${publicApi}/users/verify-otp`, {
+        // Correct string interpolation
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),

@@ -70,6 +70,7 @@ export default function BloodDonationChatbot() {
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [nearbyCamps, setNearbyCamps] = useState<Camp[]>([]);
   const [showAnimation, setShowAnimation] = useState(false);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   // Autoscroll to bottom of messages
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function BloodDonationChatbot() {
       const userId = getUserIdFromToken();
 
       // Call Gemini API with context about blood donation
-      const response = await fetch("http://localhost:3001/chatbot/gemini", {
+      const response = await fetch(`${publicApi}/chatbot/gemini`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

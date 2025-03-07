@@ -33,6 +33,7 @@ const DonorRegistration = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [passwordErrors, setPasswordErrors] = useState({
     length: false,
     number: false,
@@ -121,7 +122,7 @@ const DonorRegistration = () => {
     setApiError("");
 
     try {
-      const response = await fetch("http://localhost:3001/users/register", {
+      const response = await fetch(`${publicApi}/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

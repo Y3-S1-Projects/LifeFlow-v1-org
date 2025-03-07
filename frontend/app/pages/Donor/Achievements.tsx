@@ -73,6 +73,7 @@ const DonorAchievements: React.FC = () => {
   const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isDarkMode, setDarkMode] = useState(false);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [achievementStats, setAchievementStats] = useState({
     totalAchieved: 0,
     percentageCompleted: 0,
@@ -112,7 +113,7 @@ const DonorAchievements: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:3001/users/donation-history/${userId}`
+        `${publicApi}/users/donation-history/${userId}`
       );
 
       if (!response.ok) {
