@@ -36,6 +36,9 @@ app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
 
+// Trust proxy (required for Railway deployment)
+app.set("trust proxy", 1);
+
 app.use("/users", userRoutes);
 app.use("/api", loginUser);
 app.use("/camps", campRoutes);
