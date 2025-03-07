@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import Organizer from "../models/Organizer.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Otp from "../models/OTP.js";
 import { sendOTP } from "./authController.js";
