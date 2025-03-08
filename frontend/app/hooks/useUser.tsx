@@ -56,7 +56,7 @@ interface UseUserReturn {
   debug: {
     token: string | null;
     apiUrl: string;
-    lastResponse: any;
+    lastResponse: string;
   };
 }
 
@@ -68,7 +68,7 @@ const useUser = (): UseUserReturn => {
   const [debugInfo, setDebugInfo] = useState({
     token: null as string | null,
     apiUrl: "",
-    lastResponse: null as any,
+    lastResponse: "null" as string,
   });
 
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";

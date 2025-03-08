@@ -6,22 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  SelectItem,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-} from "@/components/ui/select";
 import { useSearchParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import {
   Calendar,
   Droplet,
   Award,
-  Clock,
   MapPin,
-  AlertCircle,
   User,
   Clipboard,
   Heart,
@@ -38,9 +29,7 @@ import useUser from "../../hooks/useUser";
 import { useRouter } from "next/navigation";
 import Footer from "../../components/Footer";
 import { Button } from "@/components/ui/button";
-import { ClipLoader } from "react-spinners";
 import Loader from "../../components/Loader";
-import Modal2 from "../../components/Modal2";
 import { RouteGuard } from "../../components/RouteGuard";
 import { getUserIdFromToken } from "@/app/utils/auth";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
@@ -73,32 +62,15 @@ interface Donation {
   pintsDonated: number;
 }
 
-const DonorDashboard: React.FC = () => {
-  const router = useRouter();
-  const { user, loading, error } = useUser();
+interface SearchParamsHandlerProps {
+  onMessageFound: (message: string) => void;
+}
+
+const SearchParamsHandler = ({ onMessageFound }: SearchParamsHandlerProps) => {
   const searchParams = useSearchParams();
-  const [isVisible, setIsVisible] = useState<boolean>(true);
+  const router = useRouter();
   const [toastShown, setToastShown] = useState(false);
   const toastShownRef = useRef(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { darkMode, toggleDarkMode } = useDarkMode();
-  const [settings, setSettings] = useState<Settings>({
-    darkMode: false,
-    emailNotifications: true,
-    smsNotifications: false,
-    donationReminders: true,
-    bloodShortageAlerts: true,
-    language: "english",
-    savedSuccess: false,
-  });
-  const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-  const [nextEligibleDate, setNextEligibleDate] =
-    useState<string>("Loading...");
-  const [authChecked, setAuthChecked] = useState(false);
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   useEffect(() => {
     const message = searchParams.get("message");
@@ -112,7 +84,46 @@ const DonorDashboard: React.FC = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [searchParams, toastShown]);
+  }, [searchParams, toastShown, router]);
+
+  return null;
+};
+
+const DonorDashboard: React.FC = () => {
+  const router = useRouter();
+  const { user, loading, error } = useUser();
+  const [isVisible] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsModalOpen] = useState(false);
+  const { darkMode } = useDarkMode();
+  const [, setSettings] = useState<Settings>({
+    darkMode: false,
+    emailNotifications: true,
+    smsNotifications: false,
+    donationReminders: true,
+    bloodShortageAlerts: true,
+    language: "english",
+    savedSuccess: false,
+  });
+  const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
+  const [, setHistoryLoading] = useState(true);
+  const [, setHistoryError] = useState<string | null>(null);
+  const [, setNextEligibleDate] = useState<string>("Loading...");
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+  // useEffect(() => {
+  //   const message = searchParams.get("message");
+  //   if (message && !toastShown) {
+  //     const timer = setTimeout(() => {
+  //       toast.success(message);
+  //       toastShownRef.current = true;
+  //       router.replace("/donor/dashboard");
+  //       setToastShown(true);
+  //     }, 500);
+
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [searchParams, toastShown]);
 
   useEffect(() => {
     if (user && user.isEligible) {
@@ -303,9 +314,6 @@ const DonorDashboard: React.FC = () => {
     window.location.href = path;
   };
 
-  const handleClose = () => {
-    setIsVisible(false);
-  };
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return "Good Morning";

@@ -14,16 +14,14 @@ import {
   Gift,
   Award,
 } from "lucide-react";
-import Header from "./Header";
 import Footer from "./Footer";
 import Link from "next/link";
 import GlobalHeader from "./GlobalHeader";
 
 const LandingPage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [, setIsVisible] = useState(false);
+  const [, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {

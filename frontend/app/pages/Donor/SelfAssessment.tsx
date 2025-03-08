@@ -1,4 +1,4 @@
-import { use, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,7 +26,7 @@ const BloodDonationForm = () => {
   const router = useRouter();
   const token = getToken();
   const [currentSection, setCurrentSection] = useState(1);
-  const { user, loading, error } = useUser();
+  const { user } = useUser();
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [formData, setFormData] = useState<FormData>({
     understandsBenefits: false,

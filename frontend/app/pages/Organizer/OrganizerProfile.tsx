@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,6 @@ import {
   Phone,
   Mail,
   Building,
-  User,
 } from "lucide-react";
 import Loader from "../../components/Loader";
 import useUser from "../../hooks/useUser";
@@ -41,11 +39,31 @@ import Footer from "../../components/Footer";
 import { RouteGuard } from "../../components/RouteGuard";
 import { useRouter } from "next/navigation";
 
+// Define a type for the address object
+type AddressType = {
+  street: string;
+  city: string;
+  state: string;
+};
+
+// Define a type for the form data
+type FormDataType = {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  organization: string;
+  phone: string;
+  address: AddressType;
+  additionalInfo: string;
+  [key: string]: string | AddressType; // Index signature for dynamic access
+};
+
 const OrganizerProfile = () => {
   const { user, loading, error, refetch } = useUser();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("view");
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     firstName: "",
     lastName: "",
     fullName: "",
@@ -122,7 +140,7 @@ const OrganizerProfile = () => {
       setFormData({
         ...formData,
         [parent]: {
-          ...(formData[parent as keyof typeof formData] as Record<string, any>),
+          ...(formData[parent] as AddressType),
           [child]: value,
         },
       });
@@ -545,7 +563,7 @@ const OrganizerProfile = () => {
                       </div>
                       <h3 className="text-lg font-medium">No Events Yet</h3>
                       <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                        You haven't created any blood donation events yet.
+                        You haven&apos;t created any blood donation events yet.
                         Create your first event to start helping your community.
                       </p>
                       <Button className="mt-4">Create New Event</Button>

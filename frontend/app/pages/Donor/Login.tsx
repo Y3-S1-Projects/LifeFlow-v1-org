@@ -1,44 +1,26 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import {
-  Mail,
-  Lock,
-  Heart,
-  Moon,
-  Sun,
-  Eye,
-  EyeOff,
-  Loader2,
-} from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import "../../styles/index.css";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "@/app/components/Footer";
 import useUser from "@/app/hooks/useUser";
-import Loader from "@/app/components/Loader";
 
 const Login = () => {
   const router = useRouter();
-  const { user, error, loading } = useUser();
+  const { user, loading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [focusedInput, setFocusedInput] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const menuItems = [
-    { title: "Home", href: "/" },
-    { title: "About", href: "/about" },
-    { title: "Donate", href: "/donate" },
-    { title: "Find Donors", href: "/find-donors" },
-    { title: "Contact", href: "/contact" },
-  ];
 
   const autofillStyles = `
   /* Light mode autofill styles */
@@ -158,7 +140,7 @@ const Login = () => {
           // Handle login errors
           setErrorMessage(data.message || "Login failed. Please try again.");
         }
-      } catch (error) {
+      } catch (_) {
         // Handle network or server errors
         setErrorMessage("An error occurred, please try again.");
       } finally {
@@ -168,11 +150,6 @@ const Login = () => {
       setErrorMessage("Please enter a valid email address.");
     }
   };
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   return (
     <div className="w-screen">
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
@@ -427,7 +404,7 @@ const Login = () => {
                         : "bg-white text-gray-500"
                     }`}
                   >
-                    Don't have an account?
+                    Don&apos;t have an account?
                   </span>
                 </div>
               </div>

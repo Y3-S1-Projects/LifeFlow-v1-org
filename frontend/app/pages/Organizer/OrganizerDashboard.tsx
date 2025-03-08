@@ -9,16 +9,14 @@ import {
   Users,
   MapPin,
   TrendingUp,
-  Clock,
   Heart,
 } from "lucide-react";
-import { FaOtter } from "react-icons/fa6";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import { RouteGuard } from "../../components/RouteGuard";
 
 const OrganizerDashboard = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode] = useState(false);
   // Sample data - in a real app, this would come from an API
   const stats = {
     totalDonors: 1245,

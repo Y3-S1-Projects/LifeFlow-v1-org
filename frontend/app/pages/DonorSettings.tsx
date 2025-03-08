@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Save, Bell, Moon, Sun, Globe, Phone, Info } from "lucide-react";
+import { Save, Bell, Moon, Sun, Globe, Info } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -44,7 +44,7 @@ const DonorSettings = () => {
     savedSuccess: false,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Set isClient to true on component mount
@@ -365,7 +365,7 @@ const DonorSettings = () => {
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
-                    Get reminded when you're eligible to donate
+                    Get reminded when you&apos;re eligible to donate
                   </p>
                 </div>
                 <Switch

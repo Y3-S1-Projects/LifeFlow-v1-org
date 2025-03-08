@@ -6,7 +6,7 @@ import {
   InfoWindow,
 } from "@react-google-maps/api";
 import axios from "axios";
-import { MapPin, Clock, Phone, Calendar, Users, Info } from "lucide-react";
+import { Clock, Phone, Calendar } from "lucide-react";
 
 interface Camp {
   _id: string;

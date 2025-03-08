@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Heart, X, Menu, User, LogOut } from "lucide-react";
 import { cn } from "../libs/utils";
 import useUser from "../hooks/useUser";
-import { useRouter } from "next/navigation";
 import { logout } from "../services/authService";
 
 interface HeaderProps {
@@ -16,8 +15,7 @@ interface HeaderProps {
 }
 
 const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
-  const { user, loading, error } = useUser();
-  const router = useRouter();
+  const { user, loading } = useUser();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);

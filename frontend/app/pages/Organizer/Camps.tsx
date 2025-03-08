@@ -34,7 +34,6 @@ import { format } from "date-fns";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { toast } from "sonner";
-import Loader from "../../components/Loader";
 import { getUserIdFromToken } from "@/app/utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
 interface Address {
@@ -78,10 +77,6 @@ const Camps = () => {
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const router = useRouter();
 
-  useEffect(() => {
-    fetchCamps();
-  }, []);
-
   const fetchCamps = async () => {
     const organizerId = getUserIdFromToken();
     try {
@@ -93,6 +88,10 @@ const Camps = () => {
       toast.error("Failed to fetch camps");
     }
   };
+
+  useEffect(() => {
+    fetchCamps();
+  }, [fetchCamps]);
 
   const fetchCampUsers = async (campId: string) => {
     try {
