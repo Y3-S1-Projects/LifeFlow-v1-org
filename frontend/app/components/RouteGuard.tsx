@@ -1,4 +1,3 @@
-// components/RouteGuard.tsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated, getRoleFromToken } from "../utils/auth";
@@ -19,6 +18,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
   useEffect(() => {
     // Only run client-side
     if (typeof window === "undefined") return;
+
     // Function to check auth
     const checkAuth = () => {
       // First check if user is authenticated
@@ -51,9 +51,12 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     checkAuth();
   }, [requiredRoles, router]);
 
-  if (!authorized) {
-    router.push("/unauthorized");
-  }
+  // Redirect to unauthorized page if not authorized
+  useEffect(() => {
+    if (!authorized && !loading) {
+      router.push("/unauthorized");
+    }
+  }, [authorized, loading, router]);
 
   // Initially show loading state until explicitly authorized
   if (loading) {
