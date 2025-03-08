@@ -33,6 +33,7 @@ import Loader from "../../components/Loader";
 import { RouteGuard } from "../../components/RouteGuard";
 import { getUserIdFromToken } from "@/app/utils/auth";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
+import { Separator } from "@radix-ui/react-select";
 import BloodDonationChatbot from "@/app/components/ChatBot";
 
 interface Settings {
@@ -750,14 +751,16 @@ const DonorDashboard: React.FC = () => {
             >
               <CardHeader
                 className={` p-6 ${
-                  darkMode
-                    ? "bg-gray-700 text-white"
-                    : "bg-gradient-to-r from-red-100 to-white text-gray-900"
+                  darkMode ? "bg-black text-white" : "bg-gray-100 text-gray-900"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-red-500 p-2 rounded-full">
+                    <div
+                      className={` p-2 rounded-full ${
+                        darkMode ? "bg-black" : "bg-red-500"
+                      }`}
+                    >
                       <Droplet className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -770,7 +773,11 @@ const DonorDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="hidden md:flex items-center gap-2 p-2 rounded-lg">
-                    <Heart className="h-5 w-5 text-red-500" />
+                    <Heart
+                      className={`h-5 w-5 ${
+                        darkMode ? "bg-black" : "text-red-500"
+                      }`}
+                    />
                     <span className="font-bold ">
                       {donationHistory.reduce(
                         (sum, d) => sum + Math.round(d.pintsDonated * 3),
@@ -781,20 +788,23 @@ const DonorDashboard: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
+              <div className="border-t border-gray-400"></div>
 
               <CardContent className="p-6">
                 {donationHistory.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                    <Droplet className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 font-medium mb-2">
+                  <div className="text-center py-12  rounded-xl border border-dashed border-gray-200">
+                    <Droplet className="h-12 w-12  mx-auto mb-3" />
+                    <p className=" font-medium mb-2">
                       No donations recorded yet
                     </p>
-                    <p className="text-sm text-gray-400 max-w-md mx-auto mb-4">
+                    <p className="text-sm  max-w-md mx-auto mb-4">
                       Your donation journey will appear here once you make your
                       first contribution
                     </p>
                     <Button
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      className={`${
+                        darkMode ? "hover:bg-gray-400" : "hover:bg-gray-600s"
+                      }`}
                       onClick={handleScheduleDonation}
                     >
                       Schedule Your First Donation
