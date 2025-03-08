@@ -4,9 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   Mail,
   Lock,
-  Heart,
   User,
-  Droplet,
   Phone,
   Eye,
   EyeOff,
@@ -21,14 +19,6 @@ import GlobalHeader from "../../components/GlobalHeader";
 const DonorRegistration = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const menuItems = [
-    { title: "Home", href: "/" },
-    { title: "About", href: "/about" },
-    { title: "Donate", href: "/donate" },
-    { title: "Find Donors", href: "/find-donors" },
-    { title: "Contact", href: "/contact" },
-  ];
   const [focusedInput, setFocusedInput] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -86,15 +76,6 @@ const DonorRegistration = () => {
   interface PasswordCriteriaProps {
     met: boolean;
     text: string;
-  }
-
-  // Define interface for password errors
-  interface PasswordErrors {
-    length: boolean;
-    number: boolean;
-    uppercase: boolean;
-    lowercase: boolean;
-    special: boolean;
   }
 
   // Password validation

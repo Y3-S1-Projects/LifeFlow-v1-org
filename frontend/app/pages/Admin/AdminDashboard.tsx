@@ -36,7 +36,7 @@ interface DonationStat {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [role, setRole] = useState<string | null>(null);
+  const [, setRole] = useState<string | null>(null);
   useEffect(() => {
     // Get the role when the component mounts
     const userRole = getRoleFromToken();

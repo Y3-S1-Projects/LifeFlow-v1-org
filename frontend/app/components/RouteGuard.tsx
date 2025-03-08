@@ -51,6 +51,10 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     checkAuth();
   }, [requiredRoles, router]);
 
+  if (!authorized) {
+    router.push("/unauthorized");
+  }
+
   // Initially show loading state until explicitly authorized
   if (loading) {
     return (

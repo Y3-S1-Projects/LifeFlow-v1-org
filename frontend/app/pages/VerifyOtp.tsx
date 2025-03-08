@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, Heart, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Loader from "../components/Loader";
 
 interface ApiResponse {
   message: string;
@@ -30,7 +31,8 @@ interface VerifyOtpRequest {
   otp: string;
 }
 
-const VerifyOtp: React.FC = () => {
+// Create a separate component to handle the search params logic
+const VerifyOtpContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -43,6 +45,7 @@ const VerifyOtp: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState(5);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
   const handleVerifyOtp = async (): Promise<void> => {
     setLoading(true);
     setError("");
@@ -54,7 +57,6 @@ const VerifyOtp: React.FC = () => {
       };
 
       const response = await fetch(`${publicApi}/users/verify-otp`, {
-        // Correct string interpolation
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -87,7 +89,7 @@ const VerifyOtp: React.FC = () => {
 
   const handleResendCode = async (): Promise<void> => {
     try {
-      const response = await fetch("http://localhost:3001/users/resend-otp", {
+      const response = await fetch(`${publicApi}/users/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -108,14 +110,9 @@ const VerifyOtp: React.FC = () => {
   };
 
   const handleCloseModal = () => {
-    // Immediately navigate to login page when modal is closed
     router.push("/donor/login");
   };
 
-  // Remove the first useEffect that was managing redirection based on the timer
-  // Now the redirection happens directly in handleCloseModal
-
-  // Start the 5-second timer
   const startTimer = () => {
     const interval = setInterval(() => {
       setTimer((prevTimer) => {
@@ -202,7 +199,7 @@ const VerifyOtp: React.FC = () => {
               onClick={handleResendCode}
               disabled={attempts >= 3}
             >
-              Didn't receive the code? Resend
+              Didn&apos;t receive the code? Resend
             </Button>
           </div>
         </CardContent>
@@ -222,6 +219,15 @@ const VerifyOtp: React.FC = () => {
         </button>
       </Modal>
     </div>
+  );
+};
+
+// Main component with Suspense boundary
+const VerifyOtp: React.FC = () => {
+  return (
+    <Suspense fallback={<Loader />}>
+      <VerifyOtpContent />
+    </Suspense>
   );
 };
 

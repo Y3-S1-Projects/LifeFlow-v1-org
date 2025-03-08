@@ -55,12 +55,36 @@ interface DonationStats {
   mostRecentDonation: string | null;
 }
 
-const MyDonationsPage: React.FC = () => {
-  const router = useRouter();
+interface SearchParamsHandlerProps {
+  onMessageFound: (message: string) => void;
+}
+
+const SearchParamsHandler = ({ onMessageFound }: SearchParamsHandlerProps) => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [toastShown, setToastShown] = useState(false);
   const toastShownRef = useRef(false);
-  const [isDarkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message && !toastShown) {
+      const timer = setTimeout(() => {
+        toast.success(message);
+        toastShownRef.current = true;
+        router.replace("/donor/donations");
+        setToastShown(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, toastShown, router]);
+
+  return null;
+};
+
+const MyDonationsPage: React.FC = () => {
+  const router = useRouter();
+  const [isDarkMode] = useState(false);
   const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -77,19 +101,19 @@ const MyDonationsPage: React.FC = () => {
   });
 
   // Handle success messages from redirects
-  useEffect(() => {
-    const message = searchParams.get("message");
-    if (message && !toastShown) {
-      const timer = setTimeout(() => {
-        toast.success(message);
-        toastShownRef.current = true;
-        router.replace("/donor/my-donations");
-        setToastShown(true);
-      }, 500);
+  // useEffect(() => {
+  //   const message = searchParams.get("message");
+  //   if (message && !toastShown) {
+  //     const timer = setTimeout(() => {
+  //       toast.success(message);
+  //       toastShownRef.current = true;
+  //       router.replace("/donor/my-donations");
+  //       setToastShown(true);
+  //     }, 500);
 
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams, toastShown, router]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [searchParams, toastShown, router]);
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -270,7 +294,7 @@ const MyDonationsPage: React.FC = () => {
                 My Donations
               </h1>
               <p className="text-gray-600">
-                Track your donation history and see the impact you've made
+                Track your donation history and see the impact you&apos;ve made
               </p>
             </div>
 

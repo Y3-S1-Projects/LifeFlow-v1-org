@@ -72,7 +72,7 @@ const DonorAchievements: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [isDarkMode, setDarkMode] = useState(false);
+  const [isDarkMode] = useState(false);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [achievementStats, setAchievementStats] = useState({
     totalAchieved: 0,
@@ -590,7 +590,7 @@ const DonorAchievements: React.FC = () => {
                       ) : achievementStats.totalAchieved ===
                         achievements.length ? (
                         <p className="text-green-600 font-medium">
-                          Congratulations! You've earned all available
+                          Congratulations! You&apos;ve earned all available
                           achievements!
                         </p>
                       ) : (

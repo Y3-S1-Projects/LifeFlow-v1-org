@@ -30,7 +30,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -303,24 +302,34 @@ export default function CreateCamp() {
                               variant={"outline"}
                               className={cn(
                                 "w-[280px] justify-start text-left font-normal",
-                                !date && "text-muted-foreground"
+                                !field.value && "text-muted-foreground"
                               )}
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
-                              {date ? (
-                                format(date, "PPP")
+                              {field.value && field.value.from ? (
+                                field.value.to ? (
+                                  `${format(
+                                    field.value.from,
+                                    "PPP"
+                                  )} - ${format(field.value.to, "PPP")}`
+                                ) : (
+                                  format(field.value.from, "PPP")
+                                )
                               ) : (
-                                <span>Pick a date</span>
+                                <span>Pick a date range</span>
                               )}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
                             <Calendar
-                              mode="single"
-                              selected={date}
-                              onSelect={setDate}
+                              mode="range"
+                              selected={{
+                                from: field.value?.from,
+                                to: field.value?.to,
+                              }}
+                              onSelect={field.onChange}
                               initialFocus
-                            />{" "}
+                            />
                           </PopoverContent>
                         </Popover>
                       </div>

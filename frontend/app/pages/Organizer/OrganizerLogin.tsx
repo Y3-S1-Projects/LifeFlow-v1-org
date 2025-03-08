@@ -2,8 +2,21 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
+// Define types for the response data
+interface OrganizerData {
+  id: string;
+  name: string;
+  email: string;
+  // Add other organizer properties as needed
+}
+
+interface LoginResponse {
+  token: string;
+  organizer: OrganizerData;
+}
+
 interface LoginFormProps {
-  onLoginSuccess?: (data: any) => void;
+  onLoginSuccess?: (data: LoginResponse) => void;
 }
 
 const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
@@ -35,7 +48,7 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
+      const response = await axios.post<LoginResponse>(
         `${publicApi}/organizers/login`,
         formData
       );
@@ -61,8 +74,8 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         // Redirect to the saved path or default dashboard
         router.push(redirectPath);
       }
-    } catch (err: any) {
-      if (err.response && err.response.data) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data) {
         setError(err.response.data.message || "Login failed");
       } else {
         setError("Something went wrong. Please try again later.");

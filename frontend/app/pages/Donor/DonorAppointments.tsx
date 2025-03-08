@@ -5,13 +5,10 @@ import {
   Calendar,
   Clock,
   Hospital,
-  Phone,
-  Mail,
   X,
   Search,
   Navigation,
   CalendarClock,
-  User,
   Map,
   MoreVertical,
   AlertCircle,
@@ -87,22 +84,45 @@ interface Appointment {
   updatedAt: string;
 }
 
+interface SearchParamsHandlerProps {
+  onMessageFound: (message: string) => void;
+}
+
+const SearchParamsHandler = ({ onMessageFound }: SearchParamsHandlerProps) => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [toastShown, setToastShown] = useState(false);
+  const toastShownRef = useRef(false);
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message && !toastShown) {
+      const timer = setTimeout(() => {
+        toast.success(message);
+        toastShownRef.current = true;
+        router.replace("/donor/appointments");
+        setToastShown(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, toastShown, router]);
+
+  return null;
+};
+
 const BloodDonationAppointments: React.FC = () => {
-  const { user, isInitialized } = useUser();
+  const { user } = useUser();
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>("");
   const [appointmentTime, setAppointmentTime] = useState<string>("");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const toastShownRef = useRef(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const [camps, setCamps] = useState<Camp[]>([]);
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedCampId, setSelectedCampId] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
   const [rescheduleAppointment, setRescheduleAppointment] =
@@ -146,7 +166,7 @@ const BloodDonationAppointments: React.FC = () => {
             const { latitude, longitude } = position.coords;
             fetchNearbyCamps(latitude, longitude, 50);
           },
-          (error) => {
+          () => {
             toast.error("Unable to retrieve your location");
             setLoading(false);
           }
@@ -192,18 +212,18 @@ const BloodDonationAppointments: React.FC = () => {
     return () => clearTimeout(timeout); // Cleanup function to prevent memory leaks
   }, [user]); // Runs only when `user` changes
 
-  useEffect(() => {
-    const message = searchParams.get("message");
-    if (message && !toastShownRef.current) {
-      const timer = setTimeout(() => {
-        toast.success(message);
-        toastShownRef.current = true;
-        router.replace("/donor/dashboard"); // Clean URL
-      }, 500);
+  // useEffect(() => {
+  //   const message = searchParams.get("message");
+  //   if (message && !toastShownRef.current) {
+  //     const timer = setTimeout(() => {
+  //       toast.success(message);
+  //       toastShownRef.current = true;
+  //       router.replace("/donor/dashboard"); // Clean URL
+  //     }, 500);
 
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [searchParams]);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -278,7 +298,7 @@ const BloodDonationAppointments: React.FC = () => {
         );
         toast.success("Appointment rescheduled successfully");
       }
-    } catch (error) {
+    } catch (_) {
       toast.error("Failed to reschedule appointment");
     }
   };

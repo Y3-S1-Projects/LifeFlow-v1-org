@@ -360,7 +360,7 @@ export default function EligibilityForm() {
         throw new Error(errorData.message || "Failed to update user");
       }
 
-      const data = await response.json();
+      await response.json();
       setSubmitSuccess(true);
       router.push(
         "/donor/dashboard?message=" +
@@ -427,17 +427,17 @@ export default function EligibilityForm() {
     return age;
   };
 
-  // Validate age range (17-65 years)
-  const validateAgeRange = (dob: string): string | null => {
-    const age = calculateAge(dob);
-    if (age === null) return "Invalid date of birth";
+  // // Validate age range (17-65 years)
+  // const validateAgeRange = (dob: string): string | null => {
+  //   const age = calculateAge(dob);
+  //   if (age === null) return "Invalid date of birth";
 
-    if (age < 17 || age > 65) {
-      return "You must be between 17 and 65 years old to be eligible";
-    }
+  //   if (age < 17 || age > 65) {
+  //     return "You must be between 17 and 65 years old to be eligible";
+  //   }
 
-    return null;
-  };
+  //   return null;
+  // };
 
   const validateDOB = (dob: string): string | undefined => {
     // If empty, return early
@@ -746,7 +746,7 @@ export default function EligibilityForm() {
                   <SelectValue placeholder="Select your blood type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="not sure">I'm not sure</SelectItem>{" "}
+                  <SelectItem value="not sure">I&apos;m not sure</SelectItem>{" "}
                   <SelectItem value="O-">O-</SelectItem>
                   <SelectItem value="O+">O+</SelectItem>
                   <SelectItem value="A-">A-</SelectItem>

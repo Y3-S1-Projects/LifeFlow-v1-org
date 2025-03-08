@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Calendar } from "@/components/ui/calendar";
+// import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -23,8 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -54,9 +53,8 @@ export default function DonorProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const { darkMode, toggleDarkMode } = useDarkMode();
-  const [settings, setSettings] = useState<Settings>({
+  const { darkMode } = useDarkMode();
+  const [, setSettings] = useState<Settings>({
     darkMode: false,
     emailNotifications: true,
     smsNotifications: false,
@@ -140,7 +138,10 @@ export default function DonorProfilePage() {
       setFormData((prev) => ({
         ...prev,
         [parent]: {
-          ...(prev as any)[parent],
+          ...(prev[parent as keyof typeof prev] as Record<
+            string,
+            string | number
+          >),
           [child]: value,
         },
       }));
@@ -168,15 +169,15 @@ export default function DonorProfilePage() {
     }
   };
 
-  const handleLocationSelect = (lat: number, lng: number): void => {
-    setFormData((prev) => ({
-      ...prev,
-      location: {
-        latitude: lat,
-        longitude: lng,
-      },
-    }));
-  };
+  // const handleLocationSelect = (lat: number, lng: number): void => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     location: {
+  //       latitude: lat,
+  //       longitude: lng,
+  //     },
+  //   }));
+  // };
 
   const startEditing = () => {
     setIsEditing(true);
@@ -240,15 +241,11 @@ export default function DonorProfilePage() {
       // Call API to update user
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const response = await axios.put(
-        `${API_URL}/users/updateUser/${user._id}`,
-        updateData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await axios.put(`${API_URL}/users/updateUser/${user._id}`, updateData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       // Refresh user data
       await refetch();
@@ -608,7 +605,7 @@ export default function DonorProfilePage() {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0">
-                                <Calendar
+                                {/* <Calendar
                                   mode="single"
                                   selected={
                                     formData.dateOfBirth
@@ -620,7 +617,7 @@ export default function DonorProfilePage() {
                                   captionLayout="dropdown"
                                   fromDate={minDate}
                                   toDate={maxDate}
-                                />
+                                /> */}
                               </PopoverContent>
                             </Popover>
                           </div>
@@ -962,8 +959,8 @@ export default function DonorProfilePage() {
                     <p>Your donation history will appear here.</p>
                   ) : (
                     <p>
-                      You haven't made any donations yet. Start your journey as
-                      a donor today!
+                      You haven&apos;t made any donations yet. Start your
+                      journey as a donor today!
                     </p>
                   )}
                   <Button className="mt-4" variant="secondary">

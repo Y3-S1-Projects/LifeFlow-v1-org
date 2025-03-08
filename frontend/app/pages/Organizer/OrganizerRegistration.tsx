@@ -111,9 +111,9 @@ const OrganizerRegistration: React.FC = () => {
     facilities: "",
     equipmentList: "",
   });
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [, setScrolled] = useState(false);
 
   // Handle scroll effect for header
   useEffect(() => {
