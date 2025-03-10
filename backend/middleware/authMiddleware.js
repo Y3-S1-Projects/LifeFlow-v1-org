@@ -1,21 +1,34 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import csrf from "csurf";
 
-const blacklistedTokens = new Set(); // Store logged-out tokens
+// Use Redis or a database in production instead of in-memory
+const blacklistedTokens = new Set();
+
+// CSRF protection middleware
+export const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  },
+});
+
+// Get CSRF token endpoint
+export const getCsrfToken = (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+};
 
 export const authenticateUser = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  // Get token from cookies instead of headers
+  const token = req.cookies.authToken;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res.status(401).json({ message: "Unauthorized: No token provided" });
   }
 
-  const token = authHeader.split(" ")[1];
-
   if (blacklistedTokens.has(token)) {
-    return res
-      .status(401)
-      .json({ message: "Unauthorized: Token has been logged out" });
+    return res.status(401).json({ message: "Unauthorized: Session expired" });
   }
 
   try {
@@ -36,15 +49,20 @@ export const authorizeRole = (roles) => {
   };
 };
 
-// Function to blacklist a token (use in logout)
+// Function to logout (clear the cookie)
 export const logoutUser = (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(400).json({ message: "Bad request: No token provided" });
+  // Add current token to blacklist if needed
+  const token = req.cookies.authToken;
+  if (token) {
+    blacklistedTokens.add(token);
   }
 
-  const token = authHeader.split(" ")[1];
-  blacklistedTokens.add(token); // Add token to blacklist
+  // Clear the auth cookie
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
 
   res.json({ message: "Logged out successfully" });
 };

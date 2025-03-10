@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Heart, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Loader from "../components/Loader";
+import axios from "axios";
+import { toast } from "sonner";
 
 interface ApiResponse {
   message: string;
@@ -39,12 +41,34 @@ const VerifyOtpContent: React.FC = () => {
 
   const [otp, setOtp] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [attempts, setAttempts] = useState<number>(0);
   const [message, setMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState(5);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   const handleVerifyOtp = async (): Promise<void> => {
     setLoading(true);
@@ -58,7 +82,11 @@ const VerifyOtpContent: React.FC = () => {
 
       const response = await fetch(`${publicApi}/users/verify-otp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
         body: JSON.stringify(requestBody),
       });
 
@@ -91,7 +119,11 @@ const VerifyOtpContent: React.FC = () => {
     try {
       const response = await fetch(`${publicApi}/users/resend-otp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
         body: JSON.stringify({ email }),
       });
 

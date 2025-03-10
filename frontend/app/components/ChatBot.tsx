@@ -11,6 +11,8 @@ import {
   MinusCircle,
 } from "lucide-react";
 import { getUserIdFromToken } from "../utils/auth";
+import axios from "axios";
+import { toast } from "sonner";
 
 interface EligibilityStatus {
   isEligible: boolean;
@@ -66,16 +68,37 @@ export default function BloodDonationChatbot() {
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const chatRef = useRef<HTMLDivElement>(null);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [nearbyCamps, setNearbyCamps] = useState<Camp[]>([]);
   const [showAnimation, setShowAnimation] = useState(false);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
   // Autoscroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   // Animation effect when opening the chat
   useEffect(() => {
@@ -114,15 +137,16 @@ export default function BloodDonationChatbot() {
 
     try {
       // Get user ID from your auth context/storage
-      const userId = getUserIdFromToken();
+      const userId = await getUserIdFromToken();
 
       // Call Gemini API with context about blood donation
       const response = await fetch(`${publicApi}/chatbot/gemini`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // If using auth tokens
+          "X-CSRF-Token": csrfToken,
         },
+        credentials: "include",
         body: JSON.stringify({
           message: input,
           history: messages.map((msg) => ({

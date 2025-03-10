@@ -104,50 +104,68 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const isEmailValid = validateEmail(email);
 
-    if (isEmailValid) {
-      setIsLoading(true); // Start loading
-      try {
-        const response = await fetch(`${publicApi}/api/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        });
+    setErrorMessage(""); // Clear previous errors
+    setIsLoading(true);
 
-        const data = await response.json();
-
-        if (response.status === 403 && data.requiresVerification) {
-          // Redirect to email verification page if email is not verified
-          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        } else if (response.ok) {
-          // Store token and role in local storage
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("role", data.user.role);
-
-          // Check if there's a saved redirect URL
-          const redirectPath =
-            localStorage.getItem("redirectAfterLogin") || "/donor/dashboard";
-
-          // Clear the stored redirect path
-          localStorage.removeItem("redirectAfterLogin");
-
-          // Redirect to the saved path or default dashboard
-          router.push(redirectPath);
-        } else {
-          // Handle login errors
-          setErrorMessage(data.message || "Login failed. Please try again.");
+    try {
+      // First, get a fresh CSRF token
+      const tokenResponse = await fetch(
+        `http://localhost:3001/api/csrf-token`,
+        {
+          method: "GET",
+          credentials: "include", // Important for receiving the csrf cookie
         }
-      } catch (_) {
-        // Handle network or server errors
-        setErrorMessage("An error occurred, please try again.");
-      } finally {
-        setIsLoading(false); // Stop loading
+      );
+
+      if (!tokenResponse.ok) {
+        throw new Error("Failed to get CSRF token");
       }
-    } else {
-      setErrorMessage("Please enter a valid email address.");
+
+      const { csrfToken } = await tokenResponse.json();
+
+      // Now make the login request with the token
+      const response = await fetch(`http://localhost:3001/api/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken, // Use the token from the API, not from meta tag
+        },
+        credentials: "include", // For cookies
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Generic error message regardless of error type
+        setErrorMessage(
+          "Invalid credentials. Please check your email and password."
+        );
+
+        // Handle specific redirects without exposing reason
+        if (response.status === 403 && data.requiresVerification) {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        }
+      } else {
+        // Let the server set HTTP-only cookies instead of using localStorage
+
+        // Check if there's a saved redirect URL in sessionStorage (more secure than localStorage)
+        const redirectPath =
+          sessionStorage.getItem("redirectAfterLogin") || "/donor/dashboard";
+
+        // Clear the stored redirect path
+        sessionStorage.removeItem("redirectAfterLogin");
+
+        // Redirect to the saved path or default dashboard
+        router.push(redirectPath);
+      }
+    } catch (error) {
+      // Generic error message
+      setErrorMessage("Authentication failed. Please try again.");
+      console.error("Login error:", error); // Log actual error for debugging
+    } finally {
+      setIsLoading(false);
     }
   };
   return (

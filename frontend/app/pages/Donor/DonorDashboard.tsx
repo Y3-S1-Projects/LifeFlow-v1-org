@@ -31,10 +31,9 @@ import Footer from "../../components/Footer";
 import { Button } from "@/components/ui/button";
 import Loader from "../../components/Loader";
 import { RouteGuard } from "../../components/RouteGuard";
-import { getUserIdFromToken } from "@/app/utils/auth";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
-import { Separator } from "@radix-ui/react-select";
 import BloodDonationChatbot from "@/app/components/ChatBot";
+import axios from "axios";
 
 interface Settings {
   darkMode: boolean;
@@ -97,6 +96,7 @@ const DonorDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [, setIsModalOpen] = useState(false);
   const { darkMode } = useDarkMode();
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const [, setSettings] = useState<Settings>({
     darkMode: false,
     emailNotifications: true,
@@ -110,6 +110,10 @@ const DonorDashboard: React.FC = () => {
   const [, setHistoryLoading] = useState(true);
   const [, setHistoryError] = useState<string | null>(null);
   const [, setNextEligibleDate] = useState<string>("Loading...");
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   // useEffect(() => {
@@ -125,6 +129,23 @@ const DonorDashboard: React.FC = () => {
   //     return () => clearTimeout(timer);
   //   }
   // }, [searchParams, toastShown]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     if (user && user.isEligible) {
@@ -227,14 +248,9 @@ const DonorDashboard: React.FC = () => {
   const fetchDonationHistory = async () => {
     setHistoryLoading(true);
     try {
-      const userId = getUserIdFromToken();
-      if (!userId) {
-        throw new Error("User ID not found");
-      }
-
-      const response = await fetch(
-        `${publicApi}/users/donation-history/${userId}`
-      );
+      const response = await fetch(`${publicApi}/users/donation-history`, {
+        credentials: "include", // Send cookies with request
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch donation history");
@@ -245,24 +261,18 @@ const DonorDashboard: React.FC = () => {
       if (data && data.donationHistory && Array.isArray(data.donationHistory)) {
         setDonationHistory(data.donationHistory);
       } else {
-        console.warn("Invalid donation history structure:", data);
         setDonationHistory([]);
       }
 
-      // Simply set a static eligible date for now to avoid date parsing issues
-      setNextEligibleDate("Eligible now");
-
-      //  enable this code later after fixing the date format in  backend
       if (data.nextEligibleDate) {
         setNextEligibleDate(data.nextEligibleDate);
-      } else if (data.donationHistory && data.donationHistory.length > 0) {
-        // For now, just use a placeholder
+      } else {
         setNextEligibleDate("Eligible now");
       }
     } catch (err) {
       console.error("Error fetching donation history:", err);
       setHistoryError((err as Error).message);
-      setDonationHistory([]); // Set empty array on error
+      setDonationHistory([]);
     } finally {
       setHistoryLoading(false);
     }
@@ -284,7 +294,9 @@ const DonorDashboard: React.FC = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
           },
+
           body: JSON.stringify(dataToSubmit),
         }
       );
@@ -619,7 +631,6 @@ const DonorDashboard: React.FC = () => {
               }`}
             >
               <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute h-1 w-full bg-gradient-to-r from-red-400 to-red-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle
                     className={`text-sm font-medium ${
@@ -669,7 +680,6 @@ const DonorDashboard: React.FC = () => {
               </Card>
 
               <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute h-1 w-full bg-gradient-to-r from-yellow-400 to-yellow-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium ">
                     Lives Impacted
@@ -698,7 +708,6 @@ const DonorDashboard: React.FC = () => {
               </Card>
 
               <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute h-1 w-full bg-gradient-to-r from-blue-400 to-blue-600 top-0"></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium ">
                     Next Eligible Date

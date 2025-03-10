@@ -15,44 +15,50 @@ if (!process.env.JWT_SECRET) {
 // Login function
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
+
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({
-        message:
-          "We couldn't find an account with that email. Please check your email or sign up.",
+
+    // Use consistent error message regardless of whether user exists
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        message: "Invalid credentials. Please check your email and password.",
       });
     }
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+
     if (!user.isVerified) {
       await sendOTP(email);
       return res.status(403).json({
-        message: "Email not verified. A new OTP has been sent.",
+        message: "Authentication failed. Please check your email.",
         requiresVerification: true,
       });
     }
+
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role || "User" },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
-    // Get proper IP address - specifically handle ::ffff: prefix
-    const clientIP = getClientIP(req);
+    // Set JWT as HttpOnly cookie instead of sending in response
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
 
-    // Get location data based on IP
+    // Record login attempt for security logging
+    const clientIP = getClientIP(req);
     let locationInfo = "Unknown";
+
     try {
       const geoData = await getLocationFromIP(clientIP);
       locationInfo = geoData.country || "Unknown";
-
-      // Add city if available
       if (geoData.city) {
         locationInfo = `${geoData.city}, ${locationInfo}`;
       }
@@ -80,17 +86,17 @@ export const loginUser = async (req, res) => {
             "If this was not you, please contact our support team immediately.",
           actionButton: {
             text: "View Account Security",
-            link: "http://localhost/account/security",
+            link: `${process.env.FRONTEND_URL}/account/security`,
           },
         },
       });
     } catch (emailError) {
       console.error("Login notification email failed:", emailError);
-      // Non-critical error, so we'll still return successful login response
     }
+
+    // Return minimal user info - don't include token in body
     res.status(200).json({
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -104,7 +110,9 @@ export const loginUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    res
+      .status(500)
+      .json({ message: "Authentication failed. Please try again." });
   }
 };
 

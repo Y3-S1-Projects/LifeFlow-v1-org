@@ -123,11 +123,16 @@ const BloodDonationAppointments: React.FC = () => {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedCampId, setSelectedCampId] = useState<string>("");
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
   const [rescheduleAppointment, setRescheduleAppointment] =
     useState<Appointment | null>(null);
   const router = useRouter();
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
 
   useEffect(() => {
     if (!user) return; // Ensure user is available before proceeding
@@ -204,13 +209,29 @@ const BloodDonationAppointments: React.FC = () => {
       }
     };
 
-    // Add a slight delay to ensure user data is loaded before fetching location
     const timeout = setTimeout(() => {
       getLocation();
     }, 500);
 
     return () => clearTimeout(timeout); // Cleanup function to prevent memory leaks
-  }, [user]); // Runs only when `user` changes
+  }, [user]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   // useEffect(() => {
   //   const message = searchParams.get("message");
@@ -226,21 +247,23 @@ const BloodDonationAppointments: React.FC = () => {
   // }, [searchParams]);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchAppointments = async (): Promise<void> => {
       try {
-        const userId = getUserIdFromToken(); // Get user ID from token
+        const userId = await getUserIdFromToken();
+
         if (!userId) {
           toast.error("User not authenticated");
           return;
         }
+
         const response = await fetch(
           `${publicApi}/appointments/getByUser/${userId}`,
           {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`, // Ensure token is sent
               "Content-Type": "application/json",
             },
+            credentials: "include",
           }
         );
 
@@ -256,9 +279,8 @@ const BloodDonationAppointments: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchAppointments();
-  }, []);
+  }, [publicApi]);
 
   useEffect(() => {
     setAppointmentDate("");
@@ -275,7 +297,7 @@ const BloodDonationAppointments: React.FC = () => {
     setSelectedCampId(camp._id);
   };
 
-  const hanldeRescheduleAppointment = async (
+  const handleRescheduleAppointment = async (
     appointmentId: string,
     newDate: string,
     newTime: string
@@ -284,7 +306,13 @@ const BloodDonationAppointments: React.FC = () => {
       const response = await axios.put(
         `${publicApi}/appointments/reschedule/${appointmentId}`,
         { date: newDate, time: newTime },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
+          },
+          withCredentials: true,
+        }
       );
 
       if (response.status === 200) {
@@ -305,15 +333,15 @@ const BloodDonationAppointments: React.FC = () => {
 
   const handleCancelAppointment = async (appointmentId: string) => {
     try {
-      setLoading(true);
-
       const response = await fetch(
         `${publicApi}/appointments/cancel/${appointmentId}`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
           },
+          credentials: "include", // This ensures cookies are sent with the request
         }
       );
 
@@ -357,7 +385,11 @@ const BloodDonationAppointments: React.FC = () => {
           time: appointmentTime,
         },
         {
-          headers: { Authorization: `Bearer ${getToken()}` },
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "X-CSRF-Token": csrfToken,
+          },
+          withCredentials: true,
         }
       );
 
@@ -733,7 +765,7 @@ const BloodDonationAppointments: React.FC = () => {
                             isOpen={!!rescheduleAppointment}
                             onClose={() => setRescheduleAppointment(null)}
                             appointment={rescheduleAppointment}
-                            onReschedule={hanldeRescheduleAppointment}
+                            onReschedule={handleRescheduleAppointment}
                           />
                         )}
                         <Button

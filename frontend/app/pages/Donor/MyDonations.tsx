@@ -115,16 +115,6 @@ const MyDonationsPage: React.FC = () => {
   //   }
   // }, [searchParams, toastShown, router]);
 
-  useEffect(() => {
-    const role = localStorage.getItem("role");
-    if (role !== "User") {
-      router.push("/unauthorized");
-    } else {
-      // Only fetch data if user is authorized
-      fetchDonationHistory();
-    }
-  }, []);
-
   // Update stats when donation history changes
   useEffect(() => {
     if (donationHistory.length > 0) {
@@ -139,17 +129,16 @@ const MyDonationsPage: React.FC = () => {
     }
   }, [sortOrder]);
 
+  useEffect(() => {
+    fetchDonationHistory();
+  }, []);
+
   const fetchDonationHistory = async () => {
     setHistoryLoading(true);
     try {
-      const userId = getUserIdFromToken();
-      if (!userId) {
-        throw new Error("User ID not found");
-      }
-
-      const response = await fetch(
-        `${publicApi}/users/donation-history/${userId}`
-      );
+      const response = await fetch(`${publicApi}/users/donation-history`, {
+        credentials: "include", // Send cookies with request
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch donation history");
@@ -159,14 +148,15 @@ const MyDonationsPage: React.FC = () => {
 
       if (data && data.donationHistory && Array.isArray(data.donationHistory)) {
         setDonationHistory(data.donationHistory);
-        sortDonations("newest", data.donationHistory);
       } else {
-        console.warn("Invalid donation history structure:", data);
         setDonationHistory([]);
       }
 
-      // Set next eligible date
-      setNextEligibleDate(calculateNextEligibleDate(data.donationHistory));
+      if (data.nextEligibleDate) {
+        setNextEligibleDate(data.nextEligibleDate);
+      } else {
+        setNextEligibleDate("Eligible now");
+      }
     } catch (err) {
       console.error("Error fetching donation history:", err);
       setHistoryError((err as Error).message);
@@ -334,7 +324,7 @@ const MyDonationsPage: React.FC = () => {
             <>
               {/* Donation Stats Cards */}
               {donationHistory.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols gap-4 mb-8">
                   <Card className="bg-gradient-to-br from-red-50 to-white">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
@@ -454,7 +444,11 @@ const MyDonationsPage: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="h-screen overflow-y-auto">
+                      <div
+                        className={`overflow-y-auto ${
+                          donationHistory.length > 3 ? "max-h-96" : ""
+                        }`}
+                      >
                         <div className="space-y-4">
                           {donationHistory.map((donation, index) => (
                             <div

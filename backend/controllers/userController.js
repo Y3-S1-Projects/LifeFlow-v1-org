@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Organizer from "../models/Organizer.js";
 import bcrypt from "bcryptjs";
 import { sendOTP } from "./authController.js";
+import jwt from "jsonwebtoken";
 import emailService from "../services/emailService.js";
 
 // User registration with OTP verification
@@ -212,16 +213,34 @@ export const addDonationRecord = async (req, res) => {
   }
 };
 
+// Add this new function to your controller
 export const getUserDonationHistory = async (req, res) => {
   try {
-    const { id } = req.params;
+    // Get token from cookies
+    const token = req.cookies.authToken;
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: No token provided" });
+    }
+
+    // Verify and decode token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Invalid user information" });
+    }
 
     // Use populate to get the camp information for each donation
-    const user = await User.findById(id).select("donationHistory").populate({
-      path: "donationHistory.donationCenter",
-      model: "Camp",
-      select: "name  contact address", // Select specific fields you want from Camp
-    });
+    const user = await User.findById(userId)
+      .select("donationHistory")
+      .populate({
+        path: "donationHistory.donationCenter",
+        model: "Camp",
+        select: "name contact address",
+      });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -230,6 +249,12 @@ export const getUserDonationHistory = async (req, res) => {
     res.status(200).json({ donationHistory: user.donationHistory });
   } catch (error) {
     console.error("Error fetching donation history:", error);
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
     res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { getToken } from "../utils/auth";
+import { isAuthenticated } from "../utils/auth";
 
 interface UserData {
   _id: string;
@@ -53,11 +53,6 @@ interface UseUserReturn {
   error: string | null;
   isInitialized: boolean;
   refetch: () => Promise<void>;
-  debug: {
-    token: string | null;
-    apiUrl: string;
-    lastResponse: string;
-  };
 }
 
 const useUser = (): UseUserReturn => {
@@ -65,29 +60,24 @@ const useUser = (): UseUserReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  const [debugInfo, setDebugInfo] = useState({
-    token: null as string | null,
-    apiUrl: "",
-    lastResponse: "null" as string,
-  });
+  const [isUserAuthenticated, setIsUserAuthenticated] =
+    useState<boolean>(false);
 
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+  const checkAuthentication = async () => {
+    const authStatus = await isAuthenticated();
+    setIsUserAuthenticated(authStatus);
+    return authStatus;
+  };
 
   const fetchUser = async () => {
     try {
       setLoading(true);
-      const token = getToken();
 
-      // Store token for debugging (you might want to mask this in production)
-      setDebugInfo((prev) => ({
-        ...prev,
-        token,
-        apiUrl: `${publicApi}/api/me`,
-      }));
-
-      // If no token is present, we're dealing with a guest user
-      // Set user to null and exit early without making the API call
-      if (!token || token === "undefined") {
+      // Check authentication first
+      const authenticated = await checkAuthentication();
+      if (!authenticated) {
         setUser(null);
         setError(null);
         setLoading(false);
@@ -95,20 +85,23 @@ const useUser = (): UseUserReturn => {
         return;
       }
 
-      // Only proceed with API call if we have a valid token
       const response = await axios.get(`${publicApi}/api/me`, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        withCredentials: true,
         timeout: 5000,
         validateStatus: (status) => {
-          return status >= 200 && status < 300;
+          return (status >= 200 && status < 300) || status === 401;
         },
       });
-      setDebugInfo((prev) => ({ ...prev, lastResponse: response.data }));
 
-      // Validate response data
+      if (response.status === 401) {
+        setUser(null);
+        setError(null);
+        return;
+      }
+
       if (!response.data || !response.data.email) {
         throw new Error("Invalid user data received");
       }
@@ -116,42 +109,19 @@ const useUser = (): UseUserReturn => {
       setUser(response.data);
       setError(null);
     } catch (err) {
-      // Only log errors for token-related issues if we actually have a token
-      // This prevents logging 401 errors for guest users
-      const token = getToken();
-      if (token && token !== "undefined") {
-        console.error("User fetch error:", err);
-
-        if (axios.isAxiosError(err)) {
-          // Log the full error for debugging
-          console.error("Axios error details:", {
-            response: err.response?.data,
-            status: err.response?.status,
-            headers: err.response?.headers,
-            config: err.config,
-          });
-
-          if (err.response?.status === 401) {
-            setError("Session expired. Please login again");
-          } else if (err.response?.status === 404) {
-            setError("User not found");
-          } else if (err.code === "ECONNABORTED") {
-            setError("Request timed out. Please try again");
-          } else {
-            setError(
-              err.response?.data?.message || "Failed to fetch user data"
-            );
-          }
+      if (axios.isAxiosError(err)) {
+        if (err.code === "ECONNABORTED") {
+          setError("Request timed out. Please try again");
         } else {
-          setError(
-            err instanceof Error ? err.message : "An unexpected error occurred"
-          );
+          setError(err.response?.data?.message || "Failed to fetch user data");
         }
       } else {
-        // For guest users (no token), we just set user to null without an error
-        setUser(null);
-        setError(null);
+        setError(
+          err instanceof Error ? err.message : "An unexpected error occurred"
+        );
       }
+
+      setUser(null);
     } finally {
       setLoading(false);
       setIsInitialized(true);
@@ -162,13 +132,7 @@ const useUser = (): UseUserReturn => {
     let isMounted = true;
 
     const initFetch = async () => {
-      try {
-        await fetchUser();
-      } catch (err) {
-        if (isMounted) {
-          console.error("Error in initial fetch:", err);
-        }
-      }
+      await fetchUser();
     };
 
     initFetch();
@@ -178,7 +142,6 @@ const useUser = (): UseUserReturn => {
     };
   }, []);
 
-  // Return a refetch function to allow manual refresh
   const refetch = async () => {
     await fetchUser();
   };
@@ -189,7 +152,6 @@ const useUser = (): UseUserReturn => {
     error,
     isInitialized,
     refetch,
-    debug: debugInfo,
   };
 };
 

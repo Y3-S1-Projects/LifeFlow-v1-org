@@ -15,6 +15,8 @@ import {
 import { motion } from "framer-motion";
 import Footer from "../../components/Footer";
 import GlobalHeader from "../../components/GlobalHeader";
+import axios from "axios";
+import { toast } from "sonner";
 
 const DonorRegistration = () => {
   const router = useRouter();
@@ -23,7 +25,12 @@ const DonorRegistration = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
   const [passwordErrors, setPasswordErrors] = useState({
     length: false,
     number: false,
@@ -78,6 +85,23 @@ const DonorRegistration = () => {
     text: string;
   }
 
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
+
   // Password validation
   const validatePassword = (password: string) => {
     setPasswordErrors({
@@ -103,9 +127,19 @@ const DonorRegistration = () => {
     setApiError("");
 
     try {
+      // Get CSRF token from axios defaults
+      const Tokendata = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+        withCredentials: true,
+      });
+      setCsrfToken(Tokendata.data.csrfToken);
+
       const response = await fetch(`${publicApi}/users/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": Tokendata.data.csrfToken,
+        },
+        credentials: "include", // Important: include cookies with the request
         body: JSON.stringify(formData),
       });
 

@@ -1,4 +1,79 @@
 // utils/auth.ts
+
+// Function to check if the user is authenticated by verifying session cookies
+export const isAuthenticated = async (): Promise<boolean> => {
+  if (typeof window === "undefined") return false; // Check if running on server
+
+  try {
+    // With HTTP-only cookies, we can't directly check for the cookie
+    // Instead, make a lightweight auth verification request to the server
+    const response = await fetch(`http://localhost:3001/auth/verify`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.ok;
+  } catch (err) {
+    console.error("Error verifying authentication:", err);
+    return false;
+  }
+};
+
+// Function to get user role from the server
+export const getRoleFromToken = async (): Promise<string | null> => {
+  if (typeof window === "undefined") return null; // Check if running on server
+
+  try {
+    // Make a request to get user info including role
+    const response = await fetch(`http://localhost:3001/auth/me`, {
+      method: "GET",
+      credentials: "include", // Important for sending cookies
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const userData = await response.json();
+    return userData.role || null;
+  } catch (error) {
+    console.error("Error fetching user role:", error);
+    return null;
+  }
+};
+
+// Function to get user ID from the server
+export const getUserIdFromToken = async (): Promise<string | null> => {
+  if (typeof window === "undefined") return null; // Check if running on server
+
+  try {
+    // Make a request to get user info including ID
+    const response = await fetch(`http://localhost:3001/auth/me`, {
+      method: "GET",
+      credentials: "include", // Important for sending cookies
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const userData = await response.json();
+    return userData.userId || null;
+  } catch (error) {
+    console.error("Error fetching user ID:", error);
+    return null;
+  }
+};
+
+// For backward compatibility during transition (will be removed later)
 export const getToken = (): string | null => {
   if (typeof window === "undefined") return null; // Check if running on server
 
@@ -8,77 +83,6 @@ export const getToken = (): string | null => {
     return token;
   } catch (err) {
     console.error("Error retrieving token:", err);
-    return null;
-  }
-};
-
-export const isAuthenticated = (): boolean => {
-  const token = getToken();
-  return !!token;
-};
-
-export const getRoleFromToken = (): string | null => {
-  const token = getToken();
-  if (!token) return null;
-
-  try {
-    // Split the token into its parts (JWT has 3 parts: header, payload, signature)
-    const base64Url = token.split(".")[1];
-    if (!base64Url) {
-      throw new Error("Invalid token format");
-    }
-
-    // Convert Base64Url to Base64
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-
-    // Decode Base64 to JSON string
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-
-    // Parse JSON string into an object
-    const payload = JSON.parse(jsonPayload);
-
-    // Assuming the role is stored under a property like 'role'
-    return payload.role || null; // Return the role if found
-  } catch (error) {
-    console.error("Error decoding token:", error);
-    return null;
-  }
-};
-
-export const getUserIdFromToken = (): string | null => {
-  const token = getToken();
-  if (!token) return null;
-
-  try {
-    // Split the token into its parts (JWT has 3 parts: header, payload, signature)
-    const base64Url = token.split(".")[1];
-    if (!base64Url) {
-      throw new Error("Invalid token format");
-    }
-
-    // Convert Base64Url to Base64
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-
-    // Decode Base64 to JSON string
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-
-    // Parse JSON string into an object
-    const payload = JSON.parse(jsonPayload);
-
-    // Assuming the user ID is stored under a property like 'userId'
-    return payload.userId || null; // Return the user ID if found
-  } catch (error) {
-    console.error("Error decoding token:", error);
     return null;
   }
 };
