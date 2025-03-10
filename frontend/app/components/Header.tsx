@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import useUser from "../hooks/useUser";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import axios from "axios";
+import { toast } from "sonner";
 
 const Header = () => {
   const router = useRouter();
@@ -30,6 +32,8 @@ const Header = () => {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
+  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const [csrfToken, setCsrfToken] = useState<string>("");
 
   // Update current path when component mounts and when route changes
   useEffect(() => {
@@ -48,6 +52,27 @@ const Header = () => {
       window.removeEventListener("popstate", handleRouteChange);
     };
   }, []);
+
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token. Please refresh the page.");
+      }
+    };
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   if (loading) {
     return (
@@ -70,15 +95,25 @@ const Header = () => {
     );
   }
 
-  const logOut = async () => {
+  const logout = async () => {
     try {
-      localStorage.removeItem("token");
-      localStorage.removeItem("userData");
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("userData");
-      router.replace("/");
+      const response = await fetch(`http://localhost:3001/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        router.push("/");
+      } else {
+        const data = await response.json();
+        console.error("Logout failed:", data.message);
+      }
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -280,7 +315,7 @@ const Header = () => {
                   <DropdownMenuSeparator className="my-1 bg-gray-200 dark:bg-gray-700" />
 
                   <DropdownMenuItem
-                    onClick={logOut}
+                    onClick={logout}
                     className="cursor-pointer px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -504,7 +539,7 @@ const Header = () => {
               </button>
 
               <button
-                onClick={logOut}
+                onClick={logout}
                 className={`
                   w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-red-600
                   ${darkMode ? "hover:bg-red-900/20" : "hover:bg-red-50"}

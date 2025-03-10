@@ -37,11 +37,6 @@ interface DonationStat {
 
 const AdminDashboard: React.FC = () => {
   const [, setRole] = useState<string | null>(null);
-  useEffect(() => {
-    // Get the role when the component mounts
-    const userRole = getRoleFromToken();
-    setRole(userRole);
-  }, []);
 
   const [donors] = useState<Donor[]>([
     {
@@ -67,7 +62,7 @@ const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <RouteGuard requiredRoles={["Admin"]}>
+    <RouteGuard requiredRoles={["superadmin"]}>
       <div className="p-6 w-screen mx-auto space-y-6">
         <Header />
         <div className="flex justify-between items-center">

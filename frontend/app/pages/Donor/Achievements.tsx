@@ -106,15 +106,9 @@ const DonorAchievements: React.FC = () => {
   const fetchDonationHistory = async () => {
     setIsLoading(true);
     try {
-      const userId = getUserIdFromToken();
-
-      if (!userId) {
-        throw new Error("User ID not found");
-      }
-
-      const response = await fetch(
-        `${publicApi}/users/donation-history/${userId}`
-      );
+      const response = await fetch(`${publicApi}/users/donation-history`, {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch donation history");

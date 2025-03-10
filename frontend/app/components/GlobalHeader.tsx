@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Heart, X, Menu, User, LogOut } from "lucide-react";
 import { cn } from "../libs/utils";
 import useUser from "../hooks/useUser";
-import { logout } from "../services/authService";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { toast } from "sonner";
 
 interface HeaderProps {
   isMenuOpen: boolean;
@@ -19,6 +21,8 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const router = useRouter();
+  const [csrfToken, setCsrfToken] = useState<string>("");
 
   // Define menuItems inside the component
   const menuItems = [
@@ -29,8 +33,47 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
     { title: "Contact", href: "/contact" },
   ];
 
-  const handleLogout = async () => {
-    await logout();
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token. Please refresh the page.");
+      }
+    };
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
+
+  const logout = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        router.push("/");
+      } else {
+        const data = await response.json();
+        console.error("Logout failed:", data.message);
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   // Close dropdown when clicking outside
@@ -155,7 +198,10 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
 
                     <Link
                       href="#"
-                      onClick={handleLogout}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        logout().then(() => window.location.reload());
+                      }}
                       className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                     >
                       <div className="flex items-center space-x-2">
@@ -254,9 +300,15 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
                   )}
 
                   <Link
-                    href="/logout"
+                    href="#"
                     className="flex items-center space-x-2 px-4 py-2 rounded-md text-lg font-medium text-white hover:bg-gray-800"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      logout().then(() => {
+                        window.location.reload();
+                        setIsMenuOpen(false);
+                      });
+                    }}
                   >
                     <LogOut className="w-5 h-5" />
                     <span>Logout</span>
@@ -265,7 +317,7 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
               </>
             ) : (
               <Link
-                href="/login"
+                href="/donor/login"
                 className="block px-4 py-2 mt-4 text-center rounded-md text-lg font-medium bg-red-500 text-white hover:bg-red-600"
                 onClick={() => setIsMenuOpen(false)}
               >

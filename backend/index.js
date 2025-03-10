@@ -8,12 +8,23 @@ import appointmentRoutes from "./routes/appointmentRoutes.js";
 import organizerRoutes from "./routes/organizerRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import csrf from "csurf";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Trust proxy (required for Railway deployment)
+app.set("trust proxy", 1);
+
+// Order of middleware is important
+app.use(cookieParser());
+app.use(express.json());
+
+// Configure CORS before CSRF
 app.use(
   cors({
     origin: [
@@ -22,13 +33,39 @@ app.use(
       "https://lifeflow-woad.vercel.app",
     ],
     methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
+    allowedHeaders: "Content-Type,Authorization,X-CSRF-Token",
     credentials: true,
   })
 );
 
-app.use(express.json());
+// Create CSRF middleware - BUT DON'T APPLY IT GLOBALLY YET
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+  },
+});
 
+// CSRF token endpoint - must come BEFORE applying csrf globally
+app.get("/api/csrf-token", csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+// Now apply CSRF protection to all other routes
+app.use(csrfProtection);
+
+// Routes
+app.use("/users", userRoutes);
+app.use("/api", loginUser);
+app.use("/camps", campRoutes);
+app.use("/appointments", appointmentRoutes);
+app.use("/organizers", organizerRoutes);
+app.use("/auth", authRoutes);
+app.use("/chatbot", chatbotRoutes);
+app.use("/admin", adminRoutes);
+
+// MongoDB connection
 const uri = process.env.ATLAS_URI;
 mongoose.connect(uri);
 const connection = mongoose.connection;
@@ -39,14 +76,3 @@ connection.once("open", () => {
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
-
-// Trust proxy (required for Railway deployment)
-app.set("trust proxy", 1);
-
-app.use("/users", userRoutes);
-app.use("/api", loginUser);
-app.use("/camps", campRoutes);
-app.use("/appointments", appointmentRoutes);
-app.use("/organizers", organizerRoutes);
-app.use("/auth", authRoutes);
-app.use("/chatbot", chatbotRoutes);

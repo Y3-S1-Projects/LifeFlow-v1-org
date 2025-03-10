@@ -20,45 +20,51 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     if (typeof window === "undefined") return;
 
     // Function to check auth
-    const checkAuth = () => {
-      // First check if user is authenticated
-      if (!isAuthenticated()) {
-        // Save the attempted URL before redirecting
-        localStorage.setItem("redirectAfterLogin", window.location.pathname);
+    const checkAuth = async () => {
+      try {
+        // First check if user is authenticated
+        const authenticated = await isAuthenticated();
+
+        if (!authenticated) {
+          sessionStorage.setItem(
+            "redirectAfterLogin",
+            window.location.pathname
+          );
+          router.push("/donor/login");
+          return;
+        }
+
+        // Then check if user has required role
+        const userRole = await getRoleFromToken();
+
+        // Case-insensitive role checking
+        const hasRequiredRole =
+          userRole &&
+          requiredRoles.some(
+            (role) => role.toLowerCase() === userRole.toLowerCase()
+          );
+
+        if (!hasRequiredRole) {
+          router.push("/unauthorized");
+          return;
+        }
+
+        setAuthorized(true);
+      } catch (error) {
+        console.error("Authentication check failed:", error);
+        // On error, redirect to login
+        sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
         router.push("/donor/login");
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      // Then check if user has required role - make case-insensitive
-      const userRole = getRoleFromToken();
-      // Case-insensitive role checking
-      const hasRequiredRole =
-        userRole &&
-        requiredRoles.some(
-          (role) => role.toLowerCase() === userRole.toLowerCase()
-        );
-
-      if (!hasRequiredRole) {
-        router.push("/unauthorized");
-        return;
-      }
-
-      setAuthorized(true);
-      setLoading(false);
     };
 
     // Run auth check
     checkAuth();
   }, [requiredRoles, router]);
 
-  // Redirect to unauthorized page if not authorized
-  useEffect(() => {
-    if (!authorized && !loading) {
-      router.push("/unauthorized");
-    }
-  }, [authorized, loading, router]);
-
-  // Initially show loading state until explicitly authorized
+  // Show loading state until authentication check completes
   if (loading) {
     return (
       <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
@@ -67,5 +73,11 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     );
   }
 
+  // If not authorized and not loading, the useEffect will handle redirection
+  if (!authorized) {
+    return null;
+  }
+
+  // Render children only if authorized
   return <>{children}</>;
 };

@@ -25,7 +25,7 @@ router.post("/resend-otp", resendOTP);
 
 // Protected routes
 router.get("/allUsers", getUsers);
-router.get("/donation-history/:id", getUserDonationHistory);
+router.get("/donation-history", getUserDonationHistory);
 router.get("/getUserDetails/:id", getUserDetails);
 router.put("/updateUser/:id", updateUser);
 router.post("/addUserDonationRecord/:id", addDonationRecord);

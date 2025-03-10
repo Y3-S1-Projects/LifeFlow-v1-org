@@ -8,6 +8,8 @@ import useUser from "../../hooks/useUser";
 import { useRouter } from "next/navigation";
 import { getToken } from "../../utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
+import axios from "axios";
+import { toast } from "sonner";
 
 type FormFields =
   | "understandsBenefits"
@@ -37,7 +39,11 @@ const BloodDonationForm = () => {
     awareOfActivityRestrictions: false,
     agreesToHonesty: false,
   });
-
+  const [csrfToken, setCsrfToken] = useState<string>("");
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
 
@@ -49,6 +55,23 @@ const BloodDonationForm = () => {
       );
     }
   }, [user, router]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   const section1Fields: FormFields[] = [
     "understandsBenefits",
@@ -116,8 +139,9 @@ const BloodDonationForm = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "X-CSRF-Token": csrfToken,
           },
+          credentials: "include",
           body: JSON.stringify(dataToSubmit),
         }
       );

@@ -20,6 +20,7 @@ import MapComponent from "../../components/Map";
 import { getToken } from "../../utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
 import { toast, Toaster } from "sonner";
+import axios from "axios";
 
 interface FormErrors {
   fullName?: string;
@@ -70,6 +71,7 @@ export default function EligibilityForm() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const [age, setAge] = useState<number | null>(null);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [formData, setFormData] = useState<FormData>({
@@ -94,6 +96,10 @@ export default function EligibilityForm() {
       longitude: null,
     },
   });
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
   const [userLocation, setUserLocation] = useState({
     latitude: 6.9271, // Colombo's latitude
     longitude: 79.8612, // Colombo's longitude
@@ -107,6 +113,23 @@ export default function EligibilityForm() {
       );
     }
   }, [user, router]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     if (user) {
@@ -343,14 +366,17 @@ export default function EligibilityForm() {
     setSubmitSuccess(false);
 
     try {
+      console.log(user?._id);
+      console.log(csrfToken);
       const response = await fetch(
         `${publicApi}/users/updateUser/${user?._id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "X-CSRF-Token": csrfToken,
           },
+          credentials: "include",
           body: JSON.stringify(dataToSubmit),
         }
       );
@@ -376,6 +402,7 @@ export default function EligibilityForm() {
       setSubmitting(false);
     }
   };
+
   // Get user's current location on component mount
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -739,7 +766,7 @@ export default function EligibilityForm() {
                 Blood Type<span className="text-red-500">*</span>
               </Label>
               <Select
-                value={user?.bloodType || formData.bloodType || "none"} // Use "none" as the default when nothing is selected
+                value={formData.bloodType || user?.bloodType || "none"}
                 onValueChange={handleSelectChange}
               >
                 <SelectTrigger className="w-full">

@@ -222,6 +222,14 @@ export default function DonorProfilePage() {
     setFormError(null);
 
     try {
+      // Get CSRF token first
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const csrfResponse = await axios.get(`${API_URL}/api/csrf-token`, {
+        withCredentials: true,
+      });
+      const csrfToken = csrfResponse.data.csrfToken;
+
       // Prepare data for API
       const updateData = {
         fullName: formData.fullName,
@@ -238,13 +246,13 @@ export default function DonorProfilePage() {
         emergencyContact: formData.emergencyContact,
       };
 
-      // Call API to update user
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      // Call API to update user with CSRF token
       await axios.put(`${API_URL}/users/updateUser/${user._id}`, updateData, {
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
         },
+        withCredentials: true,
       });
 
       // Refresh user data
