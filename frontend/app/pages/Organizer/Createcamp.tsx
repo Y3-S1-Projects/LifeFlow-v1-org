@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -125,11 +125,15 @@ export default function CreateCamp() {
   });
 
   // Check if user is an organizer
-  useState(() => {
-    // This is a client-side function that would check the user's role from their JWT token
-    const role = getRoleFromToken();
-    setUserRole(role);
-  });
+  useEffect(() => {
+    // Async function to handle the Promise
+    const fetchRole = async () => {
+      const role = await getRoleFromToken();
+      setUserRole(role);
+    };
+
+    fetchRole();
+  }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Only proceed if user is an organizer
