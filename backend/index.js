@@ -42,12 +42,12 @@ app.use(
 // Create CSRF middleware - BUT DON'T APPLY IT GLOBALLY YET
 const csrfProtection = csrf({
   cookie: {
+    key: "_csrf",
     httpOnly: true,
-    sameSite: "none", // Correct format
-    secure: process.env.NODE_ENV === "production", // true in production
+    secure: true,
+    sameSite: "none", // Exactly like this, with single quotes
   },
 });
-
 // CSRF token endpoint - must come BEFORE applying csrf globally
 app.get("/api/csrf-token", csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });

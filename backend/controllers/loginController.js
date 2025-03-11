@@ -47,10 +47,9 @@ export const loginUser = async (req, res) => {
     // Set JWT as HttpOnly cookie instead of sending in response
     res.cookie("authToken", token, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === "production",
       secure: true,
       sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     // Record login attempt for security logging
