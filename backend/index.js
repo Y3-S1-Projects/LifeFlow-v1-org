@@ -31,6 +31,7 @@ app.use(
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "https://lifeflow-woad.vercel.app",
+      "https://lifeflow-woad.vercel.app/",
     ],
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,Authorization,X-CSRF-Token",
@@ -42,8 +43,9 @@ app.use(
 const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production" ? true : false,
+    sameSite: "none",
+    // secure: process.env.NODE_ENV === "production" ? true : false,
+    secure: false,
   },
 });
 
