@@ -1,3 +1,8 @@
+const API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://lifeflow-v1-org-production.up.railway.app"
+    : "http://localhost:3001";
+
 export const logout = async () => {
   try {
     // Get the token from wherever you store it (localStorage, sessionStorage, etc.)
@@ -8,7 +13,7 @@ export const logout = async () => {
       return;
     }
 
-    const response = await fetch(`http://localhost:3001/auth/logout`, {
+    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

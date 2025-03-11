@@ -35,6 +35,7 @@ app.use(
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,Authorization,X-CSRF-Token",
     credentials: true,
+    sameSite: "none",
   })
 );
 
