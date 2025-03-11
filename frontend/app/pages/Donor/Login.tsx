@@ -21,6 +21,10 @@ const Login = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
   const autofillStyles = `
   /* Light mode autofill styles */
   input:-webkit-autofill,
@@ -109,7 +113,7 @@ const Login = () => {
 
     try {
       // First, get a fresh CSRF token
-      const tokenResponse = await fetch(`${publicApi}/api/csrf-token`, {
+      const tokenResponse = await fetch(`${API_BASE_URL}/api/csrf-token`, {
         method: "GET",
         credentials: "include", // Important for receiving the csrf cookie
       });
@@ -121,7 +125,7 @@ const Login = () => {
       const { csrfToken } = await tokenResponse.json();
 
       // Now make the login request with the token
-      const response = await fetch(`${publicApi}/api/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

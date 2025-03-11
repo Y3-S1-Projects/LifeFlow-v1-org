@@ -35,7 +35,6 @@ app.use(
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,Authorization,X-CSRF-Token",
     credentials: true,
-    sameSite: "none",
   })
 );
 
@@ -44,7 +43,7 @@ const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" ? true : false,
   },
 });
 
