@@ -44,7 +44,8 @@ const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
     sameSite: "none", // Correct format
-    secure: process.env.NODE_ENV === "production", // true in production
+    // secure: process.env.NODE_ENV === "production", // true in production
+    secure: true,
   },
 });
 
