@@ -43,7 +43,7 @@ app.use(
 const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
-    sameSite: "none", // Correct format
+    sameSite: "strict", // Correct format
     // secure: process.env.NODE_ENV === "production", // true in production
     secure: true,
   },
