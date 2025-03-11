@@ -9,29 +9,28 @@ import organizerRoutes from "./routes/organizerRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import { csrfSync } from "csrf-csrf";
+import { doubleCsrf } from "csrf-csrf";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Trust proxy (required for Railway deployment)
 app.set("trust proxy", 1);
 
-// Order of middleware is important
+// Middleware Order
 app.use(cookieParser());
 app.use(express.json());
 
-// Configure CORS before CSRF
+// Configure CORS
 app.use(
   cors({
     origin: [
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "https://lifeflow-woad.vercel.app",
-      "https://lifeflow-woad.vercel.app/",
     ],
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type,Authorization,X-CSRF-Token",
@@ -39,22 +38,32 @@ app.use(
   })
 );
 
-// Create CSRF middleware - BUT DON'T APPLY IT GLOBALLY YET
-const { csrfSynchronisedProtection } = csrfSync({
-  getTokenFromRequest: (req) => req.headers["x-csrf-token"],
+// CSRF Protection Setup
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.CSRF_SECRET,
+  getTokenFromRequest: (req) =>
+    req.headers["x-csrf-token"] || req.cookies["x-csrf-token"].split("|")[0], // Read from both
+  cookieName: "x-csrf-token",
   cookieOptions: {
     secure: true,
+    httpOnly: true,
     sameSite: "none",
   },
 });
 
-// CSRF token endpoint - must come BEFORE applying csrf globally
+// CSRF Token Endpoint
 app.get("/api/csrf-token", (req, res) => {
-  res.json({ csrfToken: csrfSynchronisedProtection.generateToken(req, res) });
+  res.json({ csrfToken: generateToken(req, res) });
 });
 
-// Now apply CSRF protection to all other routes
-app.use(csrfSynchronisedProtection);
+app.use((req, res, next) => {
+  console.log("Received CSRF Token:", req.headers["x-csrf-token"]);
+  console.log("Received Cookies:", req.cookies);
+  next();
+});
+
+// Apply CSRF protection after token endpoint
+app.use(doubleCsrfProtection);
 
 // Routes
 app.use("/users", userRoutes);
@@ -66,13 +75,14 @@ app.use("/auth", authRoutes);
 app.use("/chatbot", chatbotRoutes);
 app.use("/admin", adminRoutes);
 
-// MongoDB connection
+// MongoDB Connection with Error Handling
 const uri = process.env.ATLAS_URI;
-mongoose.connect(uri);
-const connection = mongoose.connection;
-connection.once("open", () => {
-  console.log("MongoDB database connection established successfully");
-});
+mongoose
+  .connect(uri)
+  .then(() =>
+    console.log("MongoDB database connection established successfully")
+  )
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);

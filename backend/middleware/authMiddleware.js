@@ -1,23 +1,23 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import csrf from "csurf";
+// import csrf from "csurf";
 
-// Use Redis or a database in production instead of in-memory
+// // Use Redis or a database in production instead of in-memory
 const blacklistedTokens = new Set();
 
-// CSRF protection middleware
-export const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  },
-});
+// // CSRF protection middleware
+// export const csrfProtection = csrf({
+//   cookie: {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production",
+//     sameSite: "strict",
+//   },
+// });
 
-// Get CSRF token endpoint
-export const getCsrfToken = (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-};
+// // Get CSRF token endpoint
+// export const getCsrfToken = (req, res) => {
+//   res.json({ csrfToken: req.csrfToken() });
+// };
 
 export const authenticateUser = (req, res, next) => {
   // Get token from cookies instead of headers

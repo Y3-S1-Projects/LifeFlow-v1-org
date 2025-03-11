@@ -9,6 +9,7 @@ import Footer from "@/app/components/Footer";
 import useUser from "@/app/hooks/useUser";
 import { toast } from "sonner";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const Login = () => {
   const router = useRouter();
@@ -62,10 +63,13 @@ const Login = () => {
     const fetchCsrfToken = async (): Promise<void> => {
       try {
         const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
-          withCredentials: true,
+          withCredentials: true, // Ensure cookies are sent
         });
+
+        console.log("CSRF Token received:", data.csrfToken);
+
         setCsrfToken(data.csrfToken);
-        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken; // Set globally
       } catch (err) {
         console.error("CSRF token fetch error:", err);
         toast.error("Failed to fetch security token");
@@ -127,30 +131,31 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    setErrorMessage(""); // Clear previous errors
+    setErrorMessage("");
     setIsLoading(true);
 
     try {
+      const csrfTokenFromCookie = Cookies.get("x-csrf-token"); // Retrieve from cookies
+
       const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
+          "X-CSRF-Token": csrfTokenFromCookie || csrfToken, // Ensure token is sent
         },
-        credentials: "include", // For cookies
+        credentials: "include", // Ensure cookies are sent
         body: JSON.stringify({ email, password }),
       });
-      console.log("token", csrfToken);
+
+      console.log("CSRF Token Sent:", csrfTokenFromCookie || csrfToken);
+
       const data = await response.json();
 
       if (!response.ok) {
-        // Generic error message regardless of error type
         setErrorMessage(
           "Invalid credentials. Please check your email and password."
         );
 
-        // Handle specific redirects without exposing reason
         if (response.status === 403 && data.requiresVerification) {
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         }
@@ -161,13 +166,13 @@ const Login = () => {
         router.push(redirectPath);
       }
     } catch (error) {
-      // Generic error message
       setErrorMessage("Authentication failed. Please try again.");
-      console.error("Login error:", error); // Log actual error for debugging
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
   return (
     <div className="w-screen">
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
