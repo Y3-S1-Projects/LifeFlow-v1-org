@@ -7,6 +7,8 @@ import "../../styles/index.css";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "@/app/components/Footer";
 import useUser from "@/app/hooks/useUser";
+import { toast } from "sonner";
+import axios from "axios";
 
 const Login = () => {
   const router = useRouter();
@@ -20,6 +22,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const API_BASE_URL =
     process.env.NODE_ENV === "production"
@@ -54,6 +57,23 @@ const Login = () => {
       }
     }
   }, [loading, user, router]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     const styleSheet = document.createElement("style");
@@ -112,24 +132,11 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // First, get a fresh CSRF token
-      const tokenResponse = await fetch(`${API_BASE_URL}/api/csrf-token`, {
-        method: "GET",
-        credentials: "include", // Important for receiving the csrf cookie
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error("Failed to get CSRF token");
-      }
-
-      const { csrfToken } = await tokenResponse.json();
-
-      // Now make the login request with the token
       const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken, // Use the token from the API, not from meta tag
+          "X-CSRF-Token": csrfToken,
         },
         credentials: "include", // For cookies
         body: JSON.stringify({ email, password }),
@@ -148,16 +155,9 @@ const Login = () => {
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         }
       } else {
-        // Let the server set HTTP-only cookies instead of using localStorage
-
-        // Check if there's a saved redirect URL in sessionStorage (more secure than localStorage)
         const redirectPath =
           sessionStorage.getItem("redirectAfterLogin") || "/donor/dashboard";
-
-        // Clear the stored redirect path
         sessionStorage.removeItem("redirectAfterLogin");
-
-        // Redirect to the saved path or default dashboard
         router.push(redirectPath);
       }
     } catch (error) {
