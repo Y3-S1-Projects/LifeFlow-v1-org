@@ -9,7 +9,7 @@ import organizerRoutes from "./routes/organizerRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import csrf from "csurf";
+import { csrfSync } from "csrf-csrf";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 dotenv.config();
@@ -40,21 +40,21 @@ app.use(
 );
 
 // Create CSRF middleware - BUT DON'T APPLY IT GLOBALLY YET
-const csrfProtection = csrf({
-  cookie: {
-    key: "_csrf",
-    httpOnly: true,
+const { csrfSynchronisedProtection } = csrfSync({
+  getTokenFromRequest: (req) => req.headers["x-csrf-token"],
+  cookieOptions: {
     secure: true,
-    sameSite: "none", // Exactly like this, with single quotes
+    sameSite: "none",
   },
 });
+
 // CSRF token endpoint - must come BEFORE applying csrf globally
-app.get("/api/csrf-token", csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
+app.get("/api/csrf-token", (req, res) => {
+  res.json({ csrfToken: csrfSynchronisedProtection.generateToken(req, res) });
 });
 
 // Now apply CSRF protection to all other routes
-app.use(csrfProtection);
+app.use(csrfSynchronisedProtection);
 
 // Routes
 app.use("/users", userRoutes);
