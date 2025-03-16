@@ -27,7 +27,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/pages/Register.jsx"
+    "app/pages/Register.jsx",
+    "app/pages/Support/SupportDashboard.jsx",
+    "app/pages/Support/SupportDashboard.jsx"
   ],
   "exclude": ["node_modules"]
 }

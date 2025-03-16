@@ -123,10 +123,6 @@ export const sendAdminOTP = async (email) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  console.log("Sending OTP to", email);
-  console.log("OTP:", otp);
-  console.log("Expires at:", expiresAt);
-
   await AdminOTP.deleteMany({ email });
   await new AdminOTP({
     email,
@@ -438,6 +434,7 @@ export const registerAdmin = async (req, res) => {
       email,
       password: hashedPassword,
       nic,
+      role,
       address,
     });
 
