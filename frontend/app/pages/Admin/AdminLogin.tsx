@@ -117,7 +117,7 @@ const LoginForm: React.FC = () => {
               router.push("/admin/moderation");
               break;
             case "support":
-              router.push("/admin/support-tickets");
+              router.push("/support/dashboard");
               break;
             default:
               router.push("/admin/dashboard");
