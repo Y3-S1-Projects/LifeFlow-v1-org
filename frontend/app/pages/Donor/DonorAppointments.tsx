@@ -223,6 +223,7 @@ const BloodDonationAppointments: React.FC = () => {
           withCredentials: true,
         });
         setCsrfToken(data.csrfToken);
+        console.log(csrfToken);
         axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
       } catch (err) {
         console.error("CSRF token fetch error:", err);

@@ -123,6 +123,25 @@ export const processGeminiQuery = async (req, res) => {
       };
     };
 
+    async function fetchCsrfToken() {
+      try {
+        const apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3001";
+
+        const response = await axios.get(`${apiBaseUrl}/api/csrf-token`, {
+          withCredentials: true,
+        });
+
+        if (response.data && response.data.csrfToken) {
+          return response.data.csrfToken;
+        } else {
+          throw new Error("CSRF token not found in response");
+        }
+      } catch (error) {
+        console.error("Error fetching CSRF token:", error);
+        throw error;
+      }
+    }
+
     // If it's an appointment intent and we have the required details, process it
     if (appointmentIntent && userId) {
       const { isAppointment, campId, date, time } =
@@ -130,9 +149,6 @@ export const processGeminiQuery = async (req, res) => {
 
       async function createAppointmentDirectly(appointmentData) {
         try {
-          // Import your Appointment model if not already imported
-          // import Appointment from "../models/Appointment.js";
-
           // Create appointment directly in the database
           const newAppointment = new Appointment({
             user: appointmentData.userId,
@@ -185,15 +201,23 @@ export const processGeminiQuery = async (req, res) => {
           appointmentData
         );
 
-        // ATTEMPT 1: Try API first
         try {
+          const csrfToken = await fetchCsrfToken();
+
+          console.log("CSRF token:", csrfToken);
+
           const apiBaseUrl =
             process.env.API_BASE_URL || "http://localhost:3001";
+
           const appointmentResponse = await axios.post(
             `${apiBaseUrl}/appointments/create`,
             appointmentData,
             {
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": csrfToken,
+              },
+              withCredentials: true,
               timeout: 8000,
             }
           );

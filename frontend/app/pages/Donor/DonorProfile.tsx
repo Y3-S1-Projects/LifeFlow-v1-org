@@ -98,6 +98,12 @@ export default function DonorProfilePage() {
     }));
   }, [darkMode]);
 
+  useEffect(() => {
+    if (!loading && !user?.isEligible) {
+      router.push("/donor/dashboard");
+    }
+  });
+
   // Initialize form data when user data is loaded
   useEffect(() => {
     if (user) {
@@ -229,7 +235,7 @@ export default function DonorProfilePage() {
         withCredentials: true,
       });
       const csrfToken = csrfResponse.data.csrfToken;
-
+      console.log(csrfToken);
       // Prepare data for API
       const updateData = {
         fullName: formData.fullName,

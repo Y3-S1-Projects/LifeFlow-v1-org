@@ -168,7 +168,19 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
                     className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-50 bg-white border border-gray-700"
                     onMouseLeave={() => setIsUserMenuOpen(false)}
                   >
-                    {user.role === "User" && (
+                    {user.role === "User" && !user.isEligible && (
+                      <Link
+                        href="/donor/dashboard"
+                        className="block px-4 py-2 text-sm text-black hover:bg-gray-100"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <User className="w-4 h-4" />
+                          <span>Setup Profile</span>
+                        </div>
+                      </Link>
+                    )}
+
+                    {user.role === "User" && user.isEligible && (
                       <>
                         <Link
                           href="/donor/profile"

@@ -28,7 +28,7 @@ import {
   UserPlus,
   Badge,
 } from "lucide-react";
-import { getUserIdFromToken } from "@/app/utils/auth";
+import { getUserIdFromToken, isAuthenticated } from "@/app/utils/auth";
 import Footer from "@/app/components/Footer";
 import Header from "@/app/components/Header";
 import { RouteGuard } from "@/app/components/RouteGuard";
@@ -82,13 +82,13 @@ const DonorAchievements: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
-    const role = localStorage.getItem("role");
-    if (role !== "User") {
-      router.push("/unauthorized");
-    } else {
-      // Only fetch data if user is authorized
-      fetchDonationHistory();
+    if (!isAuthenticated) {
+      router.push("/donor/login");
     }
+  }, []);
+
+  useEffect(() => {
+    fetchDonationHistory();
   }, []);
 
   useEffect(() => {
