@@ -445,105 +445,109 @@ const Header = () => {
 
             {/* Action buttons */}
             <div className="px-2 py-3 space-y-1">
-              <button
-                onClick={() =>
-                  navigateTo(
-                    user?.role === "Organizer"
-                      ? "/organizer/profile"
-                      : "/donor/profile"
-                  )
-                }
-                className={`
-                  w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium relative
-                  ${
-                    isActive(
+              {user?.role !== "User" || user.isEligible ? (
+                <>
+                  <button
+                    onClick={() =>
+                      navigateTo(
+                        user?.role === "Organizer"
+                          ? "/organizer/profile"
+                          : "/donor/profile"
+                      )
+                    }
+                    className={`
+          w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium relative
+          ${
+            isActive(
+              user?.role === "Organizer"
+                ? "/organizer/profile"
+                : "/donor/profile"
+            )
+              ? darkMode
+                ? "bg-gray-800 text-white"
+                : "bg-red-50 text-red-700"
+              : darkMode
+              ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+              : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
+          }
+        `}
+                  >
+                    <User className="h-5 w-5 text-red-500" />
+                    <span>Profile</span>
+
+                    {isActive(
                       user?.role === "Organizer"
                         ? "/organizer/profile"
                         : "/donor/profile"
-                    )
-                      ? darkMode
-                        ? "bg-gray-800 text-white"
-                        : "bg-red-50 text-red-700"
-                      : darkMode
-                      ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
-                  }
-                `}
-              >
-                <User className="h-5 w-5 text-red-500" />
-                <span>Profile</span>
+                    ) && <span className="w-1 bg-red-600 rounded-r"></span>}
+                  </button>
 
-                {isActive(
-                  user?.role === "Organizer"
-                    ? "/organizer/profile"
-                    : "/donor/profile"
-                ) && <span className=" w-1 bg-red-600 rounded-r"></span>}
-              </button>
+                  <button
+                    onClick={() =>
+                      navigateTo(
+                        user?.role === "Organizer"
+                          ? "/organizer/settings"
+                          : "/donor/settings"
+                      )
+                    }
+                    className={`
+          w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium relative
+          ${
+            isActive(
+              user?.role === "Organizer"
+                ? "/organizer/settings"
+                : "/donor/settings"
+            )
+              ? darkMode
+                ? "bg-gray-800 text-white"
+                : "bg-red-50 text-red-700"
+              : darkMode
+              ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+              : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
+          }
+        `}
+                  >
+                    <Settings className="h-5 w-5 text-red-500" />
+                    <span>Settings</span>
 
-              <button
-                onClick={() =>
-                  navigateTo(
-                    user?.role === "Organizer"
-                      ? "/organizer/settings"
-                      : "/donor/settings"
-                  )
-                }
-                className={`
-                  w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium relative
-                  ${
-                    isActive(
+                    {isActive(
                       user?.role === "Organizer"
                         ? "/organizer/settings"
                         : "/donor/settings"
-                    )
-                      ? darkMode
-                        ? "bg-gray-800 text-white"
-                        : "bg-red-50 text-red-700"
-                      : darkMode
-                      ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
-                  }
-                `}
-              >
-                <Settings className="h-5 w-5 text-red-500" />
-                <span>Settings</span>
-
-                {isActive(
-                  user?.role === "Organizer"
-                    ? "/organizer/settings"
-                    : "/donor/settings"
-                ) && <span className=" w-1 bg-red-600 rounded-r"></span>}
-              </button>
+                    ) && <span className="w-1 bg-red-600 rounded-r"></span>}
+                  </button>
+                </>
+              ) : null}
 
               <button
                 onClick={() => navigateTo("/support")}
                 className={`
-                  w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium relative
-                  ${
-                    isActive("/support")
-                      ? darkMode
-                        ? "bg-gray-800 text-white"
-                        : "bg-red-50 text-red-700"
-                      : darkMode
-                      ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
-                  }
-                `}
+      w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium relative
+      ${
+        isActive("/support")
+          ? darkMode
+            ? "bg-gray-800 text-white"
+            : "bg-red-50 text-red-700"
+          : darkMode
+          ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+          : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
+      }
+    `}
               >
                 <HelpCircle className="h-5 w-5 text-red-500" />
                 <span>Support</span>
 
                 {isActive("/support") && (
-                  <span className=" w-1 bg-red-600 rounded-r"></span>
+                  <span className="w-1 bg-red-600 rounded-r"></span>
                 )}
               </button>
 
               <button
                 onClick={logout}
                 className={`
-                  w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-red-600
-                  ${darkMode ? "hover:bg-red-900/20" : "hover:bg-red-50"}
-                `}
+      w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-red-600
+      ${darkMode ? "hover:bg-red-900/20" : "hover:bg-red-50"}
+    `}
               >
                 <LogOut className="h-5 w-5" />
                 <span>Logout</span>

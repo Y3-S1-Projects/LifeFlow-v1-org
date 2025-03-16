@@ -96,7 +96,7 @@ const DonorDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [, setIsModalOpen] = useState(false);
   const { darkMode } = useDarkMode();
-  const [csrfToken, setCsrfToken] = useState<string>("");
+  // const [csrfToken, setCsrfToken] = useState<string>("");
   const [, setSettings] = useState<Settings>({
     darkMode: false,
     emailNotifications: true,
@@ -130,22 +130,22 @@ const DonorDashboard: React.FC = () => {
   //   }
   // }, [searchParams, toastShown]);
 
-  useEffect(() => {
-    const fetchCsrfToken = async (): Promise<void> => {
-      try {
-        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
-          withCredentials: true,
-        });
-        setCsrfToken(data.csrfToken);
-        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
-      } catch (err) {
-        console.error("CSRF token fetch error:", err);
-        toast.error("Failed to fetch security token");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchCsrfToken = async (): Promise<void> => {
+  //     try {
+  //       const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+  //         withCredentials: true,
+  //       });
+  //       setCsrfToken(data.csrfToken);
+  //       axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+  //     } catch (err) {
+  //       console.error("CSRF token fetch error:", err);
+  //       toast.error("Failed to fetch security token");
+  //     }
+  //   };
 
-    fetchCsrfToken();
-  }, [API_BASE_URL]);
+  //   fetchCsrfToken();
+  // }, [API_BASE_URL]);
 
   useEffect(() => {
     if (user && user.isEligible) {
@@ -287,7 +287,10 @@ const DonorDashboard: React.FC = () => {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
+      const csrfResponse = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+        withCredentials: true,
+      });
+      const csrfToken = csrfResponse.data.csrfToken;
       const response = await fetch(
         `${publicApi}/users/updateUser/${user?._id}`,
         {
@@ -296,7 +299,7 @@ const DonorDashboard: React.FC = () => {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfToken,
           },
-
+          credentials: "include", // Add this line
           body: JSON.stringify(dataToSubmit),
         }
       );
@@ -315,6 +318,7 @@ const DonorDashboard: React.FC = () => {
     } catch (error) {
       console.error("Error submitting data:", error);
     } finally {
+      console.log("Eligibility update process completed");
       setIsLoading(false);
       setIsModalOpen(false);
     }

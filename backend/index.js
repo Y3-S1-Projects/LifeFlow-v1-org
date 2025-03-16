@@ -42,7 +42,7 @@ app.use(
 const { generateToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET,
   getTokenFromRequest: (req) =>
-    req.headers["x-csrf-token"] || req.cookies["x-csrf-token"].split("|")[0], // Read from both
+    req.headers["x-csrf-token"] || req.cookies["x-csrf-token"]?.split("|")[0], // Read from both
   cookieName: "x-csrf-token",
   cookieOptions: {
     secure: true,
@@ -56,11 +56,11 @@ app.get("/api/csrf-token", (req, res) => {
   res.json({ csrfToken: generateToken(req, res) });
 });
 
-app.use((req, res, next) => {
-  console.log("Received CSRF Token:", req.headers["x-csrf-token"]);
-  console.log("Received Cookies:", req.cookies);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log("Received CSRF Token:", req.headers["x-csrf-token"]);
+//   console.log("Received Cookies:", req.cookies);
+//   next();
+// });
 
 // Apply CSRF protection after token endpoint
 app.use(doubleCsrfProtection);
