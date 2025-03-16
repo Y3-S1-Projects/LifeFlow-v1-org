@@ -78,7 +78,7 @@ const Camps = () => {
   const router = useRouter();
 
   const fetchCamps = async () => {
-    const organizerId = getUserIdFromToken();
+    const organizerId = await getUserIdFromToken();
     try {
       const response = await axios.get(
         `${publicApi}/camps/get-camps/${organizerId}`
