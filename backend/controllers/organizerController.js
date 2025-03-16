@@ -79,14 +79,17 @@ export const loginOrganizer = async (req, res) => {
 
     // Check if verified
     if (!organizer.isVerified) {
-      return res.status(401).json({ message: "Account not verified" });
+      return res.status(403).json({
+        message: "Account not verified",
+        requiresVerification: true,
+      });
     }
 
-    // Generate JWT token - using userId instead of id for consistency with User schema
+    // Generate JWT token
     const token = jwt.sign(
       {
-        userId: organizer._id, // Use userId for consistency
-        role: "Organizer", // Include the user type in the token
+        userId: organizer._id,
+        role: "Organizer",
       },
       process.env.JWT_SECRET,
       {
@@ -94,9 +97,19 @@ export const loginOrganizer = async (req, res) => {
       }
     );
 
+    // Set token in HTTP-only cookie with proper configuration
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      path: "/", // Important! Make cookie available site-wide
+    });
+
+    // Return token in response as well (for redundancy)
     res.status(200).json({
       message: "Login successful",
-      token,
+      token, // Include token in response for localStorage backup
       organizer: {
         id: organizer._id,
         name: organizer.name,

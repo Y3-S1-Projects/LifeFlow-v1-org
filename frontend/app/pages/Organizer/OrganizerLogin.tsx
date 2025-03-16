@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import Cookies from "js-cookie";
+import { toast } from "sonner";
 
 // Define types for the response data
 interface OrganizerData {
@@ -28,6 +30,11 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -42,41 +49,79 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     }));
   };
 
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true, // Ensure cookies are sent
+        });
+
+        console.log("CSRF Token received:", data.csrfToken);
+
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken; // Set globally
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
+      const csrfTokenFromCookie = Cookies.get("x-csrf-token"); // Retrieve from cookies
+
       const response = await axios.post<LoginResponse>(
         `${publicApi}/organizers/login`,
-        formData
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfTokenFromCookie || csrfToken, // Ensure token is sent
+          },
+          withCredentials: true, // Equivalent to credentials: "include" in fetch
+        }
       );
 
-      // Store token in localStorage or cookies
+      console.log("CSRF Token Sent:", csrfTokenFromCookie || csrfToken);
+
+      // Store token in localStorage as backup for auth persistence
       localStorage.setItem("token", response.data.token);
       localStorage.setItem(
         "organizerInfo",
         JSON.stringify(response.data.organizer)
       );
-      localStorage.setItem("role", "organizer"); // Store role for role-based auth
+      localStorage.setItem("role", "organizer");
 
       // Check if there's a saved redirect URL
       const redirectPath =
-        localStorage.getItem("redirectAfterLogin") || "/organizer/dashboard";
+        sessionStorage.getItem("redirectAfterLogin") || "/organizer/dashboard";
 
       // Clear the stored redirect path
-      localStorage.removeItem("redirectAfterLogin");
+      sessionStorage.removeItem("redirectAfterLogin");
 
       if (onLoginSuccess) {
         onLoginSuccess(response.data);
       } else if (mounted) {
-        // Redirect to the saved path or default dashboard
         router.push(redirectPath);
       }
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data) {
-        setError(err.response.data.message || "Login failed");
+        const errorData = err.response.data;
+
+        if (err.response.status === 403 && errorData.requiresVerification) {
+          router.push(
+            `/verify-email?email=${encodeURIComponent(formData.email)}`
+          );
+        } else {
+          setError(errorData.message || "Login failed");
+        }
       } else {
         setError("Something went wrong. Please try again later.");
       }
@@ -84,7 +129,6 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       setLoading(false);
     }
   };
-
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md border-t-4 border-red-600">
       <div className="flex justify-center mb-6">
