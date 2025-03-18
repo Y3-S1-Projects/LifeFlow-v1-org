@@ -49,8 +49,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getRoleFromToken } from "@/app/utils/auth";
+import { getRoleFromToken, getUserIdFromToken } from "@/app/utils/auth";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+import { toast } from "sonner";
+import MapComponent from "../../components/Map"; // Import the MapComponent
 
 // Form validation schema
 const formSchema = z.object({
@@ -101,6 +104,15 @@ export default function CreateCamp() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = React.useState<Date>();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
+  const [csrfToken, setCsrfToken] = useState<string>("");
+  const [selectedLocation, setSelectedLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -130,14 +142,32 @@ export default function CreateCamp() {
     const fetchRole = async () => {
       const role = await getRoleFromToken();
       setUserRole(role);
+      console.log("User role:", role);
     };
 
     fetchRole();
   }, []);
 
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Only proceed if user is an organizer
-    if (userRole !== "organizer") {
+    if (userRole !== "Organizer") {
       setError("Only organizers can create blood donation camps");
       return;
     }
@@ -150,22 +180,25 @@ export default function CreateCamp() {
       const availableDates = [];
       const currentDate = new Date(values.availableDates.from);
       const endDate = new Date(values.availableDates.to);
+      const userID = await getUserIdFromToken();
 
       while (currentDate <= endDate) {
         availableDates.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const response = await fetch("/api/camps/create", {
+      const response = await fetch("http://localhost:3001/camps/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
         },
+        credentials: "include",
         body: JSON.stringify({
           ...values,
           availableDates,
           // The organizer ID would come from the user's session/token
-          organizer: "user_id_here", // This would be dynamically set in a real app
+          organizer: userID, // This would be dynamically set in a real app
         }),
       });
 
@@ -175,8 +208,7 @@ export default function CreateCamp() {
         throw new Error(data.error || "Failed to create camp");
       }
 
-      // Redirect to the new camp page or camps list
-      router.push("/camps");
+      toast.success("Camp created successfully!");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
@@ -185,6 +217,14 @@ export default function CreateCamp() {
       setLoading(false);
     }
   };
+
+  // Handle location selection from the map
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setSelectedLocation({ lat, lng });
+    form.setValue("lat", lat.toString());
+    form.setValue("lng", lng.toString());
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <Card className="w-full max-w-2xl mx-auto">
@@ -402,7 +442,12 @@ export default function CreateCamp() {
                         <FormItem>
                           <FormLabel>Latitude</FormLabel>
                           <FormControl>
-                            <Input placeholder="Latitude" {...field} />
+                            <Input
+                              placeholder="Latitude"
+                              {...field}
+                              readOnly
+                              value={selectedLocation?.lat || ""}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -416,7 +461,12 @@ export default function CreateCamp() {
                         <FormItem>
                           <FormLabel>Longitude</FormLabel>
                           <FormControl>
-                            <Input placeholder="Longitude" {...field} />
+                            <Input
+                              placeholder="Longitude"
+                              {...field}
+                              readOnly
+                              value={selectedLocation?.lng || ""}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -424,6 +474,17 @@ export default function CreateCamp() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Map Component */}
+              <div className="h-96 w-full">
+                <MapComponent
+                  userLatitude={selectedLocation?.lat || 0}
+                  userLongitude={selectedLocation?.lng || 0}
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_API || ""}
+                  showNearbyCamps={false}
+                  onLocationSelect={handleLocationSelect}
+                />
               </div>
 
               <div className="space-y-4">
