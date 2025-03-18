@@ -80,7 +80,6 @@ export const getUserDetails = async (req, res) => {
 
     // Check all possible ID field variations
     const userId = req.user.userId || req.user._id || req.user.id;
-
     if (!userId) {
       return res.status(400).json({ message: "User ID not found in token" });
     }
@@ -104,7 +103,8 @@ export const getUserDetails = async (req, res) => {
       isProfileComplete: 1,
       isAssessmentCompleted: 1,
       role: 1,
-      emergencyContacts: 1,
+      emergencyContact: 1,
+      nextEligibleDonationDate: 1,
       donationHistory: 1,
       totalPintsDonated: 1,
       lastPintsDonated: 1,
