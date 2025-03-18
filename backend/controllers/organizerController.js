@@ -1,24 +1,38 @@
-// controllers/organizerController.js
 import Organizer from "../models/Organizer.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Register a new organizer
 export const registerOrganizer = async (req, res) => {
   try {
     const {
+      orgName,
+      orgType,
+      regNumber,
+      yearEstablished,
+      website,
       firstName,
       lastName,
       email,
-      password,
       phone,
-      organization,
+      position,
+      licenseNumber,
+      validityPeriod,
+      previousCamps,
       address,
+      city,
+      state,
+      pincode,
+      facilities,
+      equipmentList,
+      password
     } = req.body;
+
+    console.log("Received registration data:", req.body);
 
     // Check if organizer already exists
     const existingOrganizer = await Organizer.findOne({ email });
     if (existingOrganizer) {
+      console.log("Organizer already exists with email:", email);
       return res
         .status(400)
         .json({ message: "Organizer already exists with this email" });
@@ -27,39 +41,55 @@ export const registerOrganizer = async (req, res) => {
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    console.log("Password hashed successfully");
 
     // Create new organizer
     const newOrganizer = new Organizer({
-      fullName: `${firstName} ${lastName}`, // Combine first and last name for fullName
+      orgName,
+      orgType,
+      regNumber,
+      yearEstablished,
+      website,
       firstName,
       lastName,
       email,
-      password: hashedPassword,
       phone,
-      organization,
-      address, // Assuming address is an object with street, city, and state
-      role: "Organizer", // Default role
-      isVerified: false, // Default verification status
-      eligibleToOrganize: false, // Default eligibility status
-      createdCamps: [], // Initialize empty array for created camps
+      position,
+      licenseNumber,
+      validityPeriod,
+      previousCamps,
+      address,
+      city,
+      state,
+      pincode,
+      facilities,
+      equipmentList,
+      password: hashedPassword, // Save the hashed password
+      role: "Organizer",
+      isVerified: false,
+      eligibleToOrganize: false,
+      createdCamps: [],
     });
 
     await newOrganizer.save();
+    console.log("New organizer saved:", newOrganizer);
 
     res.status(201).json({
       message: "Organizer registered successfully",
       organizer: {
         id: newOrganizer._id,
-        fullName: newOrganizer.fullName,
+        orgName: newOrganizer.orgName,
         firstName: newOrganizer.firstName,
         lastName: newOrganizer.lastName,
         email: newOrganizer.email,
       },
     });
   } catch (error) {
+    console.error("Error registering organizer:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 // Login organizer
 export const loginOrganizer = async (req, res) => {
   try {
@@ -121,6 +151,7 @@ export const loginOrganizer = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 // Get organizer profile
 export const getOrganizerProfile = async (req, res) => {
   try {
@@ -141,12 +172,49 @@ export const getOrganizerProfile = async (req, res) => {
 // Update organizer profile
 export const updateOrganizerProfile = async (req, res) => {
   try {
-    const { name, phone, organization } = req.body;
+    const {
+      orgName,
+      orgType,
+      regNumber,
+      yearEstablished,
+      website,
+      firstName,
+      lastName,
+      email,
+      phone,
+      position,
+      licenseNumber,
+      validityPeriod,
+      previousCamps,
+      address,
+      city,
+      state,
+      pincode,
+      facilities,
+      equipmentList,
+    } = req.body;
 
-    const updatedFields = {};
-    if (name) updatedFields.name = name;
-    if (phone) updatedFields.phone = phone;
-    if (organization) updatedFields.organization = organization;
+    const updatedFields = {
+      orgName,
+      orgType,
+      regNumber,
+      yearEstablished,
+      website,
+      firstName,
+      lastName,
+      email,
+      phone,
+      position,
+      licenseNumber,
+      validityPeriod,
+      previousCamps,
+      address,
+      city,
+      state,
+      pincode,
+      facilities,
+      equipmentList,
+    };
 
     const organizer = await Organizer.findByIdAndUpdate(
       req.organizer.id,

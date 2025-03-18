@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "../../components/Footer";
+import { Toaster } from "@/components/ui/sonner";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axios from "axios";
 
 interface ProgressStepProps {
   step: number;
@@ -86,6 +90,7 @@ interface FormData {
   pincode: string;
   facilities: string;
   equipmentList: string;
+  password: string;
 }
 
 const OrganizerRegistration: React.FC = () => {
@@ -110,11 +115,19 @@ const OrganizerRegistration: React.FC = () => {
     pincode: "",
     facilities: "",
     equipmentList: "",
+    password: "",
   });
+  const API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://lifeflow-v1-org-production.up.railway.app"
+    : "http://localhost:3001";
+    const [csrfToken, setCsrfToken] = useState<string>("");
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [, setScrolled] = useState(false);
-
+  const router = useRouter();
   // Handle scroll effect for header
   useEffect(() => {
     const handleScroll = () => {
@@ -123,6 +136,42 @@ const OrganizerRegistration: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const validateStep = (step: number) => {
+    const newErrors: Record<string, string> = {};
+    switch (step) {
+      case 1:
+        if (!formData.orgName) newErrors.orgName = "Organization Name is required";
+        if (!formData.orgType) newErrors.orgType = "Organization Type is required";
+        if (!formData.regNumber) newErrors.regNumber = "Registration Number is required";
+        if (!formData.yearEstablished) newErrors.yearEstablished = "Year Established is required";
+        break;
+      case 2:
+        if (!formData.firstName) newErrors.firstName = "First Name is required";
+        if (!formData.lastName) newErrors.lastName = "Last Name is required";
+        if (!formData.email) newErrors.email = "Email is required";
+        if (!formData.phone) newErrors.phone = "Phone Number is required";
+        if (!formData.position) newErrors.position = "Position is required";
+        if (!formData.password) newErrors.password = "Password is required";
+        break;
+      case 3:
+        if (!formData.licenseNumber) newErrors.licenseNumber = "License Number is required";
+        if (!formData.validityPeriod) newErrors.validityPeriod = "Validity Period is required";
+        break;
+      case 4:
+        if (!formData.address) newErrors.address = "Address is required";
+        if (!formData.city) newErrors.city = "City is required";
+        if (!formData.state) newErrors.state = "State is required";
+        if (!formData.pincode) newErrors.pincode = "Pincode is required";
+        if (!formData.facilities) newErrors.facilities = "Facilities are required";
+        if (!formData.equipmentList) newErrors.equipmentList = "Equipment List is required";
+        break;
+      default:
+        break;
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -142,15 +191,65 @@ const OrganizerRegistration: React.FC = () => {
   };
 
   const handleNext = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 4));
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
+    }
   };
 
   const handleBack = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (validateStep(currentStep)) {
+      try {
+        const response = await fetch("http://localhost:3001/organizers/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
+          },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        });
+  
+        if (response.ok) {
+          console.log("Registration Successful", {
+            description: "Your registration has been submitted successfully.",
+          });
+          router.push("/organizer/login");
+        } else {
+          const data = await response.json();
+          console.log({
+            title: "Registration Failed",
+            description: data.message || "An error occurred during registration.",
+          });
+        }
+      } catch (error) {
+        console.log({
+          title: "Registration Failed",
+          description: "An error occurred during registration.",
+        });
+      }
+    }
   };
 
   return (
@@ -202,6 +301,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.orgName && <p className="text-red-500 text-sm">{errors.orgName}</p>}
                   </div>
                   <div>
                     <Label htmlFor="orgType">Organization Type*</Label>
@@ -220,6 +320,7 @@ const OrganizerRegistration: React.FC = () => {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    {errors.orgType && <p className="text-red-500 text-sm">{errors.orgType}</p>}
                   </div>
                   <div>
                     <Label htmlFor="regNumber">Registration Number*</Label>
@@ -230,6 +331,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.regNumber && <p className="text-red-500 text-sm">{errors.regNumber}</p>}
                   </div>
                   <div>
                     <Label htmlFor="yearEstablished">Year Established*</Label>
@@ -241,6 +343,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.yearEstablished && <p className="text-red-500 text-sm">{errors.yearEstablished}</p>}
                   </div>
                   <div>
                     <Label htmlFor="website">Website</Label>
@@ -255,64 +358,81 @@ const OrganizerRegistration: React.FC = () => {
                 </div>
               )}
 
-              {currentStep === 2 && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name*</Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name*</Label>
-                      <Input
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email Address*</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number*</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="position">Position in Organization*</Label>
-                    <Input
-                      id="position"
-                      name="position"
-                      value={formData.position}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+{currentStep === 2 && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="firstName">First Name*</Label>
+        <Input
+          id="firstName"
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleInputChange}
+          required
+        />
+        {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
+      </div>
+      <div>
+        <Label htmlFor="lastName">Last Name*</Label>
+        <Input
+          id="lastName"
+          name="lastName"
+          value={formData.lastName}
+          onChange={handleInputChange}
+          required
+        />
+        {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
+      </div>
+    </div>
+    <div>
+      <Label htmlFor="email">Email Address*</Label>
+      <Input
+        id="email"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleInputChange}
+        required
+      />
+      {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+    </div>
+    <div>
+      <Label htmlFor="phone">Phone Number*</Label>
+      <Input
+        id="phone"
+        name="phone"
+        type="tel"
+        value={formData.phone}
+        onChange={handleInputChange}
+        required
+      />
+      {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
+    </div>
+    <div>
+      <Label htmlFor="position">Position in Organization*</Label>
+      <Input
+        id="position"
+        name="position"
+        value={formData.position}
+        onChange={handleInputChange}
+        required
+      />
+      {errors.position && <p className="text-red-500 text-sm">{errors.position}</p>}
+    </div>
+    <div>
+      <Label htmlFor="password">Password*</Label>
+      <Input
+        id="password"
+        name="password"
+        type="password"
+        value={formData.password}
+        onChange={handleInputChange}
+        required
+      />
+      {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+    </div>
+  </div>
+)}
 
               {currentStep === 3 && (
                 <div className="space-y-4">
@@ -327,6 +447,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.licenseNumber && <p className="text-red-500 text-sm">{errors.licenseNumber}</p>}
                   </div>
                   <div>
                     <Label htmlFor="validityPeriod">
@@ -340,6 +461,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.validityPeriod && <p className="text-red-500 text-sm">{errors.validityPeriod}</p>}
                   </div>
                   <div>
                     <Label>Upload Documents*</Label>
@@ -390,6 +512,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -401,6 +524,7 @@ const OrganizerRegistration: React.FC = () => {
                         onChange={handleInputChange}
                         required
                       />
+                      {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
                     </div>
                     <div>
                       <Label htmlFor="state">State*</Label>
@@ -411,6 +535,7 @@ const OrganizerRegistration: React.FC = () => {
                         onChange={handleInputChange}
                         required
                       />
+                      {errors.state && <p className="text-red-500 text-sm">{errors.state}</p>}
                     </div>
                   </div>
                   <div>
@@ -422,6 +547,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.pincode && <p className="text-red-500 text-sm">{errors.pincode}</p>}
                   </div>
                   <div>
                     <Label htmlFor="facilities">Available Facilities*</Label>
@@ -434,6 +560,7 @@ const OrganizerRegistration: React.FC = () => {
                       className="h-24"
                       required
                     />
+                    {errors.facilities && <p className="text-red-500 text-sm">{errors.facilities}</p>}
                   </div>
                   <div>
                     <Label htmlFor="equipmentList">
@@ -448,6 +575,7 @@ const OrganizerRegistration: React.FC = () => {
                       className="h-24"
                       required
                     />
+                    {errors.equipmentList && <p className="text-red-500 text-sm">{errors.equipmentList}</p>}
                   </div>
                 </div>
               )}
