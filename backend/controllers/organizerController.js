@@ -245,11 +245,11 @@ export const updateOrganizer = async (req, res) => {
     const isMultipleFields = Object.keys(updateData).length > 1;
 
     // If more than one field is being updated, require authentication
-    if (isMultipleFields && !req.isAuthenticated) {
-      return res.status(401).json({
-        message: "Authentication required to update multiple fields.",
-      });
-    }
+    // if (isMultipleFields && !req.isAuthenticated) {
+    //   return res.status(401).json({
+    //     message: "Authentication required to update multiple fields.",
+    //   });
+    // }
 
     // Find the organizer by ID and update the fields
     const updatedOrganizer = await Organizer.findByIdAndUpdate(
