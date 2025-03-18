@@ -247,7 +247,7 @@ const OrganizerProfile = () => {
                         </AvatarFallback>
                       </Avatar>
                       <CardTitle className="text-lg md:text-xl">
-                        {user.fullName || "Unnamed Organizer"}
+                        {user.firstName || "Unnamed Organizer"}
                       </CardTitle>
                       <CardDescription>{user.email}</CardDescription>
                       <div className="mt-2">
