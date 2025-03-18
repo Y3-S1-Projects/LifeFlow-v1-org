@@ -30,12 +30,13 @@ interface UserData {
   healthConditions?: string[];
   lastDonationDate?: string;
   isEligible?: boolean;
+  nextEligibleDonationDate?: Date;
   isProfileComplete?: boolean;
   isAssessmentCompleted?: boolean;
   emergencyContact?: {
     fullName?: string;
     relationship?: string;
-    phone?: string;
+    phoneNumber?: string;
   };
   // Organizer fields
   name?: string;
