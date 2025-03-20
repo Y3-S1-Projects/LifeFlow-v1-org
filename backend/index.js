@@ -38,7 +38,7 @@ app.use(
 );
 
 // No need to loggin for these routes
-app.use("/api/contact", contactRoutes);
+app.use("/contact", contactRoutes);
 
 // CSRF Protection Setup
 const { generateToken, doubleCsrfProtection } = doubleCsrf({

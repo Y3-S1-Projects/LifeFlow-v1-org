@@ -19,7 +19,7 @@ const SupportDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/contact-messages")
+    fetch("http://localhost:3001/api/contact/messages")
       .then((response) => response.json())
       .then((data) => {
         setMessages(data)
