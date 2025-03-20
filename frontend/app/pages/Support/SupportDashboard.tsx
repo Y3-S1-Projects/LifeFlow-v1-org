@@ -1,328 +1,305 @@
-import React, { useState } from "react";
-import { Bar, Pie } from "recharts";
-import {
-  Phone,
-  MessageSquare,
-  Clock,
-  Calendar,
-  User,
-  Users,
-  MapPin,
-  BookOpen,
-} from "lucide-react";
-import SupportHeader from "@/app/components/SupportHeader";
+"use client"
 
-interface SupportStat {
-  id: string;
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  change: number;
-}
+import type React from "react"
+import { useState, useEffect } from "react"
+import { BarChart, Bar, PieChart, Pie, Cell, Tooltip, Legend, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { Phone, MessageSquare, Clock, Calendar, Users, MapPin, Activity, TrendingUp, AlertCircle } from "lucide-react"
+import SupportHeader from "@/app/components/SupportHeader"
 
-interface CaseData {
-  id: string;
-  status: "open" | "resolved" | "pending";
-  priority: "high" | "medium" | "low";
-  subject: string;
-  customer: string;
-  location: string;
-  timestamp: string;
-  assignee: string;
+interface ContactMessage {
+  id: string
+  name: string
+  email: string
+  message: string
+  timestamp: string
 }
 
 const SupportDashboard: React.FC = () => {
-  // Sample stats for support agent
-  const supportStats: SupportStat[] = [
-    {
-      id: "1",
-      label: "Active Cases",
-      value: 12,
-      icon: <BookOpen className="h-6 w-6 text-blue-500" />,
-      change: 2,
-    },
-    {
-      id: "2",
-      label: "Camp Requests",
-      value: 34,
-      icon: <MapPin className="h-6 w-6 text-red-500" />,
-      change: -5,
-    },
-    {
-      id: "3",
-      label: "Calls Today",
-      value: 28,
-      icon: <Phone className="h-6 w-6 text-green-500" />,
-      change: 4,
-    },
-    {
-      id: "4",
-      label: "Avg Response",
-      value: 14,
-      icon: <Clock className="h-6 w-6 text-purple-500" />,
-      change: -2,
-    },
-  ];
+  const [messages, setMessages] = useState<ContactMessage[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Sample case for recent activity
-  const recentCase: CaseData = {
-    id: "CS-1234",
-    status: "open",
-    priority: "high",
-    subject: "Need blood camp location update in North Delhi",
-    customer: "Priya Sharma",
-    location: "Delhi, India",
-    timestamp: "10:24 AM",
-    assignee: "You",
-  };
+  useEffect(() => {
+    fetch("/api/contact-messages")
+      .then((response) => response.json())
+      .then((data) => {
+        setMessages(data)
+        setIsLoading(false)
+      })
+      .catch((error) => {
+        console.error("Error fetching messages:", error)
+        setIsLoading(false)
+      })
+  }, [])
 
-  // Sample data for charts
-  const casesByRegion = [
+  const caseData = [
     { name: "Delhi", value: 35 },
     { name: "Mumbai", value: 28 },
-    { name: "Bangalore", value: 18 },
     { name: "Chennai", value: 12 },
+    { name: "Bangalore", value: 18 },
     { name: "Others", value: 7 },
-  ];
+  ]
 
-  const issueTypes = [
-    { name: "Location Update", value: 42 },
-    { name: "Registration", value: 28 },
-    { name: "Technical Error", value: 16 },
-    { name: "Eligibility", value: 14 },
-  ];
+  const COLORS = ["#0088FE", "#FF8042", "#00C49F", "#FFBB28", "#A28DFF"]
 
-  const weeklyCases = [
-    { day: "Mon", count: 15 },
-    { day: "Tue", count: 12 },
-    { day: "Wed", count: 18 },
-    { day: "Thu", count: 22 },
-    { day: "Fri", count: 25 },
-    { day: "Sat", count: 18 },
-    { day: "Sun", count: 10 },
-  ];
+  const weeklyCaseData = [
+    { day: "Mon", cases: 4 },
+    { day: "Tue", cases: 6 },
+    { day: "Wed", cases: 8 },
+    { day: "Thu", cases: 10 },
+    { day: "Fri", cases: 9 },
+    { day: "Sat", cases: 7 },
+    { day: "Sun", cases: 5 },
+  ]
 
-  const colors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"];
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-md">
+          <p className="font-medium">{`${label} : ${payload[0].value}`}</p>
+        </div>
+      )
+    }
+    return null
+  }
+
+  const PieCustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-md">
+          <p className="font-medium">{`${payload[0].name} : ${payload[0].value}`}</p>
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen ">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <SupportHeader />
-      <div className="mb-6 mt-10">
-        <h1 className="text-2xl font-bold text-gray-800">Support Dashboard</h1>
-        <p className="text-gray-500">Blood Camp Finder Support Overview</p>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {supportStats.map((stat) => (
-          <div key={stat.id} className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <div
-                  className={`text-xs ${
-                    stat.change >= 0 ? "text-green-500" : "text-red-500"
-                  } flex items-center mt-1`}
-                >
-                  {stat.change >= 0 ? "+" : ""}
-                  {stat.change}% from yesterday
-                </div>
-              </div>
-              <div className="p-2 rounded-full bg-gray-100">{stat.icon}</div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+              <Activity className="mr-2 text-red-500" />
+              Support Dashboard
+            </h1>
+            <p className="text-gray-500 mt-1 flex items-center">
+              <MapPin className="h-4 w-4 mr-1 text-red-400" />
+              Blood Camp Finder Support Overview
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <div className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm font-medium">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              Live Updates
             </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Cases by Region */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Cases by Region</h2>
-          <div className="h-64 flex justify-center items-center">
-            <div className="w-full h-full flex justify-center items-center">
-              <div className="w-full max-w-xs">
-                <svg viewBox="0 0 400 400" width="100%" height="100%">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-blue-50 text-blue-600 mr-4 group-hover:bg-blue-100 transition-colors duration-200">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active Cases</p>
+                <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-blue-600 transition-colors duration-200">
+                  12
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-xs text-gray-500">
+              <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              <span className="text-green-500 font-medium">+8%</span>
+              <span className="ml-1">from last week</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-red-50 text-red-600 mr-4 group-hover:bg-red-100 transition-colors duration-200">
+                <Calendar className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Camp Requests</p>
+                <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-red-600 transition-colors duration-200">
+                  34
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-xs text-gray-500">
+              <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              <span className="text-green-500 font-medium">+12%</span>
+              <span className="ml-1">from last month</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-green-50 text-green-600 mr-4 group-hover:bg-green-100 transition-colors duration-200">
+                <Phone className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Calls Today</p>
+                <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-green-600 transition-colors duration-200">
+                  28
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-xs text-gray-500">
+              <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              <span className="text-green-500 font-medium">+5%</span>
+              <span className="ml-1">from yesterday</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-purple-50 text-purple-600 mr-4 group-hover:bg-purple-100 transition-colors duration-200">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Avg Response</p>
+                <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-purple-600 transition-colors duration-200">
+                  14 min
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-xs text-gray-500">
+              <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              <span className="text-green-500 font-medium">-2 min</span>
+              <span className="ml-1">from last week</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
+            <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-red-500" />
+              Cases by Region
+            </h2>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
                   <Pie
-                    data={casesByRegion}
-                    cx={200}
-                    cy={200}
-                    innerRadius={60}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    paddingAngle={5}
+                    data={caseData}
                     dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    labelLine={true}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   >
-                    {casesByRegion.map((entry, index) => (
-                      <g key={`cell-${index}`}>
-                        <path fill={colors[index % colors.length]} />
-                      </g>
+                    {caseData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <text
-                    x={200}
-                    y={200}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="text-lg font-semibold"
-                  >
-                    Total: 100
-                  </text>
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            {casesByRegion.map((item, index) => (
-              <div key={index} className="flex items-center text-sm">
-                <span
-                  className="w-3 h-3 rounded-full mr-1"
-                  style={{ backgroundColor: colors[index % colors.length] }}
-                ></span>
-                <span className="truncate">
-                  {item.name}: {item.value}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Weekly Case Load */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Weekly Case Load</h2>
-          <div className="h-64">
-            <svg viewBox="0 0 500 300" width="100%" height="100%">
-              <Bar data={weeklyCases} barSize={30}>
-                {weeklyCases.map((entry, index) => (
-                  <g key={`bar-${index}`}>
-                    <rect
-                      x={(500 / weeklyCases.length) * index + 20}
-                      y={300 - entry.count * 8}
-                      width={30}
-                      height={entry.count * 8}
-                      fill="#3B82F6"
-                      rx={4}
-                    />
-                    <text
-                      x={(500 / weeklyCases.length) * index + 35}
-                      y={300 - entry.count * 8 - 10}
-                      textAnchor="middle"
-                      fill="#4B5563"
-                      fontSize="12"
-                    >
-                      {entry.count}
-                    </text>
-                    <text
-                      x={(500 / weeklyCases.length) * index + 35}
-                      y={285}
-                      textAnchor="middle"
-                      fill="#4B5563"
-                      fontSize="12"
-                    >
-                      {entry.day}
-                    </text>
-                  </g>
-                ))}
-              </Bar>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity & Map Integration */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
-        <div className="bg-white p-4 rounded-lg shadow lg:col-span-1">
-          <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-          <div className="border-l-4 border-blue-500 pl-4 py-2 mb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold text-sm">{recentCase.subject}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {recentCase.customer} • {recentCase.location}
-                </p>
-              </div>
-              <div
-                className={`px-2 py-1 text-xs rounded-full ${
-                  recentCase.priority === "high"
-                    ? "bg-red-100 text-red-800"
-                    : recentCase.priority === "medium"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-green-100 text-green-800"
-                }`}
-              >
-                {recentCase.priority}
-              </div>
-            </div>
-            <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-              <span>Case #{recentCase.id}</span>
-              <span>{recentCase.timestamp}</span>
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <button className="bg-blue-500 text-white px-3 py-1 rounded-md text-xs flex items-center gap-1">
-                <Phone className="h-3 w-3" /> Call
-              </button>
-              <button className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-xs flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" /> Message
-              </button>
-            </div>
-          </div>
-
-          {/* Issue Type Distribution */}
-          <h3 className="text-md font-semibold mb-3 mt-6">Issue Types</h3>
-          <div className="space-y-3">
-            {issueTypes.map((issue, index) => (
-              <div key={index} className="flex items-center">
-                <span className="text-xs w-28 truncate">{issue.name}</span>
-                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${issue.value}%`,
-                      backgroundColor: colors[index % colors.length],
-                    }}
+                  <Tooltip content={<PieCustomTooltip />} />
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{ paddingTop: "20px" }}
                   />
-                </div>
-                <span className="text-xs ml-2">{issue.value}%</span>
-              </div>
-            ))}
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
+            <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
+              <Activity className="h-5 w-5 mr-2 text-blue-500" />
+              Weekly Case Load
+            </h2>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyCaseData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="cases" fill="#8884d8" radius={[4, 4, 0, 0]} barSize={36}>
+                    {weeklyCaseData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === 3 ? "#8884d8" : "#a794f7"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* Map Integration */}
-        <div className="bg-white p-4 rounded-lg shadow lg:col-span-2">
-          <h2 className="text-lg font-semibold mb-4">Active Blood Camps</h2>
-          <div className="h-80 bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-center p-4">
-              <MapPin className="h-10 w-10 mx-auto text-red-500 mb-2" />
-              <p className="text-gray-500">
-                Google Maps integration will show active blood camps here
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                10 active camps in your region
-              </p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center">
+              <MessageSquare className="h-5 w-5 mr-2 text-green-500" />
+              Contact Messages
+            </h2>
+            <div className="mt-2 md:mt-0">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {messages.length} total messages
+              </span>
             </div>
           </div>
-          <div className="flex justify-between items-center mt-4 text-sm">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-green-500"></span>{" "}
-                Active (8)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-yellow-500"></span>{" "}
-                Upcoming (2)
-              </span>
-            </div>
-            <button className="text-blue-500 hover:underline text-sm">
-              View All Camps
-            </button>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 text-left">
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
+                    Timestamp
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8">
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-500">Loading messages...</p>
+                    </td>
+                  </tr>
+                ) : messages.length > 0 ? (
+                  messages.map((msg, index) => (
+                    <tr
+                      key={msg.id}
+                      className={`hover:bg-gray-50 transition-colors duration-150 ${index === messages.length - 1 ? "rounded-b-lg" : ""}`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{msg.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{msg.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 truncate max-w-xs">{msg.message}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{msg.timestamp}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8">
+                      <p className="text-gray-500 flex flex-col items-center justify-center">
+                        <MessageSquare className="h-10 w-10 text-gray-300 mb-2" />
+                        <span>No messages found.</span>
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SupportDashboard;
+export default SupportDashboard
+
