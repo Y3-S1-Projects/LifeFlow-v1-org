@@ -1,8 +1,8 @@
-"use client"
-import { useState } from "react"
-import type React from "react"
+"use client";
+import { useState } from "react";
+import type React from "react";
 
-import { Mail, User, MessageSquare, Send, Heart } from "lucide-react"
+import { Mail, User, MessageSquare, Send, Heart } from "lucide-react";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -10,39 +10,41 @@ const ContactPage = () => {
     email: "",
     subject: "",
     message: "",
-  })
-  const [loading, setLoading] = useState(false)
-  const [responseMessage, setResponseMessage] = useState("")
+  });
+  const [loading, setLoading] = useState(false);
+  const [responseMessage, setResponseMessage] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setResponseMessage("")
+    e.preventDefault();
+    setLoading(true);
+    setResponseMessage("");
 
     try {
-      const response = await fetch("http://localhost:3000/api/contact", {
+      const response = await fetch("http://localhost:3001/contact/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
       if (response.ok) {
-        setResponseMessage("Message sent successfully!")
-        setFormData({ name: "", email: "", subject: "", message: "" })
+        setResponseMessage("Message sent successfully!");
+        setFormData({ name: "", email: "", subject: "", message: "" });
       } else {
-        setResponseMessage(data.error || "Failed to send message.")
+        setResponseMessage(data.error || "Failed to send message.");
       }
     } catch (error) {
-      setResponseMessage("An error occurred. Please try again.")
+      setResponseMessage("An error occurred. Please try again.");
     }
 
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white p-4">
@@ -58,7 +60,9 @@ const ContactPage = () => {
               <h2 className="text-3xl font-bold">Contact Us</h2>
               <Heart className="h-8 w-8 text-white animate-pulse" />
             </div>
-            <p className="mt-2 opacity-90">We're here to help with your blood donation inquiries</p>
+            <p className="mt-2 opacity-90">
+              We're here to help with your blood donation inquiries
+            </p>
           </div>
 
           {/* Form */}
@@ -149,7 +153,11 @@ const ContactPage = () => {
           {/* Response message */}
           {responseMessage && (
             <div
-              className={`p-4 text-center font-medium ${responseMessage.includes("success") ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"}`}
+              className={`p-4 text-center font-medium ${
+                responseMessage.includes("success")
+                  ? "text-green-600 bg-green-50"
+                  : "text-red-600 bg-red-50"
+              }`}
             >
               {responseMessage}
             </div>
@@ -162,8 +170,7 @@ const ContactPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ContactPage
-
+export default ContactPage;

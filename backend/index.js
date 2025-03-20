@@ -25,26 +25,20 @@ app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(express.json());
 
-
-
-
 // Allow requests from your frontend
 app.use(
   cors({
-    origin: "*", // Allow local frontend to access
+    origin: "http://localhost:3000", // Allow local frontend to access
     methods: "GET,POST,PUT,DELETE",
     credentials: true, // If using cookies/authentication
   })
 );
 
-// No need to loggin for these routes
-app.use("/contact", contactRoutes);
-
 // CSRF Protection Setup
 const { generateToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET,
   getTokenFromRequest: (req) =>
-    req.headers["x-csrf-token"] || req.cookies["x-csrf-token"]?.split("|")[0], // Read from both
+    req.headers["x-csrf-token"] || req.cookies["x-csrf-token"]?.split("|")[0],
   cookieName: "x-csrf-token",
   cookieOptions: {
     secure: true,
@@ -58,19 +52,18 @@ app.get("/api/csrf-token", (req, res) => {
   res.json({ csrfToken: generateToken(req, res) });
 });
 
-// Apply CSRF protection after token endpoint
-app.use(doubleCsrfProtection);
+// Routes that DO NOT need CSRF protection
+app.use("/api/contact", contactRoutes);
 
-// Routes
-app.use("/users", userRoutes);
+// Routes that NEED CSRF protection
+app.use("/users", doubleCsrfProtection, userRoutes);
 app.use("/api", loginUser);
-app.use("/camps", campRoutes);
-app.use("/appointments", appointmentRoutes);
-app.use("/organizers", organizerRoutes);
-app.use("/auth", authRoutes);
-app.use("/chatbot", chatbotRoutes);
-app.use("/admin", adminRoutes);
-
+app.use("/camps", doubleCsrfProtection, campRoutes);
+app.use("/appointments", doubleCsrfProtection, appointmentRoutes);
+app.use("/organizers", doubleCsrfProtection, organizerRoutes);
+app.use("/auth", doubleCsrfProtection, authRoutes);
+app.use("/chatbot", doubleCsrfProtection, chatbotRoutes);
+app.use("/admin", doubleCsrfProtection, adminRoutes);
 
 // MongoDB Connection with Error Handling
 const uri = process.env.ATLAS_URI;
