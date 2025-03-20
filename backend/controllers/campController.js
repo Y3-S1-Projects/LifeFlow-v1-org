@@ -1,6 +1,7 @@
 import Camp from "../models/Camp.js";
 import mongoose from "mongoose";
 import Appointment from "../models/Appointment.js";
+import Organizer from "../models/Organizer.js";
 
 export const createCamp = async (req, res) => {
   try {
@@ -57,11 +58,33 @@ export const createCamp = async (req, res) => {
       organizer,
     });
 
-    await newCamp.save();
+    // Save the new camp to the database
+    const savedCamp = await newCamp.save();
+    
+    // Update organizer's createdCamps array with the new camp ID
+    const updatedOrganizer = await Organizer.findByIdAndUpdate(
+      organizer,
+      { $push: { createdCamps: savedCamp._id } },
+      { new: true }
+    );
 
-    res
-      .status(201)
-      .json({ message: "Camp created successfully", camp: newCamp });
+    if (!updatedOrganizer) {
+      // If organizer not found, delete the camp that was just created
+      await Camp.findByIdAndDelete(savedCamp._id);
+      return res.status(404).json({ error: "Organizer not found" });
+    }
+
+    // Return the created camp in the response
+    res.status(201).json({ 
+      message: "Camp created successfully and added to organizer's profile", 
+      camp: savedCamp,
+      organizer: {
+        id: updatedOrganizer._id,
+        name: updatedOrganizer.orgName,
+        campCount: updatedOrganizer.createdCamps.length
+      }
+    });
+    
   } catch (error) {
     console.log("Error:", error.message);
     res
