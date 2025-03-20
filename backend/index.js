@@ -63,7 +63,7 @@ app.get("/api/csrf-token", (req, res) => {
 // });
 
 // Apply CSRF protection after token endpoint
-app.use(doubleCsrfProtection);
+
 
 // Routes
 app.use("/users", userRoutes);

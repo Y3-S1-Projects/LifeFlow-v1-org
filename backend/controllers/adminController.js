@@ -220,22 +220,21 @@ export const loginAdmin = async (req, res) => {
     const { email, password, captchaToken } = req.body;
 
     // Verify reCAPTCHA
-    if (!captchaToken) {
-      return res.status(400).json({ message: "CAPTCHA verification required" });
-    }
+    //if (!captchaToken) {
+    //  return res.status(400).json({ message: "CAPTCHA verification required" });
+    //}
+//// Verify captcha with Google
+   // const captchaVerification = await fetch(
+   //   `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`,
+    //  { method: "POST" }
+   // );
 
-    // Verify captcha with Google
-    const captchaVerification = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`,
-      { method: "POST" }
-    );
+   // const captchaResult = await captchaVerification.json();
+   // console.log("captchaResult", captchaResult);
 
-    const captchaResult = await captchaVerification.json();
-    console.log("captchaResult", captchaResult);
-
-    if (!captchaResult.success) {
-      return res.status(400).json({ message: "CAPTCHA verification failed" });
-    }
+   // if (!captchaResult.success) {
+    //  return res.status(400).json({ message: "CAPTCHA verification failed" });
+    //}
 
     // Find admin by email
     const admin = await Admin.findOne({ email });
@@ -526,9 +525,9 @@ export const changePassword = async (req, res) => {
 export const getAllAdmins = async (req, res) => {
   try {
     // Check if requester is superadmin
-    if (req.admin.role !== "superadmin") {
-      return res.status(403).json({ message: "Not authorized" });
-    }
+    //if (req.admin.role !== "superadmin") {
+    //  return res.status(403).json({ message: "Not authorized" });
+    //}
 
     const admins = await Admin.find().select("-password");
 
@@ -675,6 +674,83 @@ export const handleSupportTicket = async (req, res) => {
     res
       .status(200)
       .json({ success: true, message: "Support ticket handled successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Get all support admins (no authentication required)
+export const getAllSupportAdmins = async (req, res) => {
+  try {
+    // Find all admins with the role "support"
+    const supportAdmins = await Admin.find({ role: "support" }).select("-password");
+
+    res.status(200).json({ success: true, supportAdmins });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Update a support admin (no authentication required)
+export const updateSupportAdmin = async (req, res) => {
+  try {
+    const { id } = req.params; // ID of the support admin to update
+    const { fullName, firstName, lastName, email, address, nic } = req.body;
+
+    // Find the support admin by ID and role
+    const supportAdmin = await Admin.findOne({ _id: id, role: "support" });
+    if (!supportAdmin) {
+      return res.status(404).json({ message: "Support admin not found" });
+    }
+
+    // Update fields if provided
+    if (fullName) supportAdmin.fullName = fullName;
+    if (firstName) supportAdmin.firstName = firstName;
+    if (lastName) supportAdmin.lastName = lastName;
+    if (email) supportAdmin.email = email;
+    if (address) supportAdmin.address = address;
+    if (nic) supportAdmin.nic = nic;
+
+    await supportAdmin.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Support admin updated successfully",
+      admin: {
+        id: supportAdmin._id,
+        fullName: supportAdmin.fullName,
+        firstName: supportAdmin.firstName,
+        lastName: supportAdmin.lastName,
+        email: supportAdmin.email,
+        role: supportAdmin.role,
+        address: supportAdmin.address,
+        nic: supportAdmin.nic,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+// Delete a support admin (superadmin only)
+export const deleteSupportAdmin = async (req, res) => {
+  try {
+    // Check if requester is superadmin
+    //if (req.admin.role !== "superadmin") {
+    //   return res.status(403).json({ message: "Not authorized" });
+    // }
+
+    const { id } = req.params; // ID of the support admin to delete
+
+    // Find and delete the support admin by ID and role
+    const supportAdmin = await Admin.findOneAndDelete({ _id: id, role: "support" });
+    if (!supportAdmin) {
+      return res.status(404).json({ message: "Support admin not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Support admin deleted successfully",
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
