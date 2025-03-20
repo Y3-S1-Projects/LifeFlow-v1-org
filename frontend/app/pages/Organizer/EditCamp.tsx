@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +53,11 @@ import {
 } from "@/components/ui/select";
 import { getRoleFromToken, getUserIdFromToken } from "@/app/utils/auth";
 import { cn } from "@/lib/utils";
-import MapComponent from "@/app/components/Map";
+
+// Import Map component with dynamic loading to prevent SSR issues
+const MapComponent = dynamic(() => import("@/app/components/Map"), {
+  ssr: false,
+});
 
 // Form validation schema
 const formSchema = z.object({
@@ -84,8 +89,15 @@ const formSchema = z.object({
       message: "Longitude is required.",
     }),
     availableDates: z.object({
-      from: z.date(),
-      to: z.date(),
+      from: z.date().refine(date => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+        message: "Start date cannot be in the past",
+      }),
+      to: z.date().refine(date => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+        message: "End date cannot be in the past",
+      }),
+    }).refine(data => data.to >= data.from, {
+      message: "End date must be after start date",
+      path: ["to"],
     }),
     contact: z.object({
       phone: z.string().min(10, {
@@ -193,7 +205,17 @@ export default function EditCamp({ params }: { params: { id: string } }) {
         const campData = await response.json();
         
         // Set selected location for map
-        if (campData.lat && campData.lng) {
+        if (campData.location && campData.location.coordinates) {
+          // Update to use location coordinates based on the pattern from your first code snippet
+          setSelectedLocation({
+            lat: parseFloat(campData.location.coordinates[1]),
+            lng: parseFloat(campData.location.coordinates[0]),
+          });
+          
+          // Set lat/lng values in the form
+          form.setValue("lat", campData.location.coordinates[1].toString());
+          form.setValue("lng", campData.location.coordinates[0].toString());
+        } else if (campData.lat && campData.lng) {
           setSelectedLocation({
             lat: parseFloat(campData.lat),
             lng: parseFloat(campData.lng),
@@ -232,7 +254,7 @@ export default function EditCamp({ params }: { params: { id: string } }) {
   };
 
   // Form submission handler
-const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     // Only proceed if user is an organizer
     if (userRole !== "Organizer") {
       setError("Only organizers can edit blood donation camps");
@@ -268,6 +290,10 @@ const onSubmit = async (data: FormValues) => {
         body: JSON.stringify({
           ...data,
           availableDates,
+          location: {
+            type: "Point",
+            coordinates: [parseFloat(data.lng), parseFloat(data.lat)]
+          }
         }),
       });
   
@@ -278,7 +304,7 @@ const onSubmit = async (data: FormValues) => {
   
       toast.success("Camp updated successfully!");
       // Navigate back to camps list or detail page on success
-      router.push("/organizers/camps");
+      router.push("/organizer/camps");
     } catch (err: any) {
       console.error("Error updating camp:", err);
       setError(err.message || "Failed to update camp. Please try again.");
@@ -400,57 +426,57 @@ const onSubmit = async (data: FormValues) => {
                   />
                 </div>
 
-                
-<FormField
-  control={form.control}
-  name="availableDates"
-  render={({ field }) => (
-    <FormItem className="flex flex-col">
-      <FormLabel>Available Dates</FormLabel>
-      <FormControl>
-        <div className="flex items-center">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[280px] justify-start text-left font-normal",
-                  !field.value && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {field.value && field.value.from ? (
-                  field.value.to ? (
-                    `${format(
-                      field.value.from,
-                      "PPP"
-                    )} - ${format(field.value.to, "PPP")}`
-                  ) : (
-                    format(field.value.from, "PPP")
-                  )
-                ) : (
-                  <span>Pick a date range</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="range"
-                selected={{
-                  from: field.value?.from,
-                  to: field.value?.to,
-                }}
-                onSelect={field.onChange}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+                <FormField
+                  control={form.control}
+                  name="availableDates"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Available Dates</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-[280px] justify-start text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value && field.value.from ? (
+                                  field.value.to ? (
+                                    `${format(
+                                      field.value.from,
+                                      "PPP"
+                                    )} - ${format(field.value.to, "PPP")}`
+                                  ) : (
+                                    format(field.value.from, "PPP")
+                                  )
+                                ) : (
+                                  <span>Pick a date range</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="range"
+                                selected={{
+                                  from: field.value?.from,
+                                  to: field.value?.to,
+                                }}
+                                onSelect={field.onChange}
+                                initialFocus
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Address Information</h3>
@@ -545,15 +571,21 @@ const onSubmit = async (data: FormValues) => {
                   </div>
                 </div>
 
-                {/* Map Component */}
-                <div className="h-96 w-full">
+                {/* Map Component with updated props */}
+                <div className="h-96 w-full border rounded-md overflow-hidden">
                   <MapComponent
                     userLatitude={selectedLocation?.lat || 0}
                     userLongitude={selectedLocation?.lng || 0}
                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_API || ""}
                     showNearbyCamps={false}
+                    showAllCamps={true}
+                    //selectedCampId={campId || ""}
                     onLocationSelect={handleLocationSelect}
+                    isClickable={true}
                   />
+                  <div className="mt-2 text-xs text-gray-500">
+                    Latitude: {selectedLocation?.lat || "Not set"}, Longitude: {selectedLocation?.lng || "Not set"}
+                  </div>
                 </div>
 
                 <div className="space-y-4">

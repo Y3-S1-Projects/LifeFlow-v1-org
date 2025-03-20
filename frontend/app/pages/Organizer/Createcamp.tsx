@@ -85,8 +85,15 @@ const formSchema = z.object({
     message: "Longitude is required.",
   }),
   availableDates: z.object({
-    from: z.date(),
-    to: z.date(),
+    from: z.date().refine(date => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+      message: "Start date cannot be in the past",
+    }),
+    to: z.date().refine(date => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+      message: "End date cannot be in the past",
+    }),
+  }).refine(data => data.to >= data.from, {
+    message: "End date must be after start date",
+    path: ["to"],
   }),
   contact: z.object({
     phone: z.string().min(10, {
@@ -171,22 +178,22 @@ export default function CreateCamp() {
       setError("Only organizers can create blood donation camps");
       return;
     }
-
+  
     setLoading(true);
     setError(null);
-
+  
     try {
       // Format the dates for API submission
       const availableDates = [];
       const currentDate = new Date(values.availableDates.from);
       const endDate = new Date(values.availableDates.to);
       const userID = await getUserIdFromToken();
-
+  
       while (currentDate <= endDate) {
         availableDates.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
       }
-
+  
       const response = await fetch("http://localhost:3001/camps/create", {
         method: "POST",
         headers: {
@@ -201,14 +208,17 @@ export default function CreateCamp() {
           organizer: userID, // This would be dynamically set in a real app
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.error || "Failed to create camp");
       }
-
+  
       toast.success("Camp created successfully!");
+  
+      // Navigate back to camps list or detail page on success
+      router.push("/organizer/camps");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
@@ -365,15 +375,16 @@ export default function CreateCamp() {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="range"
-                              selected={{
-                                from: field.value?.from,
-                                to: field.value?.to,
-                              }}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
+                          <Calendar
+  mode="range"
+  selected={{
+    from: field.value?.from,
+    to: field.value?.to,
+  }}
+  onSelect={field.onChange}
+  initialFocus
+  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+/>
                           </PopoverContent>
                         </Popover>
                       </div>
@@ -446,7 +457,7 @@ export default function CreateCamp() {
                               placeholder="Latitude"
                               {...field}
                               readOnly
-                              value={selectedLocation?.lat || ""}
+                              value={selectedLocation?.lat?.toString() || field.value || ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -465,7 +476,7 @@ export default function CreateCamp() {
                               placeholder="Longitude"
                               {...field}
                               readOnly
-                              value={selectedLocation?.lng || ""}
+                              value={selectedLocation?.lng?.toString() || field.value || ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -476,15 +487,20 @@ export default function CreateCamp() {
                 </div>
               </div>
 
-              {/* Map Component */}
-              <div className="h-96 w-full">
+              {/* Map Component with updated props */}
+              <div className="h-96 w-full border rounded-md overflow-hidden">
                 <MapComponent
                   userLatitude={selectedLocation?.lat || 0}
                   userLongitude={selectedLocation?.lng || 0}
                   apiKey={process.env.NEXT_PUBLIC_GOOGLE_API || ""}
                   showNearbyCamps={false}
+                  showAllCamps={true}
                   onLocationSelect={handleLocationSelect}
+                  isClickable={true}
                 />
+                <div className="mt-2 text-xs text-gray-500">
+                  Latitude: {selectedLocation?.lat || "Not set"}, Longitude: {selectedLocation?.lng || "Not set"}
+                </div>
               </div>
 
               <div className="space-y-4">
