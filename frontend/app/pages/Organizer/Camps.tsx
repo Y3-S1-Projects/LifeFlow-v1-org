@@ -161,6 +161,7 @@ const Camps = () => {
   };
 
   const handleEditCamp = (campId: string) => {
+    console.log('Camp ID:', campId);
     router.push(`/organizer/camps/edit/${campId}`);
   };
 
