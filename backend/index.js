@@ -12,6 +12,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import { doubleCsrf } from "csrf-csrf";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import contactRoutes from "./routes/contactRoutes.js";
 
 dotenv.config();
 
@@ -24,19 +25,20 @@ app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(express.json());
 
-// Configure CORS
+
+
+
+// Allow requests from your frontend
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "https://lifeflow-woad.vercel.app",
-    ],
+    origin: "*", // Allow local frontend to access
     methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type,Authorization,X-CSRF-Token",
-    credentials: true,
+    credentials: true, // If using cookies/authentication
   })
 );
+
+// No need to loggin for these routes
+app.use("/api/contact", contactRoutes);
 
 // CSRF Protection Setup
 const { generateToken, doubleCsrfProtection } = doubleCsrf({
@@ -56,12 +58,6 @@ app.get("/api/csrf-token", (req, res) => {
   res.json({ csrfToken: generateToken(req, res) });
 });
 
-// app.use((req, res, next) => {
-//   console.log("Received CSRF Token:", req.headers["x-csrf-token"]);
-//   console.log("Received Cookies:", req.cookies);
-//   next();
-// });
-
 // Apply CSRF protection after token endpoint
 app.use(doubleCsrfProtection);
 
@@ -74,6 +70,7 @@ app.use("/organizers", organizerRoutes);
 app.use("/auth", authRoutes);
 app.use("/chatbot", chatbotRoutes);
 app.use("/admin", adminRoutes);
+
 
 // MongoDB Connection with Error Handling
 const uri = process.env.ATLAS_URI;
