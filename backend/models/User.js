@@ -1,30 +1,30 @@
 import mongoose from "mongoose";
 import moment from "moment";
 
-const EmergencyContactSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  relationship: {
-    type: String,
-    enum: ["Spouse", "Parent", "Sibling", "Friend", "Guardian", "Other"],
-    required: true,
-  },
-  customRelationship: {
-    type: String,
-    required: function () {
-      return this.relationship === "Other";
-    },
-    trim: true,
-  },
-  phoneNumber: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-});
+// const EmergencyContactSchema = new mongoose.Schema({
+//   fullName: {
+//     type: String,
+//     required: true,
+//     trim: true,
+//   },
+//   relationship: {
+//     type: String,
+//     enum: ["Spouse", "Parent", "Sibling", "Friend", "Guardian", "Other"],
+//     required: true,
+//   },
+//   customRelationship: {
+//     type: String,
+//     required: function () {
+//       return this.relationship === "Other";
+//     },
+//     trim: true,
+//   },
+//   phoneNumber: {
+//     type: String,
+//     required: true,
+//     trim: true,
+//   },
+// });
 
 const DonationHistorySchema = new mongoose.Schema({
   donationDate: {
@@ -154,7 +154,27 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-  emergencyContacts: [EmergencyContactSchema],
+  emergencyContact: {
+    fullName: {
+      type: String,
+      trim: true,
+    },
+    relationship: {
+      type: String,
+      enum: ["Spouse", "Parent", "Sibling", "Friend", "Guardian", "Other"],
+    },
+    customRelationship: {
+      type: String,
+      required: function () {
+        return this.relationship === "Other";
+      },
+      trim: true,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+    },
+  },
   isVerified: { type: Boolean, default: false },
   donationHistory: [DonationHistorySchema],
   isEligible: {
@@ -262,26 +282,20 @@ UserSchema.methods.updateDonationStats = function () {
 };
 
 // Method to check if user is eligible to donate based on next eligible date
-UserSchema.methods.checkDonationEligibility = function () {
-  // Check if user is eligible at profile level
-  if (!this.isEligible) {
-    this.isEligibleToDonate = false;
-    return false;
-  }
+// UserSchema.methods.checkDonationEligibility = function () {
+//   // If no nextEligibleDonationDate is set, user hasn't donated before or it wasn't calculated
+//   if (!this.nextEligibleDonationDate) {
+//     // If user has necessary profile data, they are eligible
+//     this.isEligibleToDonate = true;
+//     return true;
+//   }
 
-  // If no nextEligibleDonationDate is set, user hasn't donated before or it wasn't calculated
-  if (!this.nextEligibleDonationDate) {
-    // If user has necessary profile data, they are eligible
-    this.isEligibleToDonate = true;
-    return true;
-  }
+//   // Compare nextEligibleDonationDate with current date
+//   const currentDate = new Date();
+//   this.isEligibleToDonate = currentDate >= this.nextEligibleDonationDate;
 
-  // Compare nextEligibleDonationDate with current date
-  const currentDate = new Date();
-  this.isEligibleToDonate = currentDate >= this.nextEligibleDonationDate;
-
-  return this.isEligibleToDonate;
-};
+//   return this.isEligibleToDonate;
+// };
 
 // Pre-save middleware to update all donation-related fields
 UserSchema.pre("save", function (next) {
@@ -292,8 +306,7 @@ UserSchema.pre("save", function (next) {
     this.dateOfBirth &&
     this.address.street &&
     this.address.city &&
-    this.address.state &&
-    !this.drugUsage
+    this.address.state
   ) {
     this.isEligible = true;
   } else {
@@ -301,7 +314,7 @@ UserSchema.pre("save", function (next) {
   }
 
   // If there's a donation history, calculate stats and eligibility
-  if (this.donationHistory.length > 0) {
+  if (this.donationHistory && this.donationHistory.length > 0) {
     // Update donation statistics
     this.updateDonationStats();
 
@@ -311,10 +324,10 @@ UserSchema.pre("save", function (next) {
       lastDonation.donationType,
       lastDonation.donationDate
     );
-  }
 
-  // Check if eligible to donate now
-  this.checkDonationEligibility();
+    // Check if eligible to donate now (only if they've donated before)
+    this.checkDonationEligibility();
+  }
 
   next();
 });

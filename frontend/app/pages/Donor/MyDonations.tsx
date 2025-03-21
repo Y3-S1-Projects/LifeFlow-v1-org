@@ -29,6 +29,8 @@ import { getUserIdFromToken } from "@/app/utils/auth";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { RouteGuard } from "@/app/components/RouteGuard";
+import useUser from "../../hooks/useUser";
+import { useDarkMode } from "@/app/contexts/DarkModeContext";
 
 interface Donation {
   donationDate: string;
@@ -84,7 +86,9 @@ const SearchParamsHandler = ({ onMessageFound }: SearchParamsHandlerProps) => {
 
 const MyDonationsPage: React.FC = () => {
   const router = useRouter();
+  const { user } = useUser();
   const [isDarkMode] = useState(false);
+  const { darkMode } = useDarkMode();
   const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -99,21 +103,6 @@ const MyDonationsPage: React.FC = () => {
     firstDonation: null,
     mostRecentDonation: null,
   });
-
-  // Handle success messages from redirects
-  // useEffect(() => {
-  //   const message = searchParams.get("message");
-  //   if (message && !toastShown) {
-  //     const timer = setTimeout(() => {
-  //       toast.success(message);
-  //       toastShownRef.current = true;
-  //       router.replace("/donor/my-donations");
-  //       setToastShown(true);
-  //     }, 500);
-
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [searchParams, toastShown, router]);
 
   // Update stats when donation history changes
   useEffect(() => {
@@ -157,6 +146,7 @@ const MyDonationsPage: React.FC = () => {
       } else {
         setNextEligibleDate("Eligible now");
       }
+      console.log("nexteligible", nextEligibleDate);
     } catch (err) {
       console.error("Error fetching donation history:", err);
       setHistoryError((err as Error).message);
@@ -205,7 +195,7 @@ const MyDonationsPage: React.FC = () => {
       mostRecentDonation,
     });
   };
-
+  console.log(user?.nextEligibleDonationDate);
   const calculateNextEligibleDate = (donations: Donation[]) => {
     if (!donations || donations.length === 0) return "Eligible now";
 
@@ -275,15 +265,19 @@ const MyDonationsPage: React.FC = () => {
 
   return (
     <RouteGuard requiredRoles={["User"]}>
-      <div className="w-full">
+      <div
+        className={`w-full ${
+          darkMode
+            ? "bg-gray-900 border-gray-800 text-white"
+            : "bg-gray-100 text-black"
+        }`}
+      >
         <Header />
         <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                My Donations
-              </h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold  mb-2">My Donations</h1>
+              <p className="">
                 Track your donation history and see the impact you&apos;ve made
               </p>
             </div>
@@ -305,7 +299,13 @@ const MyDonationsPage: React.FC = () => {
               </div>
             </div>
           ) : historyError ? (
-            <div className="text-center py-12 bg-red-50 rounded-xl border border-red-200">
+            <div
+              className={`text-center py-12  rounded-xl border  ${
+                darkMode
+                  ? "bg-gray-800 border-gray-500"
+                  : "bg-white border-gray-100"
+              } `}
+            >
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
               <p className="text-red-600 font-medium mb-2">
                 Error loading your donation history
@@ -324,74 +324,114 @@ const MyDonationsPage: React.FC = () => {
             <>
               {/* Donation Stats Cards */}
               {donationHistory.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols gap-4 mb-8">
-                  <Card className="bg-gradient-to-br from-red-50 to-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  {/* Total Donations Card */}
+                  <Card className=" shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">
+                          <p className="text-sm font-semibold  uppercase tracking-wide">
                             Total Donations
                           </p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-3xl font-bold  mt-2">
                             {donationStats.totalDonations}
                           </p>
                         </div>
-                        <div className="bg-red-100 p-2 rounded-full">
-                          <Droplet className="h-6 w-6 text-red-600" />
+                        <div
+                          className={` ${
+                            darkMode ? "bg-gray-800" : "bg-red-100"
+                          } p-3 rounded-full`}
+                        >
+                          <Droplet
+                            className={`h-6 w-6 ${
+                              darkMode ? "text-white " : "text-red-600 "
+                            }`}
+                          />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-red-50 to-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
+                  {/* Total Pints Card */}
+                  <Card className=" shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">
+                          <p className="text-sm font-semibold  uppercase tracking-wide">
                             Total Pints
                           </p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-3xl font-bold mt-2">
                             {donationStats.totalPints}
                           </p>
                         </div>
-                        <div className="bg-red-100 p-2 rounded-full">
-                          <BarChart className="h-6 w-6 text-red-600" />
+                        <div
+                          className={` ${
+                            darkMode ? "bg-gray-800" : "bg-red-100"
+                          } p-3 rounded-full`}
+                        >
+                          <BarChart
+                            className={`h-6 w-6 ${
+                              darkMode ? "text-white " : "text-red-600 "
+                            }`}
+                          />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-red-50 to-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
+                  {/* Lives Impacted Card */}
+                  <Card className=" shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">
+                          <p className="text-sm font-semibold  uppercase tracking-wide">
                             Lives Impacted
                           </p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-3xl font-bold  mt-2">
                             {donationStats.livesImpacted}
                           </p>
                         </div>
-                        <div className="bg-red-100 p-2 rounded-full">
-                          <Users className="h-6 w-6 text-red-600" />
+                        <div
+                          className={` ${
+                            darkMode ? "bg-gray-800" : "bg-red-100"
+                          } p-3 rounded-full`}
+                        >
+                          <Users
+                            className={`h-6 w-6 ${
+                              darkMode ? "text-white " : "text-red-600 "
+                            }`}
+                          />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-red-50 to-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
+                  {/* Next Eligible Card */}
+                  <Card className=" shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">
+                          <p className="text-sm font-semibold  uppercase tracking-wide">
                             Next Eligible
                           </p>
-                          <p className="text-lg font-bold text-gray-900">
-                            {nextEligibleDate}
+                          <p className="text-2xl font-bold  mt-2">
+                            {user?.nextEligibleDonationDate
+                              ? new Date(
+                                  user.nextEligibleDonationDate
+                                ).toLocaleDateString()
+                              : "N/A"}
                           </p>
                         </div>
-                        <div className="bg-red-100 p-2 rounded-full">
-                          <Clock className="h-6 w-6 text-red-600" />
+                        <div
+                          className={` ${
+                            darkMode ? "bg-gray-800" : "bg-red-100"
+                          } p-3 rounded-full`}
+                        >
+                          <Clock
+                            className={`h-6 w-6 ${
+                              darkMode ? "text-white " : "text-red-600 "
+                            }`}
+                          />
                         </div>
                       </div>
                     </CardContent>
@@ -402,25 +442,25 @@ const MyDonationsPage: React.FC = () => {
               {/* Donation Timeline Card */}
               <Card className="shadow-sm hover:shadow-md transition-all">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl text-gray-800">
+                  <CardTitle className="text-xl ">
                     Your Donation Journey
                   </CardTitle>
                 </CardHeader>
 
                 <CardContent className="p-6">
                   {donationHistory.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                      <Droplet className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500 font-medium mb-2">
+                    <div className="text-center py-12  rounded-xl border border-dashed border-gray-200">
+                      <Droplet className="h-12 w-12  mx-auto mb-3" />
+                      <p className=" font-medium mb-2">
                         No donations recorded yet
                       </p>
-                      <p className="text-sm text-gray-400 max-w-md mx-auto mb-4">
+                      <p className="text-sm  max-w-md mx-auto mb-4">
                         Your donation journey will appear here once you make
                         your first contribution
                       </p>
                       <Button
                         onClick={handleScheduleDonation}
-                        className="bg-red-600 hover:bg-red-700 text-white"
+                        className="bg-red-600 hover:bg-red-700 "
                       >
                         Schedule Your First Donation
                       </Button>
@@ -428,9 +468,7 @@ const MyDonationsPage: React.FC = () => {
                   ) : (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-medium text-gray-700">
-                          Your donation timeline
-                        </h3>
+                        <h3 className="font-medium ">Your donation timeline</h3>
                         <Select
                           defaultValue={sortOrder}
                           onValueChange={(value) => setSortOrder(value)}
@@ -453,19 +491,33 @@ const MyDonationsPage: React.FC = () => {
                           {donationHistory.map((donation, index) => (
                             <div
                               key={index}
-                              className="flex flex-col sm:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all"
+                              className={` flex flex-col sm:flex-row items-start gap-4 rounded-xl p-4 border border-gray-200 hover:border-red-200 hover:shadow-md transition-all ${
+                                darkMode
+                                  ? "bg-gray-800 border-gray-600"
+                                  : "bg-gray-50"
+                              }`}
                             >
-                              <div className="flex items-center justify-center bg-red-100 rounded-full h-16 w-16 flex-shrink-0">
-                                <Droplet className="h-8 w-8 text-red-600" />
+                              <div
+                                className={`flex items-center justify-center  rounded-full h-16 w-16 flex-shrink-0 ${
+                                  darkMode ? "bg-gray-700" : "bg-red-100"
+                                }`}
+                              >
+                                <Droplet className="h-8 w-8 " />
                               </div>
 
                               <div className="space-y-2 flex-grow">
                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                   <div>
-                                    <p className="font-semibold text-lg text-gray-800">
+                                    <p className="font-semibold text-lg ">
                                       {donation.donationType}
                                     </p>
-                                    <p className="text-red-800">
+                                    <p
+                                      className={`${
+                                        darkMode
+                                          ? "text-gray-400"
+                                          : "text-black"
+                                      }`}
+                                    >
                                       {donation.donationCenter.name}
                                     </p>
                                   </div>

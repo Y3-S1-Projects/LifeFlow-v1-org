@@ -34,8 +34,15 @@ import { format } from "date-fns";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { toast } from "sonner";
-import { getUserIdFromToken } from "@/app/utils/auth";
+import { getUserIdFromToken, getToken } from "@/app/utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
+import dynamic from "next/dynamic";
+
+// Import Map component with dynamic loading to prevent SSR issues
+const MapComponent = dynamic(() => import("@/app/components/Map"), {
+  ssr: false,
+});
+
 interface Address {
   street: string;
   city: string;
@@ -74,8 +81,27 @@ const Camps = () => {
   const [campUsers, setCampUsers] = useState<User[]>([]);
   const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${publicApi}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [publicApi]);
 
   const fetchCamps = async () => {
     const organizerId = await getUserIdFromToken();
@@ -91,7 +117,7 @@ const Camps = () => {
 
   useEffect(() => {
     fetchCamps();
-  }, [fetchCamps]);
+  }, []);
 
   const fetchCampUsers = async (campId: string) => {
     try {
@@ -113,7 +139,14 @@ const Camps = () => {
     if (confirm("Are you sure you want to delete this camp?")) {
       setIsDeleting(true);
       try {
-        await axios.delete(`${publicApi}/camps/delete/${campId}`);
+        const token = getToken();
+        await axios.delete(`${publicApi}/camps/delete/${campId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-Token": csrfToken,
+          },
+          withCredentials: true,
+        });
         setCamps(camps.filter((camp) => camp._id !== campId));
         if (selectedCamp && selectedCamp._id === campId) {
           setSelectedCamp(null);
@@ -128,7 +161,8 @@ const Camps = () => {
   };
 
   const handleEditCamp = (campId: string) => {
-    router.push(`${publicApi}/camps/edit/${campId}`);
+    console.log('Camp ID:', campId);
+    router.push(`/organizer/camps/edit/${campId}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -319,15 +353,27 @@ const Camps = () => {
                             </div>
                           </div>
                         </div>
+                        
+                        {/* Map Component */}
                         <div className="mt-4">
                           <h3 className="text-sm font-medium mb-2">
-                            Coordinates
+                            Camp Location
                           </h3>
-                          <p className="text-sm">
-                            Latitude: {selectedCamp.location.coordinates[1]}
-                            <br />
-                            Longitude: {selectedCamp.location.coordinates[0]}
-                          </p>
+                          <div className="w-full h-80 rounded-md overflow-hidden border">
+                            <MapComponent
+                              apiKey={apiKey}
+                              userLatitude={selectedCamp.location.coordinates[1]}
+                              userLongitude={selectedCamp.location.coordinates[0]}
+                              showNearbyCamps={false}
+                              showAllCamps={true}
+                              selectedCampId={selectedCamp._id}
+                              onCampSelect={() => {}}
+                              isClickable={false}
+                            />
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">
+                            Latitude: {selectedCamp.location.coordinates[1]}, Longitude: {selectedCamp.location.coordinates[0]}
+                          </div>
                         </div>
                       </TabsContent>
                     </Tabs>

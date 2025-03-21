@@ -242,7 +242,7 @@ const DonorDashboard: React.FC = () => {
     const today = new Date().getTime();
     const diffTime = Math.abs(today - donationDate);
     const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return days >= 56; // 56 days is typical minimum between whole blood donations
+    return days >= 56;
   };
 
   const fetchDonationHistory = async () => {
@@ -341,6 +341,7 @@ const DonorDashboard: React.FC = () => {
 
   return (
     <RouteGuard requiredRoles={["User"]}>
+      <SearchParamsHandler onMessageFound={(message) => {}} />
       <div className={`w-full ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
         <Header />
         <div className="min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col">

@@ -1,6 +1,7 @@
 import Camp from "../models/Camp.js";
 import mongoose from "mongoose";
 import Appointment from "../models/Appointment.js";
+import Organizer from "../models/Organizer.js";
 
 export const createCamp = async (req, res) => {
   try {
@@ -57,11 +58,33 @@ export const createCamp = async (req, res) => {
       organizer,
     });
 
-    await newCamp.save();
+    // Save the new camp to the database
+    const savedCamp = await newCamp.save();
+    
+    // Update organizer's createdCamps array with the new camp ID
+    const updatedOrganizer = await Organizer.findByIdAndUpdate(
+      organizer,
+      { $push: { createdCamps: savedCamp._id } },
+      { new: true }
+    );
 
-    res
-      .status(201)
-      .json({ message: "Camp created successfully", camp: newCamp });
+    if (!updatedOrganizer) {
+      // If organizer not found, delete the camp that was just created
+      await Camp.findByIdAndDelete(savedCamp._id);
+      return res.status(404).json({ error: "Organizer not found" });
+    }
+
+    // Return the created camp in the response
+    res.status(201).json({ 
+      message: "Camp created successfully and added to organizer's profile", 
+      camp: savedCamp,
+      organizer: {
+        id: updatedOrganizer._id,
+        name: updatedOrganizer.orgName,
+        campCount: updatedOrganizer.createdCamps.length
+      }
+    });
+    
   } catch (error) {
     console.log("Error:", error.message);
     res
@@ -124,6 +147,32 @@ export const getCamps = async (req, res) => {
     res.status(500).json({ message: "Error fetching camps", error });
   }
 };
+
+// Controller method (add to your existing controller file)
+export const getCampById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid camp ID format" });
+    }
+    
+    const camp = await Camp.findById(id);
+    
+    if (!camp) {
+      return res.status(404).json({ message: "Camp not found" });
+    }
+    
+    res.status(200).json(camp);
+  } catch (error) {
+    console.error("Error fetching camp by ID:", error);
+    res.status(500).json({ 
+      message: "Error fetching camp", 
+      error: error.message 
+    });
+  }
+};
+
 
 export const updateCamp = async (req, res) => {
   try {
