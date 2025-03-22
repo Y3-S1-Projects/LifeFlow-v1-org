@@ -128,7 +128,7 @@ export default function DonorProfilePage() {
         emergencyContact: {
           fullName: user.emergencyContact?.fullName || "",
           relationship: user.emergencyContact?.relationship || "",
-          phone: user.emergencyContact?.phone || "",
+          phone: user.emergencyContact?.phoneNumber || "",
         },
       });
     }
@@ -214,7 +214,7 @@ export default function DonorProfilePage() {
         emergencyContact: {
           fullName: user.emergencyContact?.fullName || "",
           relationship: user.emergencyContact?.relationship || "",
-          phone: user.emergencyContact?.phone || "",
+          phone: user.emergencyContact?.phoneNumber || "",
         },
       });
     }
@@ -903,7 +903,7 @@ export default function DonorProfilePage() {
                                   Phone
                                 </h4>
                                 <p className="mt-1">
-                                  {user.emergencyContact.phone ||
+                                  {user.emergencyContact.phoneNumber ||
                                     "Not provided"}
                                 </p>
                               </div>

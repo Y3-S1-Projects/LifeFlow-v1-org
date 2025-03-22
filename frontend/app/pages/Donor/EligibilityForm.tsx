@@ -36,6 +36,11 @@ interface FormErrors {
   state?: string;
   nicNo?: string;
   location?: string;
+  emergencyContactFullName?: string;
+  Relationship?: string;
+  emergencyContactPhoneNumber?: string;
+  emergencyContactCustomRelationship?: string;
+  emergencyContactRelationship?: string;
 }
 interface Location {
   latitude: number | null;
@@ -54,6 +59,12 @@ interface FormData {
   healthConditions: string[];
   additionalInfo: string;
   weight: number | null;
+  emergencyContact: {
+    fullName: string;
+    relationship: string;
+    phoneNumber: string;
+    customRelationship: string;
+  };
   address: {
     street: string;
     city: string;
@@ -90,6 +101,12 @@ export default function EligibilityForm() {
       street: "",
       city: "",
       state: "",
+    },
+    emergencyContact: {
+      fullName: "",
+      relationship: "",
+      phoneNumber: "",
+      customRelationship: "",
     },
     location: {
       latitude: null,
@@ -151,6 +168,20 @@ export default function EligibilityForm() {
             : prevData.lastDonationDate,
           healthConditions: user.healthConditions || prevData.healthConditions,
           additionalInfo: user.additionalInfo || prevData.additionalInfo,
+          emergencyContact: {
+            fullName:
+              user.emergencyContact?.fullName ||
+              prevData.emergencyContact.fullName,
+            relationship:
+              user.emergencyContact?.relationship ||
+              prevData.emergencyContact.relationship,
+            phoneNumber:
+              user.emergencyContact?.phoneNumber ||
+              prevData.emergencyContact.phoneNumber,
+            customRelationship:
+              user.emergencyContact?.relationship ||
+              prevData.emergencyContact.customRelationship,
+          },
           address: {
             street: user.address?.street || prevData.address.street,
             city: user.address?.city || prevData.address.city,
@@ -322,7 +353,20 @@ export default function EligibilityForm() {
       newErrors.bloodType = "Blood type is required";
       errorMessages.push("Blood type is required");
     }
-
+    if (!formData.emergencyContact.fullName) {
+      newErrors.emergencyContactFullName = "Emergency contact name is required";
+      errorMessages.push("Emergency contact name is required");
+    }
+    if (!formData.emergencyContact.phoneNumber) {
+      newErrors.emergencyContactFullName =
+        "Emergency contact phone number is required";
+      errorMessages.push("Emergency contact phone number is required");
+    }
+    if (!formData.emergencyContact.relationship) {
+      newErrors.emergencyContactFullName =
+        "Emergency contact relationship is required";
+      errorMessages.push("Emergency contact relationship is required");
+    }
     if (!termsAccepted) {
       newErrors.terms = "You must accept the terms and conditions";
       errorMessages.push("Terms and conditions must be accepted");
@@ -735,6 +779,121 @@ export default function EligibilityForm() {
               {errors.state && (
                 <p className="text-red-500 text-sm">{errors.state}</p>
               )}
+            </div>
+
+            <div className="space-y-4">
+              <h3 className=" font-semibold">Emergency Contact</h3>
+              <Label htmlFor="emergencyContactFullName">
+                Emergency Contact Full Name
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="emergencyContactFullName"
+                name="emergencyContactFullName"
+                type="text"
+                value={formData.emergencyContact.fullName}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    emergencyContact: {
+                      ...formData.emergencyContact,
+                      fullName: e.target.value,
+                    },
+                  })
+                }
+              />
+              {errors.emergencyContactFullName && (
+                <p className="text-red-500 text-sm">
+                  {errors.emergencyContactFullName}
+                </p>
+              )}
+              <div>
+                <Label htmlFor="emergencyContactRelationship">
+                  Relationship<span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.emergencyContact.relationship}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      emergencyContact: {
+                        ...formData.emergencyContact,
+                        relationship: value,
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger id="emergencyContactRelationship">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Spouse">Spouse</SelectItem>
+                    <SelectItem value="Parent">Parent</SelectItem>
+                    <SelectItem value="Sibling">Sibling</SelectItem>
+                    <SelectItem value="Friend">Friend</SelectItem>
+                    <SelectItem value="Guardian">Guardian</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.emergencyContactRelationship && (
+                  <p className="text-red-500 text-sm">
+                    {errors.emergencyContactRelationship}
+                  </p>
+                )}
+              </div>
+
+              {formData.emergencyContact.relationship === "Other" && (
+                <div>
+                  <Label htmlFor="emergencyContactCustomRelationship">
+                    Specify Relationship<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="emergencyContactCustomRelationship"
+                    name="emergencyContactCustomRelationship"
+                    type="text"
+                    value={formData.emergencyContact.customRelationship}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        emergencyContact: {
+                          ...formData.emergencyContact,
+                          customRelationship: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                  {errors.emergencyContactCustomRelationship && (
+                    <p className="text-red-500 text-sm">
+                      {errors.emergencyContactCustomRelationship}
+                    </p>
+                  )}
+                </div>
+              )}
+              <div>
+                <Label htmlFor="emergencyContactPhoneNumber">
+                  Phone Number<span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="emergencyContactPhoneNumber"
+                  name="emergencyContactPhoneNumber"
+                  type="tel"
+                  value={formData.emergencyContact.phoneNumber}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      emergencyContact: {
+                        ...formData.emergencyContact,
+                        phoneNumber: e.target.value,
+                      },
+                    })
+                  }
+                />
+                {errors.emergencyContactPhoneNumber && (
+                  <p className="text-red-500 text-sm">
+                    {errors.emergencyContactPhoneNumber}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">

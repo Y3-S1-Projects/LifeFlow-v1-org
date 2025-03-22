@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "../../components/Footer";
+import { Toaster } from "@/components/ui/sonner";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axios from "axios";
 
 interface ProgressStepProps {
   step: number;
@@ -86,6 +90,7 @@ interface FormData {
   pincode: string;
   facilities: string;
   equipmentList: string;
+  password: string;
 }
 
 const OrganizerRegistration: React.FC = () => {
@@ -110,10 +115,28 @@ const OrganizerRegistration: React.FC = () => {
     pincode: "",
     facilities: "",
     equipmentList: "",
+    password: "",
   });
+  const API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://lifeflow-v1-org-production.up.railway.app"
+    : "http://localhost:3001";
+    const [csrfToken, setCsrfToken] = useState<string>("");
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [, setScrolled] = useState(false);
+  const router = useRouter();
+
+  // Calculate max and min dates for year established and license validity
+  const currentYear = new Date().getFullYear();
+  const currentDate = new Date().toISOString().split('T')[0];
+  
+  // Calculate max date (5 years from now) for license validity
+  const maxValidityDate = new Date();
+  maxValidityDate.setFullYear(maxValidityDate.getFullYear() + 5);
+  const maxValidityDateString = maxValidityDate.toISOString().split('T')[0];
 
   // Handle scroll effect for header
   useEffect(() => {
@@ -124,11 +147,113 @@ const OrganizerRegistration: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const validateStep = (step: number) => {
+    const newErrors: Record<string, string> = {};
+    
+    switch (step) {
+      case 1:
+        if (!formData.orgName) newErrors.orgName = "Organization Name is required";
+        if (!formData.orgType) newErrors.orgType = "Organization Type is required";
+        if (!formData.regNumber) newErrors.regNumber = "Registration Number is required";
+        if (!formData.yearEstablished) {
+          newErrors.yearEstablished = "Year Established is required";
+        } else {
+          const year = parseInt(formData.yearEstablished);
+          if (isNaN(year) || year > currentYear) {
+            newErrors.yearEstablished = "Year must be valid and in the past";
+          }
+        }
+        
+        if (formData.website) {
+          const websiteRegex = /^(https?:\/\/)?(www\.)[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(.*)$/;
+          if (!websiteRegex.test(formData.website)) {
+            newErrors.website = "Website must be in format www.example.com";
+          }
+        }
+        break;
+        
+      case 2:
+        if (!formData.firstName) newErrors.firstName = "First Name is required";
+        if (!formData.lastName) newErrors.lastName = "Last Name is required";
+        if (!formData.email) newErrors.email = "Email is required";
+        if (!formData.phone) newErrors.phone = "Phone Number is required";
+        
+        if (!formData.position) {
+          newErrors.position = "Position is required";
+        } else if (/\d/.test(formData.position)) {
+          newErrors.position = "Position cannot contain numbers";
+        }
+        
+        if (!formData.password) newErrors.password = "Password is required";
+        break;
+        
+      case 3:
+        if (!formData.licenseNumber) newErrors.licenseNumber = "License Number is required";
+        
+        if (!formData.validityPeriod) {
+          newErrors.validityPeriod = "Validity Period is required";
+        } else {
+          const selectedDate = new Date(formData.validityPeriod);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (selectedDate <= today) {
+            newErrors.validityPeriod = "Date must be in the future";
+          } else if (selectedDate > maxValidityDate) {
+            newErrors.validityPeriod = "Date cannot be more than 5 years in the future";
+          }
+        }
+        break;
+        
+      case 4:
+        if (!formData.address) newErrors.address = "Address is required";
+        if (!formData.city) newErrors.city = "City is required";
+        if (!formData.state) newErrors.state = "State is required";
+        if (!formData.pincode) newErrors.pincode = "Pincode is required";
+        if (!formData.facilities) newErrors.facilities = "Facilities are required";
+        if (!formData.equipmentList) newErrors.equipmentList = "Equipment List is required";
+        break;
+        
+      default:
+        break;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    
+    // Special validation for position field
+    if (name === "position" && /\d/.test(value)) {
+      setErrors(prev => ({
+        ...prev,
+        position: "Position cannot contain numbers"
+      }));
+      return;
+    }
+    
+    // Special validation for website
+    if (name === "website") {
+      const websiteRegex = /^(https?:\/\/)?(www\.)[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(.*)$/;
+      if (value && !websiteRegex.test(value)) {
+        setErrors(prev => ({
+          ...prev,
+          website: "Website must be in format www.example.com"
+        }));
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.website;
+          return newErrors;
+        });
+      }
+    }
+    
+    setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
@@ -142,15 +267,63 @@ const OrganizerRegistration: React.FC = () => {
   };
 
   const handleNext = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 4));
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
+    }
   };
 
   const handleBack = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
+
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (validateStep(currentStep)) {
+      try {
+        const response = await fetch("http://localhost:3001/organizers/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
+          },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        });
+  
+        if (response.ok) {
+          toast.success("Registration Successful", {
+            description: "Your registration has been submitted successfully.",
+          });
+          router.push("/organizer/login");
+        } else {
+          const data = await response.json();
+          toast.error("Registration Failed", {
+            description: data.message || "An error occurred during registration.",
+          });
+        }
+      } catch (error) {
+        toast.error("Registration Failed", {
+          description: "An error occurred during registration.",
+        });
+      }
+    }
   };
 
   return (
@@ -202,6 +375,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.orgName && <p className="text-red-500 text-sm">{errors.orgName}</p>}
                   </div>
                   <div>
                     <Label htmlFor="orgType">Organization Type*</Label>
@@ -209,6 +383,7 @@ const OrganizerRegistration: React.FC = () => {
                       onValueChange={(value) =>
                         handleSelectChange(value, "orgType")
                       }
+                      value={formData.orgType}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select organization type" />
@@ -220,6 +395,7 @@ const OrganizerRegistration: React.FC = () => {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    {errors.orgType && <p className="text-red-500 text-sm">{errors.orgType}</p>}
                   </div>
                   <div>
                     <Label htmlFor="regNumber">Registration Number*</Label>
@@ -230,27 +406,32 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.regNumber && <p className="text-red-500 text-sm">{errors.regNumber}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="yearEstablished">Year Established*</Label>
+                    <Label htmlFor="yearEstablished">Year Established* (must be a past year)</Label>
                     <Input
                       id="yearEstablished"
                       name="yearEstablished"
                       type="number"
                       value={formData.yearEstablished}
                       onChange={handleInputChange}
+                      max={currentYear}
                       required
                     />
+                    {errors.yearEstablished && <p className="text-red-500 text-sm">{errors.yearEstablished}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="website">Website</Label>
+                    <Label htmlFor="website">Website (format: www.example.com)</Label>
                     <Input
                       id="website"
                       name="website"
-                      type="url"
+                      type="text"
                       value={formData.website}
                       onChange={handleInputChange}
+                      placeholder="www.example.com"
                     />
+                    {errors.website && <p className="text-red-500 text-sm">{errors.website}</p>}
                   </div>
                 </div>
               )}
@@ -267,6 +448,7 @@ const OrganizerRegistration: React.FC = () => {
                         onChange={handleInputChange}
                         required
                       />
+                      {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name*</Label>
@@ -277,6 +459,7 @@ const OrganizerRegistration: React.FC = () => {
                         onChange={handleInputChange}
                         required
                       />
+                      {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
                     </div>
                   </div>
                   <div>
@@ -289,6 +472,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone Number*</Label>
@@ -300,16 +484,32 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="position">Position in Organization*</Label>
+                    <Label htmlFor="position">Position in Organization* (letters only)</Label>
                     <Input
                       id="position"
                       name="position"
                       value={formData.position}
                       onChange={handleInputChange}
+                      pattern="^[A-Za-z\s]+$"
+                      title="Position should contain only letters"
                       required
                     />
+                    {errors.position && <p className="text-red-500 text-sm">{errors.position}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password*</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
                   </div>
                 </div>
               )}
@@ -327,10 +527,11 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.licenseNumber && <p className="text-red-500 text-sm">{errors.licenseNumber}</p>}
                   </div>
                   <div>
                     <Label htmlFor="validityPeriod">
-                      License Validity Period*
+                      License Validity Period* (must be future date, max 5 years from now)
                     </Label>
                     <Input
                       id="validityPeriod"
@@ -338,8 +539,11 @@ const OrganizerRegistration: React.FC = () => {
                       type="date"
                       value={formData.validityPeriod}
                       onChange={handleInputChange}
+                      min={currentDate}
+                      max={maxValidityDateString}
                       required
                     />
+                    {errors.validityPeriod && <p className="text-red-500 text-sm">{errors.validityPeriod}</p>}
                   </div>
                   <div>
                     <Label>Upload Documents*</Label>
@@ -390,6 +594,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -401,6 +606,7 @@ const OrganizerRegistration: React.FC = () => {
                         onChange={handleInputChange}
                         required
                       />
+                      {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
                     </div>
                     <div>
                       <Label htmlFor="state">State*</Label>
@@ -411,6 +617,7 @@ const OrganizerRegistration: React.FC = () => {
                         onChange={handleInputChange}
                         required
                       />
+                      {errors.state && <p className="text-red-500 text-sm">{errors.state}</p>}
                     </div>
                   </div>
                   <div>
@@ -422,6 +629,7 @@ const OrganizerRegistration: React.FC = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    {errors.pincode && <p className="text-red-500 text-sm">{errors.pincode}</p>}
                   </div>
                   <div>
                     <Label htmlFor="facilities">Available Facilities*</Label>
@@ -434,6 +642,7 @@ const OrganizerRegistration: React.FC = () => {
                       className="h-24"
                       required
                     />
+                    {errors.facilities && <p className="text-red-500 text-sm">{errors.facilities}</p>}
                   </div>
                   <div>
                     <Label htmlFor="equipmentList">
@@ -448,6 +657,7 @@ const OrganizerRegistration: React.FC = () => {
                       className="h-24"
                       required
                     />
+                    {errors.equipmentList && <p className="text-red-500 text-sm">{errors.equipmentList}</p>}
                   </div>
                 </div>
               )}
@@ -480,6 +690,7 @@ const OrganizerRegistration: React.FC = () => {
         </Card>
       </div>
       <Footer isDarkMode={isDarkMode} />
+      <Toaster />
     </div>
   );
 };

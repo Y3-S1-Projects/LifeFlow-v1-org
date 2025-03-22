@@ -38,6 +38,8 @@ const Header = lazy(() => import("../../components/Header"));
 import Footer from "../../components/Footer";
 import { RouteGuard } from "../../components/RouteGuard";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { getToken } from "@/app/utils/auth";
 
 // Define a type for the address object
 type AddressType = {
@@ -82,7 +84,12 @@ const OrganizerProfile = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [date, setDate] = useState<Date | undefined>(undefined);
-
+  const API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://lifeflow-v1-org-production.up.railway.app"
+    : "http://localhost:3001";
+    const [csrfToken, setCsrfToken] = useState<string>("");
+    
   // Update formData when user data is available
   useEffect(() => {
     if (user) {
@@ -106,7 +113,22 @@ const OrganizerProfile = () => {
       }
     }
   }, [user]); // Dependency on user
+  useEffect(() => {
+    const fetchCsrfToken = async (): Promise<void> => {
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
+          withCredentials: true,
+        });
+        setCsrfToken(data.csrfToken);
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+      } catch (err) {
+        console.error("CSRF token fetch error:", err);
+        toast.error("Failed to fetch security token");
+      }
+    };
 
+    fetchCsrfToken();
+  }, [API_BASE_URL]);
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -159,23 +181,34 @@ const OrganizerProfile = () => {
     setSaveSuccess(false);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
 
       if (!token) {
         throw new Error("Authentication required");
       }
 
+      const dataToSend = {
+        ...formData,
+        address: formData.address.street 
+          ? `${formData.address.street}, ${formData.address.city}, ${formData.address.state}`.trim() 
+          : "",
+        lastDonationDate: date ? format(date, "yyyy-MM-dd") : undefined,
+      };
+      
       await axios.put(
-        `${publicApi}/organizers/update`,
-        {
-          ...formData,
-          lastDonationDate: date ? format(date, "yyyy-MM-dd") : undefined,
-        },
+        `${publicApi}/organizers/update/${user._id}`,
+          dataToSend,
+        // {
+        //   ...formData,
+        //   lastDonationDate: date ? format(date, "yyyy-MM-dd") : undefined,
+        // },
         {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
           },
+          withCredentials: true
         }
       );
 
@@ -247,7 +280,7 @@ const OrganizerProfile = () => {
                         </AvatarFallback>
                       </Avatar>
                       <CardTitle className="text-lg md:text-xl">
-                        {user.fullName || "Unnamed Organizer"}
+                        {user.firstName || "Unnamed Organizer"}
                       </CardTitle>
                       <CardDescription>{user.email}</CardDescription>
                       <div className="mt-2">
