@@ -58,12 +58,12 @@ const UserTable: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 rounded-lg bg-white text-sm border border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none shadow-sm"
             />
           </div>
-          <button className="flex items-center justify-center px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors shadow-sm">
+          {/*<button className="flex items-center justify-center px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors shadow-sm">
             <Filter className="h-4 w-4 mr-2" /> Filter
-          </button>
-          <button className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm">
+          </button>*/}
+        {/*}  <button className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm">
             + Add User
-          </button>
+          </button>*/}
         </div>
       </div>
       
@@ -71,7 +71,7 @@ const UserTable: React.FC = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">ID</th>
+              {/*<th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">ID</th>*/}
               <th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">Full Name</th>
               <th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">Email</th>
               <th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">Phone</th>
@@ -79,13 +79,13 @@ const UserTable: React.FC = () => {
               <th className="text-right py-3 px-4 font-medium text-gray-600 text-sm">Weight</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">Verified</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">Eligible</th>
-              <th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">Actions</th>
+              {/*<th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">Actions</th>*/}
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
               <tr key={user._id} className="hover:bg-gray-50 border-b border-gray-200 transition-colors">
-                <td className="py-3 px-4 text-sm text-gray-500">{user._id.substring(0, 8)}...</td>
+                {/*<td className="py-3 px-4 text-sm text-gray-500">{user._id.substring(0, 8)}...</td> */}
                 <td className="py-3 px-4">
                   <div className="font-medium text-gray-800">{user.fullName}</div>
                   <div className="text-xs text-gray-500">{user.role}</div>
@@ -121,9 +121,9 @@ const UserTable: React.FC = () => {
                   )}
                 </td>
                 <td className="py-3 px-4 text-center">
-                  <button className="p-1 hover:bg-gray-100 rounded">
+                  {/*<button className="p-1 hover:bg-gray-100 rounded">
                     <MoreHorizontal className="h-5 w-5 text-gray-500" />
-                  </button>
+                  </button>*/}
                 </td>
               </tr>
             ))}
@@ -133,13 +133,13 @@ const UserTable: React.FC = () => {
       
       <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
         <div>Showing {users.length} users</div>
-        <div className="flex items-center space-x-2">
+        {/*<div className="flex items-center space-x-2">
           <button className="px-3 py-1 border rounded bg-white hover:bg-gray-50">Previous</button>
           <button className="px-3 py-1 border rounded bg-red-50 text-red-600 font-medium border-red-200">1</button>
           <button className="px-3 py-1 border rounded bg-white hover:bg-gray-50">2</button>
           <button className="px-3 py-1 border rounded bg-white hover:bg-gray-50">3</button>
           <button className="px-3 py-1 border rounded bg-white hover:bg-gray-50">Next</button>
-        </div>
+        </div>*/}
       </div>
     </div>
   );

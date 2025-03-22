@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Clipboard, Users, Droplet, MapPin, Bell, Activity, PieChart, TrendingUp, User, Heart, Menu, X, LogOut, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDetailsTable from "./UserDetailsTable";
-import SupportRegisterPage from "@/app/support/register/page";
+import SupportAdminsTable from "./SupportDetailsTable";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
+import SupportRegisterPage from "@/app/support/register/page";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -30,11 +31,13 @@ const AdminDashboard = () => {
 
   const tabData = [
     { id: "overview", label: "Overview", icon: <Activity className="h-5 w-5" /> },
-    { id: "Support", label: "Support Management", icon: <Users className="h-5 w-5" /> },
+    
     { id: "inventory", label: "Blood Inventory", icon: <Droplet className="h-5 w-5" /> },
     { id: "centers", label: "Donation Centers", icon: <MapPin className="h-5 w-5" /> },
-    { id: "requests", label: "Donation Requests", icon: <Bell className="h-5 w-5" /> },
+    { id: "Organizer", label: "Organizer Management", icon: <Bell className="h-5 w-5" /> },
     { id: "users", label: "User Management", icon: <User className="h-5 w-5" /> },
+    { id: "Support", label: "Support Management", icon: <Users className="h-5 w-5" /> },
+    
   ];
 
   const recentDonors = [
@@ -44,36 +47,42 @@ const AdminDashboard = () => {
     { name: "David Wilson", bloodType: "AB+", date: "Mar 13, 2025", center: "Downtown Medical" },
   ];
 
+  const sections = [
+    { title: "Main", range: [0, 3] }, // First 4 tabs
+    { title: "Management", range: [3, 8] }, // Next 4 tabs
+  ];
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header />
-      <div className="flex flex-1">
-        {/* Sidebar - Desktop */}
-        <div className="hidden lg:flex flex-col w-72 bg-white border-r border-gray-100 shadow-sm">
-          <div className="p-6 border-b bg-gradient-to-r from-red-600 to-red-700">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Heart className="mr-2 h-6 w-6 fill-white" /> BloodConnect
-            </h2>
+ 
+return (
+  <div className="flex flex-col min-h-screen bg-gray-50">
+    <Header />
+    <div className="flex flex-1">
+      {/* Sidebar - Desktop */}
+      <div className="hidden lg:flex flex-col w-72 bg-white border-r border-gray-100 shadow-sm">
+        <div className="p-6 border-b bg-gradient-to-r from-red-600 to-red-700">
+          <h2 className="text-xl font-bold text-white flex items-center">
+            <Heart className="mr-2 h-6 w-6 fill-white" /> BloodConnect
+          </h2>
+        </div>
+        <div className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 text-sm border border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none"
+            />
           </div>
-          <div className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 text-sm border border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:outline-none"
-              />
-            </div>
-          </div>
-          <nav className="flex-1 p-4">
-            <div className="mb-8">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-4">Main</p>
+        </div>
+        <nav className="flex-1 p-4">
+          {sections.map(({ title, range }, index) => (
+            <div key={index} className="mb-8">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-4">{title}</p>
               <ul className="space-y-1">
-                {tabData.slice(0, 3).map((tab) => (
+                {tabData.slice(range[0], range[1]).map((tab) => (
                   <li key={tab.id}>
                     <button
                       onClick={() => setActiveTab(tab.id)}
@@ -95,31 +104,7 @@ const AdminDashboard = () => {
                 ))}
               </ul>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-4">Management</p>
-              <ul className="space-y-1">
-                {tabData.slice(3).map((tab) => (
-                  <li key={tab.id}>
-                    <button
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center px-4 py-3 rounded-lg transition-all ${
-                        activeTab === tab.id
-                          ? "bg-gradient-to-r from-red-50 to-red-100 text-red-700 font-medium shadow-sm"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className={`mr-3 ${activeTab === tab.id ? "text-red-600" : "text-gray-400"}`}>
-                        {tab.icon}
-                      </span>
-                      <span>{tab.label}</span>
-                      {activeTab === tab.id && (
-                        <span className="ml-auto w-1.5 h-6 rounded-full bg-red-600"></span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          ))}
           </nav>
           <div className="p-4 border-t bg-gray-50">
             <div className="flex items-center p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
@@ -364,7 +349,7 @@ const AdminDashboard = () => {
               
               {activeTab === "Support" && (
                 <div className="bg-white rounded-lg shadow-md">
-                  <SupportRegisterPage />
+                  <SupportAdminsTable />
                 </div>
               )}
               
@@ -384,8 +369,8 @@ const AdminDashboard = () => {
               
               {activeTab === "requests" && (
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-lg font-medium mb-4">Donation Requests</h2>
-                  <p>Donation requests content will go here.</p>
+                  <h2 className="text-lg font-medium mb-4">Camp Requests</h2>
+                  <p>Camp requests content will go here.</p>
                 </div>
               )}
               
@@ -394,11 +379,14 @@ const AdminDashboard = () => {
                   <UserDetailsTable />
                 </div>
               )}
+
+            
+
             </div>
           </div>
         </div>
       </div>
-      <Footer />
+      <Footer isDarkMode={false} />
     </div>
   );
 };

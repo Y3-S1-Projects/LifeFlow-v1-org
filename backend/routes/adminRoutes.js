@@ -15,6 +15,9 @@ import {
   verifyAdminOTP,
   resendAdminOTP,
   sendAdminOTP,
+  getAllSupportAdmins,
+  updateSupportAdmin, // Import the new controller
+  deleteSupportAdmin, // Import the new controller
 } from "../controllers/adminController.js";
 import {
   adminAuth,
@@ -38,7 +41,7 @@ router.put("/change-password", adminAuth, changePassword);
 
 // Superadmin routes
 router.post("/register", adminAuth, isSuperAdmin, registerAdmin);
-router.get("/all", adminAuth, isSuperAdmin, getAllAdmins);
+router.get("/all",getAllAdmins);
 
 // Moderator/Superadmin routes
 router.post(
@@ -68,8 +71,15 @@ router.post(
   handleSupportTicket
 );
 
+
 router.post("/login", loginAdmin);
 router.post("/verify-otp", verifyAdminOTP);
 router.post("/resend-otp", resendAdminOTP);
+
+
+router.get("/support-admins", getAllSupportAdmins);
+
+router.put("/support-admins/:id", updateSupportAdmin);
+router.delete("/support-admins/:id", deleteSupportAdmin);
 
 export default router;

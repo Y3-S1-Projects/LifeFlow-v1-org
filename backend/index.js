@@ -57,6 +57,7 @@ app.use("/api/contact", contactRoutes);
 
 // Routes that NEED CSRF protection
 app.use("/users", doubleCsrfProtection, userRoutes);
+
 app.use("/api", loginUser);
 app.use("/camps", doubleCsrfProtection, campRoutes);
 app.use("/appointments", doubleCsrfProtection, appointmentRoutes);
