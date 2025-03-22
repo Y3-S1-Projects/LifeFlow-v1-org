@@ -17,7 +17,7 @@ interface SupportAdmin {
   address: Address | string;
   nic: string;
 }
-
+//support
 const SupportAdminTable = () => {
   const [supportAdmins, setSupportAdmins] = useState<SupportAdmin[]>([]); // Explicitly type supportAdmins
   const [loading, setLoading] = useState(true);
