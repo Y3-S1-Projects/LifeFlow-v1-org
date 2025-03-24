@@ -146,7 +146,6 @@ const MyDonationsPage: React.FC = () => {
       } else {
         setNextEligibleDate("Eligible now");
       }
-      console.log("nexteligible", nextEligibleDate);
     } catch (err) {
       console.error("Error fetching donation history:", err);
       setHistoryError((err as Error).message);
@@ -195,7 +194,6 @@ const MyDonationsPage: React.FC = () => {
       mostRecentDonation,
     });
   };
-  console.log(user?.nextEligibleDonationDate);
   const calculateNextEligibleDate = (donations: Donation[]) => {
     if (!donations || donations.length === 0) return "Eligible now";
 

@@ -67,15 +67,21 @@ const useUser = (): UseUserReturn => {
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const checkAuthentication = async () => {
-    const authStatus = await isAuthenticated();
-    setIsUserAuthenticated(authStatus);
-    return authStatus;
+    try {
+      const authStatus = await isAuthenticated();
+      setIsUserAuthenticated(authStatus);
+      return authStatus;
+    } catch {
+      // Ensure any unexpected errors don't break the authentication check
+      setIsUserAuthenticated(false);
+      return false;
+    }
   };
 
   const fetchUser = async () => {
     try {
       setLoading(true);
-
+      setError(null);
       // Check authentication first
       const authenticated = await checkAuthentication();
       if (!authenticated) {
