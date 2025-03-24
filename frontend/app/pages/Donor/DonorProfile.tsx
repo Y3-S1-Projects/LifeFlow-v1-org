@@ -34,6 +34,7 @@ import Footer from "@/app/components/Footer";
 import Loader from "@/app/components/Loader";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
 import BloodDonationChatbot from "@/app/components/ChatBot";
+import { Calendar } from "@/components/ui/calendar";
 // Blood types options
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -45,6 +46,25 @@ interface Settings {
   bloodShortageAlerts: boolean;
   language: string;
   savedSuccess: boolean;
+}
+
+interface FormErrors {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  bloodType?: string;
+  dob?: string;
+  weight?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  nicNo?: string;
+  location?: string;
+  emergencyContactFullName?: string;
+  Relationship?: string;
+  emergencyContactPhoneNumber?: string;
+  emergencyContactCustomRelationship?: string;
+  emergencyContactRelationship?: string;
 }
 
 export default function DonorProfilePage() {
@@ -66,6 +86,8 @@ export default function DonorProfilePage() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const minDate = new Date(1920, 0, 1); // January 1, 1920
   const maxDate = new Date(2010, 11, 31); // December 31, 2010
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [age, setAge] = useState<number | null>(null);
   // Form state
   const [formData, setFormData] = useState({
     fullName: "",
@@ -91,6 +113,10 @@ export default function DonorProfilePage() {
       phone: "",
     },
   });
+  const [currentView, setCurrentView] = useState(
+    formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date()
+  );
+
   useEffect(() => {
     setSettings((prev) => ({
       ...prev,
@@ -134,6 +160,61 @@ export default function DonorProfilePage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (formData.dateOfBirth) {
+      // Calculate and set age
+      const calculatedAge = calculateAge(formData.dateOfBirth);
+      setAge(calculatedAge);
+
+      // Validate DOB and update errors state
+      const dobError = validateDOB(formData.dateOfBirth);
+      setErrors((prev) => ({
+        ...prev,
+        dateOfBirth: dobError,
+      }));
+
+      // Revalidate NIC when DOB changes
+      if (formData.nicNo) {
+        const nicError = validateNIC(formData.nicNo, formData.dateOfBirth);
+        setErrors((prev) => ({
+          ...prev,
+          nicNo: nicError,
+        }));
+      }
+    } else {
+      setAge(null);
+    }
+  }, [formData.dateOfBirth, formData.nicNo]);
+  // Add this function at the top to validate a specific field
+  const validateField = (name: string, value: any): string | undefined => {
+    switch (name) {
+      case "nicNo":
+        return validateNIC(value, formData.dateOfBirth);
+      case "dateOfBirth":
+        return validateDOB(value);
+      case "phoneNumber":
+        return !value
+          ? "Phone number is required"
+          : !/^\d{10}$/.test(value)
+          ? "Phone number is invalid"
+          : undefined;
+      case "fullName":
+        return !value ? "Full name is required" : undefined;
+      case "weight":
+        return !value ? "Weight is required" : undefined;
+      case "bloodType":
+        return !value ? "Blood type is required" : undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  const handleYearChange = (year: number) => {
+    const newDate = new Date(currentView);
+    newDate.setFullYear(year);
+    setCurrentView(newDate);
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -144,18 +225,51 @@ export default function DonorProfilePage() {
       setFormData((prev) => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<
-            string,
-            string | number
-          >),
+          ...(prev[parent as keyof typeof prev] as Record<string, any>),
           [child]: value,
         },
       }));
+
+      // Validate nested fields
+      if (parent === "emergencyContact") {
+        const error = !value
+          ? `Emergency contact ${child} is required`
+          : undefined;
+        setErrors((prev) => ({
+          ...prev,
+          [`emergencyContact${child.charAt(0).toUpperCase() + child.slice(1)}`]:
+            error,
+        }));
+      } else if (parent === "address") {
+        const error = !value
+          ? `${child.charAt(0).toUpperCase() + child.slice(1)} is required`
+          : undefined;
+        setErrors((prev) => ({
+          ...prev,
+          [child]: error,
+        }));
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
         [name]: value,
       }));
+
+      // Validate the field
+      const error = validateField(name, value);
+      setErrors((prev) => ({
+        ...prev,
+        [name]: error,
+      }));
+
+      // Handle DOB validation
+      if (name === "dateOfBirth" && formData.nicNo) {
+        const nicError = validateNIC(formData.nicNo, value);
+        setErrors((prev) => ({
+          ...prev,
+          nicNo: nicError,
+        }));
+      }
     }
   };
 
@@ -163,6 +277,12 @@ export default function DonorProfilePage() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+
+    const error = validateField(name, value);
+    setErrors((prev) => ({
+      ...prev,
+      [name]: error,
     }));
   };
 
@@ -220,9 +340,185 @@ export default function DonorProfilePage() {
     }
     setFormError(null);
   };
+  // Add these at the top of your DonorProfilePage.js
+  const calculateAge = (dob: string): number | null => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    if (isNaN(birthDate.getTime())) return null;
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDifference = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  };
+
+  const validateDOB = (dob: string): string | undefined => {
+    if (!dob) return "Date of birth is required";
+
+    const today = new Date();
+    const birthDate = new Date(dob);
+
+    if (isNaN(birthDate.getTime())) return "Invalid date format";
+    if (birthDate > today) return "Date of birth cannot be in the future";
+
+    const minDate = new Date();
+    minDate.setFullYear(today.getFullYear() - 120);
+    if (birthDate < minDate) return "Date of birth is too far in the past";
+
+    const age = calculateAge(dob);
+    if (age === null) return "Invalid date of birth";
+    if (age < 17) return "You must be at least 17 years old to be eligible";
+    if (age > 65) return "Maximum eligible age is 65 years";
+
+    return undefined;
+  };
+
+  const validateNIC = (nic: string, dob: string): string | undefined => {
+    if (!nic) return "NIC is required";
+
+    const nicLength = nic.length;
+    const dobDate = new Date(dob);
+    const birthYear = dobDate.getFullYear();
+
+    if (nicLength !== 10 && nicLength !== 12) {
+      return "NIC must be either 10 or 12 digits long";
+    }
+
+    if (nicLength === 10) {
+      const nicYear = parseInt(nic.substring(0, 2), 10);
+      const expectedYear = birthYear % 100;
+
+      if (nicYear !== expectedYear) {
+        return "NIC does not match the birth year (old format)";
+      }
+
+      const lastChar = nic.charAt(8);
+      if (!/\d|V/i.test(lastChar)) {
+        return "Invalid NIC format (old format)";
+      }
+    }
+
+    if (nicLength === 12) {
+      const nicYear = parseInt(nic.substring(0, 4), 10);
+
+      if (nicYear !== birthYear) {
+        return "NIC does not match the birth year (new format)";
+      }
+
+      const lastChar = nic.charAt(11);
+      if (!/\d/.test(lastChar)) {
+        return "Invalid NIC format (new format)";
+      }
+    }
+
+    return undefined;
+  };
+
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+    const errorMessages: string[] = [];
+
+    if (!formData.fullName) {
+      newErrors.fullName = "Full name is required";
+      errorMessages.push("Full name is required");
+    }
+
+    if (!formData.phoneNumber) {
+      newErrors.phone = "Phone number is required";
+      errorMessages.push("Phone number is required");
+    } else if (!/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phone = "Phone number is invalid";
+      errorMessages.push("Phone number is invalid");
+    }
+
+    if (!formData.bloodType) {
+      newErrors.bloodType = "Blood type is required";
+      errorMessages.push("Blood type is required");
+    }
+
+    if (!formData.weight) {
+      newErrors.weight = "Weight is required";
+      errorMessages.push("Weight is required");
+    }
+
+    if (!formData.nicNo) {
+      newErrors.nicNo = "NIC is required";
+      errorMessages.push("NIC is required");
+    } else {
+      const nicError = validateNIC(formData.nicNo, formData.dateOfBirth);
+      if (nicError) {
+        newErrors.nicNo = nicError;
+        errorMessages.push(nicError);
+      }
+    }
+
+    if (!formData.address.street) {
+      newErrors.street = "Street is required";
+      errorMessages.push("Street address is required");
+    }
+
+    if (!formData.address.city) {
+      newErrors.city = "City is required";
+      errorMessages.push("City is required");
+    }
+
+    if (!formData.address.state) {
+      newErrors.state = "State is required";
+      errorMessages.push("State is required");
+    }
+
+    if (!formData.dateOfBirth) {
+      newErrors.dob = "Date of Birth is required";
+      errorMessages.push("Date of Birth is required");
+    } else {
+      const dobError = validateDOB(formData.dateOfBirth);
+      if (dobError) {
+        newErrors.dob = dobError;
+        errorMessages.push(dobError);
+      }
+    }
+
+    if (!formData.emergencyContact.fullName) {
+      newErrors.emergencyContactFullName = "Emergency contact name is required";
+      errorMessages.push("Emergency contact name is required");
+    }
+
+    if (!formData.emergencyContact.phone) {
+      newErrors.emergencyContactPhoneNumber =
+        "Emergency contact phone number is required";
+      errorMessages.push("Emergency contact phone number is required");
+    }
+
+    if (!formData.emergencyContact.relationship) {
+      newErrors.emergencyContactRelationship =
+        "Emergency contact relationship is required";
+      errorMessages.push("Emergency contact relationship is required");
+    }
+
+    setErrors(newErrors);
+
+    if (errorMessages.length > 0) {
+      setFormError(
+        errorMessages.length === 1
+          ? errorMessages[0]
+          : `Please fill or check the following ${errorMessages.length} fields to continue`
+      );
+    }
+
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async () => {
     if (!user?._id) return;
+
+    if (!validateForm()) {
+      return; // Stop submission if there are errors
+    }
 
     setIsSubmitting(true);
     setFormError(null);
@@ -249,7 +545,11 @@ export default function DonorProfilePage() {
         lat: formData.location.latitude,
         lng: formData.location.longitude,
         dateOfBirth: formData.dateOfBirth,
-        emergencyContact: formData.emergencyContact,
+        emergencyContact: {
+          ...formData.emergencyContact,
+          // Only update if phone is not empty
+          phoneNumber: formData.emergencyContact.phone || undefined,
+        },
       };
 
       // Call API to update user with CSRF token
@@ -573,7 +873,13 @@ export default function DonorProfilePage() {
                               name="phoneNumber"
                               value={formData.phoneNumber}
                               onChange={handleInputChange}
+                              className={errors.phone ? "border-red-500" : ""}
                             />
+                            {errors.phone && (
+                              <p className="text-red-500 text-sm">
+                                {errors.phone}
+                              </p>
+                            )}
                           </div>
 
                           <div className="space-y-2">
@@ -583,7 +889,14 @@ export default function DonorProfilePage() {
                               name="nicNo"
                               value={formData.nicNo}
                               onChange={handleInputChange}
+                              disabled={!isEditing}
+                              className={errors.nicNo ? "border-red-500" : ""}
                             />
+                            {errors.nicNo && (
+                              <p className="text-red-500 text-sm">
+                                {errors.nicNo}
+                              </p>
+                            )}
                           </div>
 
                           <div className="space-y-2">
@@ -619,7 +932,33 @@ export default function DonorProfilePage() {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0">
-                                {/* <Calendar
+                                <div className="p-2 flex justify-between items-center">
+                                  <select
+                                    value={currentView.getFullYear()}
+                                    onChange={(e) =>
+                                      handleYearChange(parseInt(e.target.value))
+                                    }
+                                    className="border rounded p-1"
+                                  >
+                                    {Array.from(
+                                      {
+                                        length:
+                                          maxDate.getFullYear() -
+                                          minDate.getFullYear() +
+                                          1,
+                                      },
+                                      (_, i) => (
+                                        <option
+                                          key={minDate.getFullYear() + i}
+                                          value={minDate.getFullYear() + i}
+                                        >
+                                          {minDate.getFullYear() + i}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                </div>
+                                <Calendar
                                   mode="single"
                                   selected={
                                     formData.dateOfBirth
@@ -627,11 +966,13 @@ export default function DonorProfilePage() {
                                       : undefined
                                   }
                                   onSelect={handleDateChange}
+                                  month={currentView}
+                                  onMonthChange={setCurrentView}
                                   initialFocus
-                                  captionLayout="dropdown"
+                                  captionLayout="buttons"
                                   fromDate={minDate}
                                   toDate={maxDate}
-                                /> */}
+                                />
                               </PopoverContent>
                             </Popover>
                           </div>
