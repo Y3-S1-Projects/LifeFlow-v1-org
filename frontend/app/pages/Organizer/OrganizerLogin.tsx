@@ -56,8 +56,6 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           withCredentials: true, // Ensure cookies are sent
         });
 
-        console.log("CSRF Token received:", data.csrfToken);
-
         setCsrfToken(data.csrfToken);
         axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken; // Set globally
       } catch (err) {
@@ -88,8 +86,6 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           withCredentials: true, // Equivalent to credentials: "include" in fetch
         }
       );
-
-      console.log("CSRF Token Sent:", csrfTokenFromCookie || csrfToken);
 
       // Store token in localStorage as backup for auth persistence
       localStorage.setItem("token", response.data.token);

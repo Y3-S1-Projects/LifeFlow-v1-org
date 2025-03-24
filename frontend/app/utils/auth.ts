@@ -1,27 +1,32 @@
-// utils/auth.ts
-
 const API_BASE_URL =
   process.env.NODE_ENV === "production"
     ? "https://lifeflow-v1-org-production.up.railway.app"
     : "http://localhost:3001";
 
-// Function to check if the user is authenticated by verifying session cookies
 export const isAuthenticated = async (): Promise<boolean> => {
-  if (typeof window === "undefined") return false; // Check if running on server
+  if (typeof window === "undefined") return false;
 
   try {
-    // With HTTP-only cookies, we can't directly check for the cookie
-    // Instead, make a lightweight auth verification request to the server
     const response = await fetch(`${API_BASE_URL}/auth/verify`, {
       method: "GET",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(5000),
     });
-    return response.ok;
-  } catch (err) {
-    console.error("Error verifying authentication:", err);
+
+    const data = await response.json();
+
+    // If the request is successful and authentication is true
+    if (data.authenticated === true) {
+      return true;
+    }
+
+    // For public pages, this prevents throwing an error
+    return false;
+  } catch (error) {
+    // Completely silent error handling
     return false;
   }
 };

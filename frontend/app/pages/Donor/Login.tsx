@@ -66,8 +66,6 @@ const Login = () => {
           withCredentials: true, // Ensure cookies are sent
         });
 
-        console.log("CSRF Token received:", data.csrfToken);
-
         setCsrfToken(data.csrfToken);
         axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken; // Set globally
       } catch (err) {
@@ -146,8 +144,6 @@ const Login = () => {
         credentials: "include", // Ensure cookies are sent
         body: JSON.stringify({ email, password }),
       });
-
-      console.log("CSRF Token Sent:", csrfTokenFromCookie || csrfToken);
 
       const data = await response.json();
 
