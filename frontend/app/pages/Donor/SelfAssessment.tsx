@@ -44,8 +44,10 @@ const BloodDonationForm = () => {
     process.env.NODE_ENV === "production"
       ? "https://lifeflow-v1-org-production.up.railway.app"
       : "http://localhost:3001";
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
+  const [apiMessage, setApiMessage] = useState<{
+    type: "success" | "error" | null;
+    content: string;
+  }>({ type: null, content: "" });
 
   useEffect(() => {
     if (user && user.isAssessmentCompleted) {
@@ -91,8 +93,7 @@ const BloodDonationForm = () => {
       ...prevData,
       [name]: value,
     }));
-    setShowSuccess(false);
-    setShowError(false);
+    setApiMessage({ type: null, content: "" });
   };
 
   const validateSection = (sectionFields: FormFields[]): boolean => {
@@ -100,63 +101,75 @@ const BloodDonationForm = () => {
   };
 
   const handleNextSection = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault();
     if (validateSection(section1Fields)) {
       setCurrentSection(2);
-      setShowError(false);
+      setApiMessage({ type: null, content: "" });
     } else {
-      setShowError(true);
+      setApiMessage({
+        type: "error",
+        content:
+          "Please review and acknowledge all statements in this section before continuing.",
+      });
     }
   };
 
   const handlePreviousSection = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault();
     setCurrentSection(1);
-    setShowError(false);
-    setShowSuccess(false);
+    setApiMessage({ type: null, content: "" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateSection(section2Fields)) {
-      setShowError(false);
-      setShowSuccess(true);
-    } else {
-      setShowError(true);
-      setShowSuccess(false);
-      return; // Exit early if validation fails
+    if (!validateSection(section2Fields)) {
+      setApiMessage({
+        type: "error",
+        content:
+          "Please review and acknowledge all statements in this section before submitting.",
+      });
+      return;
     }
 
     // Prepare data to be submitted
     const dataToSubmit = { isAssessmentCompleted: true };
 
     try {
-      // Perform the PUT request to update the user
-      const response = await fetch(
+      const response = await axios.put(
         `${publicApi}/users/updateUser/${user?._id}`,
+        dataToSubmit,
         {
-          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfToken,
           },
-          credentials: "include",
-          body: JSON.stringify(dataToSubmit),
+          withCredentials: true,
         }
       );
 
-      // Check if the request was successful
-      if (response.ok) {
+      if (response.status === 200) {
         router.push(
           "/donor/dashboard?message=" +
-            encodeURIComponent("You have  completed the Assessment")
+            encodeURIComponent("Assessment completed successfully")
         );
       } else {
-        console.error("Failed to update assessment status");
+        setApiMessage({
+          type: "error",
+          content:
+            response.data.message || "Failed to update assessment status",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting data:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "An error occurred while submitting the form";
+      setApiMessage({
+        type: "error",
+        content: errorMessage,
+      });
     }
   };
 
@@ -200,7 +213,6 @@ const BloodDonationForm = () => {
     },
   ];
 
-  // Rest of the JSX remains the same until the buttons section
   return (
     <RouteGuard requiredRoles={["User"]}>
       <div className="w-full">
@@ -220,9 +232,21 @@ const BloodDonationForm = () => {
               </CardHeader>
 
               <CardContent className="p-6">
-                {showSuccess && (
-                  <Alert className="mb-6 bg-green-50 border-green-200">
-                    <AlertDescription className="text-green-800 flex items-center gap-2 text-base">
+                {apiMessage.type && (
+                  <Alert
+                    className={`mb-6 ${
+                      apiMessage.type === "success"
+                        ? "bg-green-50 border-green-200"
+                        : "bg-red-50 border-red-200"
+                    }`}
+                  >
+                    <AlertDescription
+                      className={`${
+                        apiMessage.type === "success"
+                          ? "text-green-800"
+                          : "text-red-800"
+                      } flex items-center gap-2 text-base`}
+                    >
                       <svg
                         className="w-5 h-5"
                         fill="currentColor"
@@ -230,32 +254,15 @@ const BloodDonationForm = () => {
                       >
                         <path
                           fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          d={
+                            apiMessage.type === "success"
+                              ? "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          }
                           clipRule="evenodd"
                         />
                       </svg>
-                      Thank you for completing the questionnaire. Please proceed
-                      to the next step.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {showError && (
-                  <Alert className="mb-6 bg-red-50 border-red-200">
-                    <AlertDescription className="text-red-800 flex items-center gap-2 text-base">
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Please review and acknowledge all statements in this
-                      section before continuing.
+                      {apiMessage.content}
                     </AlertDescription>
                   </Alert>
                 )}
