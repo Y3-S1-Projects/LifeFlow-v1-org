@@ -11,7 +11,13 @@ import {
   deleteOrganizer,
   getOrganizerCamps,
   updateOrganizer,
+  uploadDocuments,
+  getOrganizerDocuments,
+  downloadDocument,
+  deleteDocument,
+  verifyDocument
 } from "../controllers/organizerController.js";
+import upload from "../config/multerConfig.js";
 import { authorizeRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -26,6 +32,25 @@ router.put("/profile", updateOrganizerProfile);
 router.put("/update/:id", updateOrganizer);
 router.put("/change-password", changePassword);
 router.get("/camps", getOrganizerCamps);
+
+// Document routes
+router.post(
+  "/documents",
+  upload.array('documents', 5), // Max 5 files
+  uploadDocuments
+);
+
+router.get("/documents", getOrganizerDocuments);
+router.get("/documents/:documentId/download", downloadDocument);
+router.delete("/documents/:documentId", deleteDocument);
+
+// Admin routes
+router.put(
+  "/documents/:documentId/verify",
+  authorizeRole('Admin'),
+  verifyDocument
+);
+
 
 // Admin routes - require admin privileges
 router.get("/all", getAllOrganizers);

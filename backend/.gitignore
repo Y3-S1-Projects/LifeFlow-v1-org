@@ -62,3 +62,6 @@ logs/
 # Next.js
 .next/
 out/
+
+# multer
+/uploads
