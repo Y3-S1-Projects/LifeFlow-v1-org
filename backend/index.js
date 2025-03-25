@@ -13,6 +13,7 @@ import { doubleCsrf } from "csrf-csrf";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import contactRoutes from "./routes/contactRoutes.js";
+import fileMiddleware from './middleware/fileMiddleware.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.set("trust proxy", 1);
 // Middleware Order
 app.use(cookieParser());
 app.use(express.json());
+app.use(fileMiddleware);
 
 // Allow requests from your frontend
 app.use(
