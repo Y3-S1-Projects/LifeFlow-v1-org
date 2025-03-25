@@ -37,6 +37,7 @@ interface UserData {
     fullName?: string;
     relationship?: string;
     phoneNumber?: string;
+    customRelationship?: string;
   };
   // Organizer fields
   name?: string;

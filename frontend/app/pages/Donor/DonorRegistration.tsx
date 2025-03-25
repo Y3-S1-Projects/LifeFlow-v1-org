@@ -25,6 +25,11 @@ const DonorRegistration = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [nameErrors, setNameErrors] = useState({
+    firstName: "",
+    lastName: "",
+  });
   const [csrfToken, setCsrfToken] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const API_BASE_URL =
@@ -112,6 +117,63 @@ const DonorRegistration = () => {
       special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
     });
   };
+  const validatePhoneNumber = (phoneNumber: string) => {
+    if (!phoneNumber) {
+      setPhoneError("Phone number is required");
+      return false;
+    }
+
+    // Sri Lankan phone number regex patterns:
+    // Mobile: 0[7][0-9]{8} or +94[7][0-9]{8}
+    // Landline: 0[1-9][0-9]{7} or +94[1-9][0-9]{7}
+    const pattern = /^(?:\+94|0)(7\d{8}|[1-9]\d{7})$/;
+
+    if (!pattern.test(phoneNumber)) {
+      setPhoneError("Please enter a valid Sri Lankan phone number");
+      return false;
+    }
+
+    setPhoneError("");
+    return true;
+  };
+
+  const validateName = (name: string, field: "firstName" | "lastName") => {
+    // Only allow letters, spaces, hyphens, and apostrophes
+    const nameRegex = /^[a-zA-Z\u00C0-\u017F\s'-]+$/;
+
+    if (!name.trim()) {
+      setNameErrors((prev) => ({
+        ...prev,
+        [field]: `${field === "firstName" ? "First" : "Last"} name is required`,
+      }));
+      return false;
+    } else if (!nameRegex.test(name)) {
+      setNameErrors((prev) => ({
+        ...prev,
+        [field]: `Only letters and spaces allowed`,
+      }));
+      return false;
+    } else if (name.length < 2) {
+      setNameErrors((prev) => ({
+        ...prev,
+        [field]: `Must be at least 2 characters`,
+      }));
+      return false;
+    } else if (name.length > 50) {
+      setNameErrors((prev) => ({
+        ...prev,
+        [field]: `Must be less than 50 characters`,
+      }));
+      return false;
+    } else {
+      setNameErrors((prev) => ({ ...prev, [field]: "" }));
+      return true;
+    }
+  };
+
+  useEffect(() => {
+    if (formData.phoneNumber) validatePhoneNumber(formData.phoneNumber);
+  }, [formData.phoneNumber]);
 
   useEffect(() => {
     if (formData.email) validateEmail(formData.email);
@@ -125,6 +187,19 @@ const DonorRegistration = () => {
     e.preventDefault();
     setLoading(true);
     setApiError("");
+
+    const isFirstNameValid = validateName(formData.firstName, "firstName");
+    const isLastNameValid = validateName(formData.lastName, "lastName");
+    validateEmail(formData.email);
+    const isPhoneValid = validatePhoneNumber(formData.phoneNumber);
+
+    if (!isFirstNameValid || !isLastNameValid || emailError || !isPhoneValid) {
+      return;
+    }
+
+    if (emailError || !isPhoneValid) {
+      return;
+    }
 
     try {
       // Get CSRF token from axios defaults
@@ -159,11 +234,53 @@ const DonorRegistration = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (name === "phoneNumber" && !/^\d*$/.test(value)) return;
+
+    // Prevent non-letter characters for name fields
+    if (
+      (name === "firstName" || name === "lastName") &&
+      !/^[a-zA-Z\s'-]*$/.test(value)
+    ) {
+      return;
+    }
+
+    // Special handling for phone number field
+    if (name === "phoneNumber") {
+      // Only allow numbers and + character
+      const cleanedValue = value.replace(/[^0-9+]/g, "");
+
+      // Ensure only one + at the start
+      const hasPlus = cleanedValue.includes("+");
+      const finalValue = hasPlus
+        ? "+" + cleanedValue.replace(/[^0-9]/g, "")
+        : cleanedValue;
+
+      // Limit length based on whether it starts with +94 or 0
+      const maxLength = finalValue.startsWith("+94")
+        ? 12
+        : finalValue.startsWith("0")
+        ? 10
+        : 15;
+      if (finalValue.length > maxLength) return;
+
+      setFormData((prev) => ({
+        ...prev,
+        [name]: finalValue, // Use finalValue instead of value
+      }));
+
+      validatePhoneNumber(finalValue);
+      return; // Return early since we handled phone number case
+    }
+
+    // For all other fields
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Validate fields
+    if (name === "firstName") validateName(value, "firstName");
+    if (name === "lastName") validateName(value, "lastName");
+    if (name === "email") validateEmail(value);
 
     if (apiError) setApiError("");
   };
@@ -297,6 +414,7 @@ const DonorRegistration = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedInput("fname")}
                     onBlur={() => setFocusedInput("")}
+                    pattern="[a-zA-Z\s'-]+"
                     className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
@@ -306,6 +424,11 @@ const DonorRegistration = () => {
                     required
                   />
                 </motion.div>
+                {nameErrors.firstName && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {nameErrors.firstName}
+                  </p>
+                )}
               </motion.div>
 
               {/* Last Name */}
@@ -336,6 +459,7 @@ const DonorRegistration = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedInput("lname")}
                     onBlur={() => setFocusedInput("")}
+                    pattern="[a-zA-Z\s'-]+"
                     className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
@@ -345,6 +469,11 @@ const DonorRegistration = () => {
                     required
                   />
                 </motion.div>
+                {nameErrors.lastName && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {nameErrors.lastName}
+                  </p>
+                )}
               </motion.div>
 
               {/* Email */}
@@ -495,19 +624,40 @@ const DonorRegistration = () => {
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    pattern="[0-9]*"
-                    inputMode="numeric"
+                    onKeyDown={(e) => {
+                      // Prevent non-numeric characters except +, Backspace, Delete, Tab, etc.
+                      if (
+                        !/[0-9+]/.test(e.key) &&
+                        ![
+                          "Backspace",
+                          "Delete",
+                          "Tab",
+                          "ArrowLeft",
+                          "ArrowRight",
+                          "Home",
+                          "End",
+                        ].includes(e.key)
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
                     onFocus={() => setFocusedInput("contact")}
-                    onBlur={() => setFocusedInput("")}
+                    onBlur={() => {
+                      setFocusedInput("");
+                      validatePhoneNumber(formData.phoneNumber);
+                    }}
                     className={`block w-full pl-10 pr-3 py-2 sm:py-3 ${
                       isDarkMode
                         ? "bg-gray-700 text-white"
                         : "bg-white text-gray-900"
                     } rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200`}
-                    placeholder="Enter contact number"
+                    placeholder="e.g., 0712345678 or +94712345678"
                     required
                   />
                 </motion.div>
+                {phoneError && (
+                  <p className="mt-1 text-sm text-red-500">{phoneError}</p>
+                )}
               </motion.div>
 
               {/* Submit Button */}

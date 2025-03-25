@@ -65,6 +65,7 @@ interface FormErrors {
   emergencyContactPhoneNumber?: string;
   emergencyContactCustomRelationship?: string;
   emergencyContactRelationship?: string;
+  emergencyRelationship?: string;
 }
 
 export default function DonorProfilePage() {
@@ -111,6 +112,7 @@ export default function DonorProfilePage() {
       fullName: "",
       relationship: "",
       phone: "",
+      customRelationship: "",
     },
   });
   const [currentView, setCurrentView] = useState(
@@ -155,6 +157,7 @@ export default function DonorProfilePage() {
           fullName: user.emergencyContact?.fullName || "",
           relationship: user.emergencyContact?.relationship || "",
           phone: user.emergencyContact?.phoneNumber || "",
+          customRelationship: user.emergencyContact?.relationship || "",
         },
       });
     }
@@ -335,6 +338,7 @@ export default function DonorProfilePage() {
           fullName: user.emergencyContact?.fullName || "",
           relationship: user.emergencyContact?.relationship || "",
           phone: user.emergencyContact?.phoneNumber || "",
+          customRelationship: user.emergencyContact?.relationship || "",
         },
       });
     }
@@ -1076,13 +1080,82 @@ export default function DonorProfilePage() {
                             <div className="space-y-2">
                               <Label htmlFor="emergencyRelationship">
                                 Relationship
+                                <span className="text-red-500">*</span>
                               </Label>
-                              <Input
-                                id="emergencyRelationship"
-                                name="emergencyContact.relationship"
+                              <Select
                                 value={formData.emergencyContact.relationship}
-                                onChange={handleInputChange}
-                              />
+                                onValueChange={(value) =>
+                                  setFormData({
+                                    ...formData,
+                                    emergencyContact: {
+                                      ...formData.emergencyContact,
+                                      relationship: value,
+                                      // Clear custom relationship when switching away from "Other"
+                                      ...(value !== "Other" && {
+                                        customRelationship: "",
+                                      }),
+                                    },
+                                  })
+                                }
+                              >
+                                <SelectTrigger id="emergencyRelationship">
+                                  <SelectValue placeholder="Select relationship" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Spouse">Spouse</SelectItem>
+                                  <SelectItem value="Parent">Parent</SelectItem>
+                                  <SelectItem value="Sibling">
+                                    Sibling
+                                  </SelectItem>
+                                  <SelectItem value="Friend">Friend</SelectItem>
+                                  <SelectItem value="Guardian">
+                                    Guardian
+                                  </SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {errors.emergencyRelationship && (
+                                <p className="text-red-500 text-sm">
+                                  {errors.emergencyRelationship}
+                                </p>
+                              )}
+
+                              {/* Add this section for custom relationship */}
+                              {formData.emergencyContact.relationship ===
+                                "Other" && (
+                                <div className="mt-2">
+                                  <Label htmlFor="emergencyCustomRelationship">
+                                    Specify Relationship
+                                    <span className="text-red-500">*</span>
+                                  </Label>
+                                  <Input
+                                    id="emergencyCustomRelationship"
+                                    value={
+                                      user?.emergencyContact
+                                        ?.customRelationship ||
+                                      formData.emergencyContact
+                                        .customRelationship ||
+                                      ""
+                                    }
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        emergencyContact: {
+                                          ...formData.emergencyContact,
+                                          customRelationship: e.target.value,
+                                        },
+                                      })
+                                    }
+                                  />
+                                  {errors.emergencyContactCustomRelationship && (
+                                    <p className="text-red-500 text-sm">
+                                      {
+                                        errors.emergencyContactCustomRelationship
+                                      }
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             <div className="space-y-2">
@@ -1233,8 +1306,21 @@ export default function DonorProfilePage() {
                                   Relationship
                                 </h4>
                                 <p className="mt-1">
-                                  {user.emergencyContact.relationship ||
-                                    "Not specified"}
+                                  {(() => {
+                                    if (!user.emergencyContact?.relationship)
+                                      return "Not specified";
+                                    if (
+                                      user.emergencyContact.relationship ===
+                                      "Other"
+                                    ) {
+                                      return (
+                                        user.emergencyContact
+                                          .customRelationship ||
+                                        "Other (not specified)"
+                                      );
+                                    }
+                                    return user.emergencyContact.relationship;
+                                  })()}
                                 </p>
                               </div>
 
