@@ -161,7 +161,6 @@ const Camps = () => {
   };
 
   const handleEditCamp = (campId: string) => {
-    console.log('Camp ID:', campId);
     router.push(`/organizer/camps/edit/${campId}`);
   };
 
@@ -353,7 +352,7 @@ const Camps = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Map Component */}
                         <div className="mt-4">
                           <h3 className="text-sm font-medium mb-2">
@@ -362,8 +361,12 @@ const Camps = () => {
                           <div className="w-full h-80 rounded-md overflow-hidden border">
                             <MapComponent
                               apiKey={apiKey}
-                              userLatitude={selectedCamp.location.coordinates[1]}
-                              userLongitude={selectedCamp.location.coordinates[0]}
+                              userLatitude={
+                                selectedCamp.location.coordinates[1]
+                              }
+                              userLongitude={
+                                selectedCamp.location.coordinates[0]
+                              }
                               showNearbyCamps={false}
                               showAllCamps={true}
                               selectedCampId={selectedCamp._id}
@@ -372,7 +375,8 @@ const Camps = () => {
                             />
                           </div>
                           <div className="mt-2 text-xs text-gray-500">
-                            Latitude: {selectedCamp.location.coordinates[1]}, Longitude: {selectedCamp.location.coordinates[0]}
+                            Latitude: {selectedCamp.location.coordinates[1]},
+                            Longitude: {selectedCamp.location.coordinates[0]}
                           </div>
                         </div>
                       </TabsContent>

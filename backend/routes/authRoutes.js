@@ -11,25 +11,54 @@ router.get("/verify", (req, res) => {
     // Extract the JWT token from cookies
     const token = req.cookies.authToken;
 
+    // If no token, it's okay - this is for public pages
     if (!token) {
-      return res.status(401).json({ authenticated: false });
+      return res.status(200).json({
+        authenticated: false,
+        message: "No token present",
+        allowPublicAccess: true,
+      });
     }
 
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    try {
+      // Verify the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // If verification is successful, return 200 OK
-    return res.status(200).json({
-      authenticated: true,
-      user: {
-        id: decoded.userId,
-        email: decoded.email,
-        role: decoded.role,
-      },
-    });
+      // Check token expiration
+      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+        return res.status(200).json({
+          authenticated: false,
+          message: "Token has expired",
+          allowPublicAccess: true,
+        });
+      }
+
+      // If verification is successful, return authenticated details
+      return res.status(200).json({
+        authenticated: true,
+        user: {
+          id: decoded.userId,
+          email: decoded.email,
+          role: decoded.role,
+        },
+      });
+    } catch (verificationError) {
+      // For public pages, return 200 with authentication failure
+      return res.status(200).json({
+        authenticated: false,
+        message: "Invalid token",
+        allowPublicAccess: true,
+      });
+    }
   } catch (error) {
-    console.error("Authentication verification failed:", error.message);
-    return res.status(401).json({ authenticated: false });
+    // Log the error for server-side debugging
+    console.error("Authentication verification encountered an error:", error);
+
+    return res.status(200).json({
+      authenticated: false,
+      message: "Authentication check failed",
+      allowPublicAccess: true,
+    });
   }
 });
 

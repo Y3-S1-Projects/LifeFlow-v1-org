@@ -105,7 +105,11 @@ const organizerSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-  }
+  },
+  documentsUploaded: {
+    type: Boolean,
+    default: false
+  },
 });
 
 const Organizer = mongoose.model("Organizer", organizerSchema);

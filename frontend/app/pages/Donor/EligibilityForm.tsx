@@ -410,8 +410,6 @@ export default function EligibilityForm() {
     setSubmitSuccess(false);
 
     try {
-      console.log(user?._id);
-      console.log(csrfToken);
       const response = await fetch(
         `${publicApi}/users/updateUser/${user?._id}`,
         {

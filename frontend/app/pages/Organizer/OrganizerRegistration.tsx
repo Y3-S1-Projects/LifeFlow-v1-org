@@ -19,6 +19,8 @@ import {
   User,
   FileText,
   MapPin,
+  Upload,
+  X,
 } from "lucide-react";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "../../components/Footer";
@@ -26,6 +28,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
+import { useDropzone } from "react-dropzone";
+import { getUserIdFromToken } from "@/app/utils/auth";
 
 interface ProgressStepProps {
   step: number;
@@ -91,6 +95,7 @@ interface FormData {
   facilities: string;
   equipmentList: string;
   password: string;
+  documents: File[];
 }
 
 const OrganizerRegistration: React.FC = () => {
@@ -116,12 +121,45 @@ const OrganizerRegistration: React.FC = () => {
     facilities: "",
     equipmentList: "",
     password: "",
+    documents: [],
   });
   const API_BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://lifeflow-v1-org-production.up.railway.app"
-    : "http://localhost:3001";
-    const [csrfToken, setCsrfToken] = useState<string>("");
+    process.env.NODE_ENV === "production"
+      ? "https://lifeflow-v1-org-production.up.railway.app"
+      : "http://localhost:3001";
+  const [csrfToken, setCsrfToken] = useState<string>("");
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.jpeg', '.jpg', '.png'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+    },
+    maxFiles: 5,
+    maxSize: 5 * 1024 * 1024, // 5MB
+    onDrop: acceptedFiles => {
+      setFormData(prev => ({
+        ...prev,
+        documents: [...prev.documents, ...acceptedFiles]
+      }));
+      setUploadError(null);
+    },
+    onDropRejected: rejectedFiles => {
+      setUploadError(rejectedFiles[0]?.errors[0]?.message || 'File rejected');
+    }
+  });
+
+  const removeFile = (index: number) => {
+    setFormData(prev => {
+      const newDocuments = [...prev.documents];
+      newDocuments.splice(index, 1);
+      return { ...prev, documents: newDocuments };
+    });
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDarkMode] = useState(false);
@@ -203,6 +241,10 @@ const OrganizerRegistration: React.FC = () => {
             newErrors.validityPeriod = "Date cannot be more than 5 years in the future";
           }
         }
+
+        if (formData.documents.length === 0) {
+          newErrors.documents = "At least one document is required";
+        }
         break;
         
       case 4:
@@ -275,8 +317,19 @@ const OrganizerRegistration: React.FC = () => {
   const handleBack = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
+  async function fetchOrganizerId  () {
+    try{
+      const organizerId = await getUserIdFromToken();
+      return organizerId;
+    } catch (error) {
+      console.error("Error fetching organizer ID:", error);
+      throw error;
+
+    }
+  }
 
   useEffect(() => {
+    
     const fetchCsrfToken = async (): Promise<void> => {
       try {
         const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
@@ -295,34 +348,87 @@ const OrganizerRegistration: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep(currentStep)) {
-      try {
-        const response = await fetch("http://localhost:3001/organizers/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrfToken,
-          },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        });
+    if (!validateStep(currentStep)) return;
   
-        if (response.ok) {
-          toast.success("Registration Successful", {
-            description: "Your registration has been submitted successfully.",
-          });
-          router.push("/organizer/login");
-        } else {
-          const data = await response.json();
-          toast.error("Registration Failed", {
-            description: data.message || "An error occurred during registration.",
-          });
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+  
+      // Prepare registration data without documents
+      const registrationData = { 
+        ...formData,
+        documents: undefined // Remove the documents array
+      };
+  
+      // 1. First try to register the organizer
+      const registrationResponse = await axios.post(
+        `${API_BASE_URL}/organizers/register`,
+        registrationData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          withCredentials: true
         }
-      } catch (error) {
-        toast.error("Registration Failed", {
-          description: "An error occurred during registration.",
+      );
+  
+      // 2. If registration succeeds, upload documents if any
+      if (formData.documents.length > 0 && registrationResponse.data.organizer?.id) {
+        const formDataWithFiles = new FormData();
+        formData.documents.forEach(file => {
+          formDataWithFiles.append('documents', file);
         });
+        formDataWithFiles.append('documentType', 'registration');
+        formDataWithFiles.append('organizerId', registrationResponse.data.organizer.id);
+  
+        await axios.post(
+          `${API_BASE_URL}/organizers/documents`,
+          formDataWithFiles,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'X-CSRF-Token': csrfToken,
+            },
+            withCredentials: true,
+            onUploadProgress: progressEvent => {
+              if (progressEvent.total) {
+                setUploadProgress(
+                  Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                );
+              }
+            }
+          }
+        );
       }
+  
+      toast.success("Registration Successful", {
+        description: "Your registration has been submitted successfully.",
+      });
+      router.push("/organizer/login");
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      let errorMessage = "An error occurred during registration.";
+      
+      if (error.response) {
+        // Backend returned an error response
+        errorMessage = error.response.data.message || 
+                      error.response.data.error?.message || 
+                      errorMessage;
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = "No response from server. Please try again.";
+      } else {
+        // Something happened in setting up the request
+        errorMessage = error.message || errorMessage;
+      }
+  
+      toast.error("Registration Failed", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -547,12 +653,18 @@ const OrganizerRegistration: React.FC = () => {
                   </div>
                   <div>
                     <Label>Upload Documents*</Label>
-                    <div className="border-2 border-dashed rounded-lg p-4 mt-1">
+                    <div 
+                      {...getRootProps()}
+                      className={`border-2 border-dashed rounded-lg p-4 mt-1 cursor-pointer ${
+                        isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input {...getInputProps()} />
                       <div className="text-center">
-                        <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
                         <div className="mt-2">
                           <p className="text-sm text-gray-500">
-                            Upload the following documents:
+                            {isDragActive ? 'Drop files here' : 'Drag & drop files here, or click to select'}
                           </p>
                           <ul className="text-xs text-gray-500 list-disc list-inside mt-1">
                             <li>Medical practice license</li>
@@ -560,13 +672,44 @@ const OrganizerRegistration: React.FC = () => {
                             <li>Blood bank operation permit</li>
                             <li>Safety compliance certificate</li>
                           </ul>
+                          <p className="text-xs text-gray-400 mt-1">
+                            (PDF, JPG, PNG, DOC/DOCX up to 5MB each)
+                          </p>
                         </div>
-                        <Button className="mt-2" variant="outline">
-                          Upload Files
-                        </Button>
                       </div>
                     </div>
+                    {errors.documents && <p className="text-red-500 text-sm">{errors.documents}</p>}
+                    {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
                   </div>
+                  {formData.documents.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Selected Files:</h4>
+                      <ul className="space-y-2">
+                        {formData.documents.map((file, index) => (
+                          <li key={index} className="flex items-center justify-between p-2 border rounded">
+                            <div className="flex items-center space-x-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm truncate max-w-xs">{file.name}</span>
+                              <span className="text-xs text-gray-500">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFile(index);
+                              }}
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="previousCamps">
                       Previous Blood Camps Organized
@@ -680,8 +823,13 @@ const OrganizerRegistration: React.FC = () => {
                   <Button
                     type="submit"
                     className="ml-auto bg-green-600 hover:bg-green-700"
+                    disabled={isUploading}
                   >
-                    Submit Registration
+                    {isUploading ? (
+                      uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Processing...'
+                    ) : (
+                      'Submit Registration'
+                    )}
                   </Button>
                 )}
               </div>

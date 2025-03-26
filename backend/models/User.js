@@ -282,20 +282,20 @@ UserSchema.methods.updateDonationStats = function () {
 };
 
 // Method to check if user is eligible to donate based on next eligible date
-// UserSchema.methods.checkDonationEligibility = function () {
-//   // If no nextEligibleDonationDate is set, user hasn't donated before or it wasn't calculated
-//   if (!this.nextEligibleDonationDate) {
-//     // If user has necessary profile data, they are eligible
-//     this.isEligibleToDonate = true;
-//     return true;
-//   }
+UserSchema.methods.checkDonationEligibility = function () {
+  // If no nextEligibleDonationDate is set, user hasn't donated before or it wasn't calculated
+  if (!this.nextEligibleDonationDate) {
+    // If user has necessary profile data, they are eligible
+    this.isEligibleToDonate = true;
+    return true;
+  }
 
-//   // Compare nextEligibleDonationDate with current date
-//   const currentDate = new Date();
-//   this.isEligibleToDonate = currentDate >= this.nextEligibleDonationDate;
+  // Compare nextEligibleDonationDate with current date
+  const currentDate = new Date();
+  this.isEligibleToDonate = currentDate >= this.nextEligibleDonationDate;
 
-//   return this.isEligibleToDonate;
-// };
+  return this.isEligibleToDonate;
+};
 
 // Pre-save middleware to update all donation-related fields
 UserSchema.pre("save", function (next) {

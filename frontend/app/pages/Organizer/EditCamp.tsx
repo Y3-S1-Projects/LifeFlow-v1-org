@@ -61,54 +61,60 @@ const MapComponent = dynamic(() => import("@/app/components/Map"), {
 
 // Form validation schema
 const formSchema = z.object({
-    name: z.string().min(3, {
-      message: "Camp name must be at least 3 characters.",
+  name: z.string().min(3, {
+    message: "Camp name must be at least 3 characters.",
+  }),
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters.",
+  }),
+  operatingHours: z.string().min(5, {
+    message: "Operating hours are required.",
+  }),
+  address: z.object({
+    street: z.string().min(3, {
+      message: "Street address is required.",
     }),
-    description: z.string().min(10, {
-      message: "Description must be at least 10 characters.",
+    city: z.string().min(2, {
+      message: "City is required.",
     }),
-    operatingHours: z.string().min(5, {
-      message: "Operating hours are required.",
+    postalCode: z.string().min(4, {
+      message: "Valid postal code is required.",
     }),
-    address: z.object({
-      street: z.string().min(3, {
-        message: "Street address is required.",
-      }),
-      city: z.string().min(2, {
-        message: "City is required.",
-      }),
-      postalCode: z.string().min(4, {
-        message: "Valid postal code is required.",
-      }),
-    }),
-    status: z.enum(["Open", "Closed", "Full", "Upcoming"]).default("Upcoming"),
-    lat: z.string().min(1, {
-      message: "Latitude is required.",
-    }),
-    lng: z.string().min(1, {
-      message: "Longitude is required.",
-    }),
-    availableDates: z.object({
-      from: z.date().refine(date => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
-        message: "Start date cannot be in the past",
-      }),
-      to: z.date().refine(date => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
-        message: "End date cannot be in the past",
-      }),
-    }).refine(data => data.to >= data.from, {
+  }),
+  status: z.enum(["Open", "Closed", "Full", "Upcoming"]).default("Upcoming"),
+  lat: z.string().min(1, {
+    message: "Latitude is required.",
+  }),
+  lng: z.string().min(1, {
+    message: "Longitude is required.",
+  }),
+  availableDates: z
+    .object({
+      from: z
+        .date()
+        .refine((date) => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+          message: "Start date cannot be in the past",
+        }),
+      to: z
+        .date()
+        .refine((date) => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+          message: "End date cannot be in the past",
+        }),
+    })
+    .refine((data) => data.to >= data.from, {
       message: "End date must be after start date",
       path: ["to"],
     }),
-    contact: z.object({
-      phone: z.string().min(10, {
-        message: "Valid phone number is required.",
-      }),
-      email: z.string().email({
-        message: "Valid email is required.",
-      }),
+  contact: z.object({
+    phone: z.string().min(10, {
+      message: "Valid phone number is required.",
     }),
-  });
-  
+    email: z.string().email({
+      message: "Valid email is required.",
+    }),
+  }),
+});
+
 type FormValues = z.infer<typeof formSchema>;
 
 export default function EditCamp({ params }: { params: { id: string } }) {
@@ -122,7 +128,7 @@ export default function EditCamp({ params }: { params: { id: string } }) {
     lng: number;
   } | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>("");
-  
+
   const API_BASE_URL =
     process.env.NODE_ENV === "production"
       ? "https://lifeflow-v1-org-production.up.railway.app"
@@ -159,7 +165,6 @@ export default function EditCamp({ params }: { params: { id: string } }) {
     const fetchRole = async () => {
       const role = await getRoleFromToken();
       setUserRole(role);
-      console.log("User role:", role);
     };
 
     fetchRole();
@@ -193,17 +198,17 @@ export default function EditCamp({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCampData = async () => {
       if (!campId) return;
-      
+
       try {
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/camps/${campId}`);
-        
+
         if (!response.ok) {
           throw new Error("Failed to fetch camp data");
         }
-        
+
         const campData = await response.json();
-        
+
         // Set selected location for map
         if (campData.location && campData.location.coordinates) {
           // Update to use location coordinates based on the pattern from your first code snippet
@@ -211,7 +216,7 @@ export default function EditCamp({ params }: { params: { id: string } }) {
             lat: parseFloat(campData.location.coordinates[1]),
             lng: parseFloat(campData.location.coordinates[0]),
           });
-          
+
           // Set lat/lng values in the form
           form.setValue("lat", campData.location.coordinates[1].toString());
           form.setValue("lng", campData.location.coordinates[0].toString());
@@ -221,16 +226,20 @@ export default function EditCamp({ params }: { params: { id: string } }) {
             lng: parseFloat(campData.lng),
           });
         }
-        
+
         // Format dates for the form
         const formattedData = {
           ...campData,
           availableDates: {
-            from: campData.availableDates?.from ? new Date(campData.availableDates.from) : new Date(),
-            to: campData.availableDates?.to ? new Date(campData.availableDates.to) : undefined,
+            from: campData.availableDates?.from
+              ? new Date(campData.availableDates.from)
+              : new Date(),
+            to: campData.availableDates?.to
+              ? new Date(campData.availableDates.to)
+              : undefined,
           },
         };
-        
+
         // Reset form with fetched data
         form.reset(formattedData);
       } catch (err) {
@@ -260,26 +269,26 @@ export default function EditCamp({ params }: { params: { id: string } }) {
       setError("Only organizers can edit blood donation camps");
       return;
     }
-  
+
     if (!campId) {
       setError("Camp ID is missing");
       return;
     }
-  
+
     try {
       setLoading(true);
       setError(null);
-  
+
       // Format the dates for API submission
       const availableDates = [];
       const currentDate = new Date(data.availableDates.from);
       const endDate = new Date(data.availableDates.to);
-  
+
       while (currentDate <= endDate) {
         availableDates.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
       }
-  
+
       const response = await fetch(`${API_BASE_URL}/camps/update/${campId}`, {
         method: "PUT",
         headers: {
@@ -292,16 +301,16 @@ export default function EditCamp({ params }: { params: { id: string } }) {
           availableDates,
           location: {
             type: "Point",
-            coordinates: [parseFloat(data.lng), parseFloat(data.lat)]
-          }
+            coordinates: [parseFloat(data.lng), parseFloat(data.lat)],
+          },
         }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update camp");
       }
-  
+
       toast.success("Camp updated successfully!");
       // Navigate back to camps list or detail page on success
       router.push("/organizer/camps");
@@ -340,7 +349,10 @@ export default function EditCamp({ params }: { params: { id: string } }) {
             </div>
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 <FormField
                   control={form.control}
                   name="name"
@@ -467,7 +479,10 @@ export default function EditCamp({ params }: { params: { id: string } }) {
                                 }}
                                 onSelect={field.onChange}
                                 initialFocus
-                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                disabled={(date) =>
+                                  date <
+                                  new Date(new Date().setHours(0, 0, 0, 0))
+                                }
                               />
                             </PopoverContent>
                           </Popover>
@@ -541,7 +556,11 @@ export default function EditCamp({ params }: { params: { id: string } }) {
                                 placeholder="Latitude"
                                 {...field}
                                 readOnly
-                                value={selectedLocation?.lat?.toString() || field.value || ""}
+                                value={
+                                  selectedLocation?.lat?.toString() ||
+                                  field.value ||
+                                  ""
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -560,7 +579,11 @@ export default function EditCamp({ params }: { params: { id: string } }) {
                                 placeholder="Longitude"
                                 {...field}
                                 readOnly
-                                value={selectedLocation?.lng?.toString() || field.value || ""}
+                                value={
+                                  selectedLocation?.lng?.toString() ||
+                                  field.value ||
+                                  ""
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -584,7 +607,8 @@ export default function EditCamp({ params }: { params: { id: string } }) {
                     isClickable={true}
                   />
                   <div className="mt-2 text-xs text-gray-500">
-                    Latitude: {selectedLocation?.lat || "Not set"}, Longitude: {selectedLocation?.lng || "Not set"}
+                    Latitude: {selectedLocation?.lat || "Not set"}, Longitude:{" "}
+                    {selectedLocation?.lng || "Not set"}
                   </div>
                 </div>
 
@@ -636,8 +660,13 @@ export default function EditCamp({ params }: { params: { id: string } }) {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={loading || form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Updating..." : "Update Camp"}
+                  <Button
+                    type="submit"
+                    disabled={loading || form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting
+                      ? "Updating..."
+                      : "Update Camp"}
                   </Button>
                 </CardFooter>
               </form>

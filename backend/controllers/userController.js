@@ -102,6 +102,7 @@ export const getUserDetails = async (req, res) => {
       weight: 1,
       isProfileComplete: 1,
       isAssessmentCompleted: 1,
+      isEligibleToDonate: 1,
       role: 1,
       emergencyContact: 1,
       nextEligibleDonationDate: 1,

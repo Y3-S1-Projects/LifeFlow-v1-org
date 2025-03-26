@@ -127,8 +127,6 @@ const LoginForm: React.FC = () => {
         // Check if reCAPTCHA is available - just use the regular login if it's not
         let captchaToken = "";
 
-        console.log("executeRecaptcha available:", !!executeRecaptcha);
-
         if (executeRecaptcha) {
           try {
             captchaToken = await executeRecaptcha("admin_login");

@@ -1,6 +1,10 @@
 import Organizer from "../models/Organizer.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import Document from "../models/Document.js";
+import upload from "../config/multerConfig.js";
+import fs from 'fs';
+import path from 'path';
 
 export const registerOrganizer = async (req, res) => {
   try {
@@ -305,6 +309,162 @@ export const changePassword = async (req, res) => {
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const verifyDocument = async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    
+    const document = await Document.findByIdAndUpdate(
+      documentId,
+      { verified: true },
+      { new: true }
+    );
+    
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    res.status(200).json({
+      message: "Document verified successfully",
+      document
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Server error verifying document",
+      error: error.message 
+    });
+  }
+};
+
+export const uploadDocuments = async (req, res) => {
+  try {
+    const organizerId = req.body.organizerId;
+    console.log("Organizer ID:", organizerId);
+    const files = req.files;
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const savedDocuments = await Promise.all(
+      files.map(async (file) => {
+        const newDocument = new Document({
+          organizerId,
+          documentType: req.body.documentType || 'other',
+          originalName: file.originalname,
+          fileName: file.filename,
+          filePath: file.path,
+          fileType: file.mimetype,
+          fileSize: file.size
+        });
+        return await newDocument.save();
+      })
+    );
+
+    // Update organizer to mark documents as uploaded
+    await Organizer.findByIdAndUpdate(organizerId, { 
+      $set: { documentsUploaded: true } 
+    });
+
+    res.status(201).json({
+      message: "Documents uploaded successfully",
+      documents: savedDocuments.map(doc => ({
+        id: doc._id,
+        name: doc.originalName,
+        type: doc.documentType,
+        size: doc.fileSize,
+        uploadedAt: doc.uploadDate
+      }))
+    });
+  } catch (error) {
+    console.error("Error uploading documents:", error);
+    
+    // Clean up uploaded files if error occurs
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (err) {
+          console.error("Error deleting file:", err);
+        }
+      });
+    }
+    
+    res.status(500).json({ 
+      message: "Server error during document upload",
+      error: error.message 
+    });
+  }
+};
+
+export const getOrganizerDocuments = async (req, res) => {
+  try {
+    const organizerId = req.organizer.id;
+    const documents = await Document.find({ organizerId })
+      .select('-filePath -__v')
+      .sort({ uploadDate: -1 });
+    
+    res.status(200).json({ documents });
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Server error fetching documents",
+      error: error.message 
+    });
+  }
+};
+
+export const downloadDocument = async (req, res) => {
+  try {
+    const document = await Document.findOne({
+      _id: req.params.documentId,
+      organizerId: req.organizer.id
+    });
+
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    const filePath = path.join(process.cwd(), document.filePath);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "File not found on server" });
+    }
+
+    res.download(filePath, document.originalName);
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Server error downloading document",
+      error: error.message 
+    });
+  }
+};
+
+export const deleteDocument = async (req, res) => {
+  try {
+    const document = await Document.findOneAndDelete({
+      _id: req.params.documentId,
+      organizerId: req.organizer.id
+    });
+
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    // Delete the physical file
+    try {
+      fs.unlinkSync(document.filePath);
+    } catch (err) {
+      console.error("Error deleting file:", err);
+    }
+
+    res.status(200).json({ message: "Document deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Server error deleting document",
+      error: error.message 
+    });
   }
 };
 
