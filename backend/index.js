@@ -13,7 +13,7 @@ import { doubleCsrf } from "csrf-csrf";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import contactRoutes from "./routes/contactRoutes.js";
-import fileMiddleware from './middleware/fileMiddleware.js';
+import fileMiddleware from "./middleware/fileMiddleware.js";
 
 dotenv.config();
 
@@ -55,7 +55,7 @@ app.get("/api/csrf-token", (req, res) => {
 });
 
 // Routes that DO NOT need CSRF protection
-app.use("/api/contact", contactRoutes);
+app.use("/contact", contactRoutes);
 
 // Routes that NEED CSRF protection
 app.use("/users", userRoutes);
