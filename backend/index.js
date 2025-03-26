@@ -14,6 +14,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import contactRoutes from "./routes/contactRoutes.js";
 import fileMiddleware from "./middleware/fileMiddleware.js";
+import faqRoutes from "./routes/faqRoute.js"; // FAQ routes import
 
 dotenv.config();
 
@@ -57,9 +58,9 @@ app.get("/api/csrf-token", (req, res) => {
 // Routes that DO NOT need CSRF protection
 app.use("/contact", contactRoutes);
 
+
 // Routes that NEED CSRF protection
 app.use("/users", userRoutes);
-
 app.use("/api", loginUser);
 app.use("/camps", doubleCsrfProtection, campRoutes);
 app.use("/appointments", doubleCsrfProtection, appointmentRoutes);
@@ -67,6 +68,7 @@ app.use("/organizers", doubleCsrfProtection, organizerRoutes);
 app.use("/auth", doubleCsrfProtection, authRoutes);
 app.use("/chatbot", doubleCsrfProtection, chatbotRoutes);
 app.use("/admin", doubleCsrfProtection, adminRoutes);
+app.use("/api/v1/faqs", doubleCsrfProtection, faqRoutes); // Added FAQ routes with CSRF protection
 
 // MongoDB Connection with Error Handling
 const uri = process.env.ATLAS_URI;
