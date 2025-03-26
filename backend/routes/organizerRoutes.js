@@ -11,6 +11,8 @@ import {
   deleteOrganizer,
   getOrganizerCamps,
   updateOrganizer,
+
+  getIneligibleOrganizers,
   uploadDocuments,
   getOrganizerDocuments,
   downloadDocument,
@@ -70,5 +72,7 @@ router.delete(
   },
   deleteOrganizer
 );
+router.get("/ineligible", getIneligibleOrganizers);
+
 
 export default router;

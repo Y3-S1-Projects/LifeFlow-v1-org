@@ -569,3 +569,13 @@ export const getOrganizerCamps = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Get organizers who are not eligible to organize
+export const getIneligibleOrganizers = async (req, res) => {
+  try {
+    const organizers = await Organizer.find({ eligibleToOrganize: false }).select("-password");
+    res.status(200).json({ organizers });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

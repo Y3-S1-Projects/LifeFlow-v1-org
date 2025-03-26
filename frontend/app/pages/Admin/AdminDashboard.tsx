@@ -21,6 +21,8 @@ import SupportAdminsTable from "./SupportDetailsTable";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import SupportRegisterPage from "@/app/support/register/page";
+import OrganizerTable from "./GetIneligibleOrganizers";
+
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -537,6 +539,13 @@ const AdminDashboard = () => {
                   <UserDetailsTable />
                 </div>
               )}
+
+              {activeTab === "Organizer" && (
+                <div className="bg-white rounded-lg shadow-md">
+                  <OrganizerTable />
+                </div>
+              )}
+          
             </div>
           </div>
         </div>
