@@ -21,13 +21,32 @@ interface User {
 const UserTable: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users for filtering
 
   useEffect(() => {
     axios
       .get<User[]>('http://localhost:3001/users/allUsers') // Replace with your actual API endpoint
-      .then((response) => setUsers(response.data))
+      .then((response) => {
+        setUsers(response.data);
+        setAllUsers(response.data);
+      })
       .catch((error) => console.error("Error fetching users:", error));
   }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setUsers(allUsers);
+    } else {
+      const filtered = allUsers.filter(user => 
+        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.phoneNumber.includes(searchTerm) ||
+        user.bloodType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.role.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setUsers(filtered);
+    }
+  }, [searchTerm, allUsers]);
 
   const getBloodTypeClass = (bloodType: string) => {
     switch (bloodType) {

@@ -11,6 +11,7 @@ import {
   deleteOrganizer,
   getOrganizerCamps,
   updateOrganizer,
+  getIneligibleOrganizers,
 } from "../controllers/organizerController.js";
 import { authorizeRole } from "../middleware/authMiddleware.js";
 
@@ -45,5 +46,7 @@ router.delete(
   },
   deleteOrganizer
 );
+router.get("/ineligible", getIneligibleOrganizers);
+
 
 export default router;
