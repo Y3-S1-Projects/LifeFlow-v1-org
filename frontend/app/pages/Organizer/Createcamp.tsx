@@ -509,7 +509,6 @@ export default function CreateCamp() {
                   userLongitude={selectedLocation?.lng || 0}
                   apiKey={process.env.NEXT_PUBLIC_GOOGLE_API || ""}
                   showNearbyCamps={false}
-                  showAllCamps={true}
                   onLocationSelect={handleLocationSelect}
                   isClickable={true}
                 />
