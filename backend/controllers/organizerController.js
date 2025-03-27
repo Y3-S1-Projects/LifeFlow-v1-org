@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Document from "../models/Document.js";
 import upload from "../config/multerConfig.js";
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 export const registerOrganizer = async (req, res) => {
   try {
@@ -28,10 +28,8 @@ export const registerOrganizer = async (req, res) => {
       pincode,
       facilities,
       equipmentList,
-      password
+      password,
     } = req.body;
-
-    console.log("Received registration data:", req.body);
 
     // Check if organizer already exists
     const existingOrganizer = await Organizer.findOne({ email });
@@ -76,7 +74,6 @@ export const registerOrganizer = async (req, res) => {
     });
 
     await newOrganizer.save();
-    console.log("New organizer saved:", newOrganizer);
 
     res.status(201).json({
       message: "Organizer registered successfully",
@@ -315,25 +312,25 @@ export const changePassword = async (req, res) => {
 export const verifyDocument = async (req, res) => {
   try {
     const { documentId } = req.params;
-    
+
     const document = await Document.findByIdAndUpdate(
       documentId,
       { verified: true },
       { new: true }
     );
-    
+
     if (!document) {
       return res.status(404).json({ message: "Document not found" });
     }
 
     res.status(200).json({
       message: "Document verified successfully",
-      document
+      document,
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error verifying document",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -343,7 +340,7 @@ export const uploadDocuments = async (req, res) => {
     const organizerId = req.body.organizerId;
     console.log("Organizer ID:", organizerId);
     const files = req.files;
-    
+
     if (!files || files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
     }
@@ -352,38 +349,38 @@ export const uploadDocuments = async (req, res) => {
       files.map(async (file) => {
         const newDocument = new Document({
           organizerId,
-          documentType: req.body.documentType || 'other',
+          documentType: req.body.documentType || "other",
           originalName: file.originalname,
           fileName: file.filename,
           filePath: file.path,
           fileType: file.mimetype,
-          fileSize: file.size
+          fileSize: file.size,
         });
         return await newDocument.save();
       })
     );
 
     // Update organizer to mark documents as uploaded
-    await Organizer.findByIdAndUpdate(organizerId, { 
-      $set: { documentsUploaded: true } 
+    await Organizer.findByIdAndUpdate(organizerId, {
+      $set: { documentsUploaded: true },
     });
 
     res.status(201).json({
       message: "Documents uploaded successfully",
-      documents: savedDocuments.map(doc => ({
+      documents: savedDocuments.map((doc) => ({
         id: doc._id,
         name: doc.originalName,
         type: doc.documentType,
         size: doc.fileSize,
-        uploadedAt: doc.uploadDate
-      }))
+        uploadedAt: doc.uploadDate,
+      })),
     });
   } catch (error) {
     console.error("Error uploading documents:", error);
-    
+
     // Clean up uploaded files if error occurs
     if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
+      req.files.forEach((file) => {
         try {
           fs.unlinkSync(file.path);
         } catch (err) {
@@ -391,10 +388,10 @@ export const uploadDocuments = async (req, res) => {
         }
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       message: "Server error during document upload",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -404,14 +401,14 @@ export const getOrganizerDocuments = async (req, res) => {
   try {
     const organizerId = req.query.organizerId || req.organizer.id;
     const documents = await Document.find({ organizerId })
-      .select('-filePath -__v')
+      .select("-filePath -__v")
       .sort({ uploadDate: -1 });
-    
+
     res.status(200).json({ documents });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error fetching documents",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -421,7 +418,7 @@ export const downloadDocument = async (req, res) => {
   try {
     const document = await Document.findOne({
       _id: req.params.documentId,
-      organizerId: req.organizer.id
+      organizerId: req.organizer.id,
     });
 
     if (!document) {
@@ -429,16 +426,16 @@ export const downloadDocument = async (req, res) => {
     }
 
     const filePath = path.join(process.cwd(), document.filePath);
-    
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ message: "File not found on server" });
     }
 
     res.download(filePath, document.originalName);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error downloading document",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -447,7 +444,7 @@ export const deleteDocument = async (req, res) => {
   try {
     const document = await Document.findOneAndDelete({
       _id: req.params.documentId,
-      organizerId: req.organizer.id
+      organizerId: req.organizer.id,
     });
 
     if (!document) {
@@ -463,9 +460,9 @@ export const deleteDocument = async (req, res) => {
 
     res.status(200).json({ message: "Document deleted successfully" });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error deleting document",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -575,7 +572,9 @@ export const getOrganizerCamps = async (req, res) => {
 // Get organizers who are not eligible to organize
 export const getIneligibleOrganizers = async (req, res) => {
   try {
-    const organizers = await Organizer.find({ eligibleToOrganize: false }).select("-password");
+    const organizers = await Organizer.find({
+      eligibleToOrganize: false,
+    }).select("-password");
 
     res.status(200).json({ organizers });
   } catch (error) {
@@ -589,32 +588,32 @@ export const updateOrganizerStatus = async (req, res) => {
     const { organizerId } = req.params;
     const { status } = req.body;
 
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
     }
 
     const organizer = await Organizer.findByIdAndUpdate(
       organizerId,
-      { 
+      {
         status,
-        eligibleToOrganize: status === 'approved' // Automatically set eligibility
+        eligibleToOrganize: status === "approved", // Automatically set eligibility
       },
       { new: true }
-    ).select('-password');
+    ).select("-password");
 
     if (!organizer) {
-      return res.status(404).json({ message: 'Organizer not found' });
+      return res.status(404).json({ message: "Organizer not found" });
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: `Organizer ${status} successfully`,
-      organizer
+      organizer,
     });
   } catch (error) {
-    console.error('Status update error:', error);
-    res.status(500).json({ 
-      message: 'Error updating status', 
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    console.error("Status update error:", error);
+    res.status(500).json({
+      message: "Error updating status",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
