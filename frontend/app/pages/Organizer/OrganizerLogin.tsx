@@ -164,7 +164,9 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         const errorData = err.response.data;
 
         if (err.response.status === 403 && errorData.requiresVerification) {
-          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+          router.push(
+            `/organizer/verify-email?email=${encodeURIComponent(email)}`
+          );
         } else {
           setErrorMessage(errorData.message || "Login failed");
         }

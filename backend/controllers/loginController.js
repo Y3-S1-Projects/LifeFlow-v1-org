@@ -118,7 +118,7 @@ export const loginUser = async (req, res) => {
 };
 
 // Improved helper function to get the client's IP address
-function getClientIP(req) {
+export function getClientIP(req) {
   let ip;
 
   // Check for x-forwarded-for header (common in proxies and load balancers)
