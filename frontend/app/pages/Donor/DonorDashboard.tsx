@@ -17,7 +17,6 @@ import {
   Clipboard,
   Heart,
   Users,
-  Badge,
   TrendingUp,
   Droplets,
   ArrowRight,
@@ -613,11 +612,17 @@ const DonorDashboard: React.FC = () => {
           </div>
           {user?.isEligible && (
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-red-600">
+              <h1
+                className={`text-3xl font-bold ${
+                  darkMode ? "text-white" : "text-red-600"
+                }`}
+              >
                 {getGreeting()}, {user?.firstName || "Donor"}
               </h1>
               <div className="flex items-center space-x-2">
-                <Droplets className="text-red-600" />
+                <Droplets
+                  className={`${darkMode ? "text-white" : "text-red-600"}`}
+                />
                 <span className="font-medium">
                   Blood Type:{" "}
                   {user?.bloodType && user.bloodType !== "not sure"
@@ -635,7 +640,11 @@ const DonorDashboard: React.FC = () => {
                 darkMode ? "bg-gray-900 border-gray-800" : "bg-gray-100"
               }`}
             >
-              <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
+              <Card
+                className={`shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300 ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle
                     className={`text-sm font-medium ${
@@ -645,7 +654,11 @@ const DonorDashboard: React.FC = () => {
                     Total Donations
                   </CardTitle>
                   <div className="p-2  rounded-full">
-                    <Droplet className="h-4 w-4 text-red-600" />
+                    <Droplet
+                      className={`h-4 w-4 ${
+                        darkMode ? "text-white" : "text-red-600"
+                      }`}
+                    />
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -664,9 +677,6 @@ const DonorDashboard: React.FC = () => {
                     >
                       Donations made
                     </p>
-                    {totalDonations > 0 && (
-                      <Badge className="ml-2   text-xs">Hero</Badge>
-                    )}
                   </div>
                   <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
                     <div className="flex items-center text-xs text-gray-500">
@@ -684,7 +694,11 @@ const DonorDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
+              <Card
+                className={`shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300 ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium ">
                     Lives Impacted
@@ -697,11 +711,6 @@ const DonorDashboard: React.FC = () => {
                   <div className="text-3xl font-bold ">{impactLives}</div>
                   <div className="flex items-center mt-1">
                     <p className="text-xs ">People helped</p>
-                    {impactLives >= 3 && (
-                      <Badge className="ml-2 bg-yellow-50   text-xs">
-                        {impactLives > 20 ? "Community Hero" : "Life Champion"}
-                      </Badge>
-                    )}
                   </div>
                   <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
                     <div className="flex items-center justify-between text-xs">
@@ -712,7 +721,11 @@ const DonorDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300">
+              <Card
+                className={`shadow-lg overflow-hidden  hover:shadow-xl transition-shadow duration-300 ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                } `}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium ">
                     Next Eligible Date
@@ -727,23 +740,15 @@ const DonorDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center mt-1">
                     <p className="text-xs ">Mark your calendar</p>
-                    {calculateNextEligibleDate(donationHistory) ===
-                    "Eligible now" ? (
-                      <Badge className="ml-2  text-green-700 border-green-200 text-xs">
-                        Eligible now!
-                      </Badge>
-                    ) : (
-                      <Badge className="ml-2  text-blue-700 border-blue-200 text-xs">
-                        Coming soon
-                      </Badge>
-                    )}
                   </div>
                   <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
                     <Button
                       variant="outline"
                       size="sm"
                       className={`w-full text-xs    flex items-center justify-center ${
-                        darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                        darkMode
+                          ? "hover:bg-gray-600 bg-gray-900"
+                          : "hover:bg-gray-100"
                       }`}
                       onClick={handleScheduleDonation}
                     >
@@ -760,19 +765,19 @@ const DonorDashboard: React.FC = () => {
           {user?.isEligible && (
             <Card
               className={` shadow-xl rounded-xl overflow-hidden border ${
-                darkMode ? "bg-black text-white" : "bg-gray-50 text-gray-900"
+                darkMode ? "bg-gray-800 text-white" : "bg-gray-50 text-gray-900"
               }`}
             >
               <CardHeader
                 className={` p-6 ${
-                  darkMode ? "bg-black text-white" : "bg-gray-100 text-gray-900"
+                  darkMode ? " text-white" : "bg-gray-100 text-gray-900"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
                       className={` p-2 rounded-full ${
-                        darkMode ? "bg-black" : "bg-red-500"
+                        darkMode ? "bg-gray-600" : "bg-red-500"
                       }`}
                     >
                       <Droplet className="h-6 w-6 text-white" />
@@ -843,7 +848,11 @@ const DonorDashboard: React.FC = () => {
                           return (
                             <div
                               key={index}
-                              className="flex flex-col sm:flex-row items-start gap-4  rounded-xl p-4 border  hover:border-red-200 hover:shadow-md transition-all"
+                              className={`flex flex-col sm:flex-row items-start gap-4 rounded-xl p-4  hover:border-red-200 hover:shadow-md transition-all ${
+                                darkMode
+                                  ? "border border-white"
+                                  : "border border-black"
+                              }`}
                             >
                               <div className="flex items-center justify-center  rounded-full h-16 w-16 flex-shrink-0">
                                 <Droplet className="h-8 w-8 text-red-600" />
@@ -855,14 +864,10 @@ const DonorDashboard: React.FC = () => {
                                     <p className="font-semibold text-lg ">
                                       {donation.donationType}
                                     </p>
-                                    <p className="text-red-800">
+                                    <p className="text-red-400">
                                       {donation.donationCenter.name}
                                     </p>
                                   </div>
-                                  <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
-                                    {donation.pintsDonated} pint
-                                    {donation.pintsDonated !== 1 ? "s" : ""}
-                                  </Badge>
                                 </div>
 
                                 <div className="flex flex-col space-y-1 text-sm">
@@ -932,7 +937,7 @@ const DonorDashboard: React.FC = () => {
                             variant="outline"
                             className={`w-full border-red-200  hover:bg-red-50 ${
                               darkMode
-                                ? "hover:bg-gray-800"
+                                ? "hover:bg-gray-800 bg-gray-700"
                                 : "hover:bg-gray-100"
                             }`}
                             onClick={() => router.push("/donor/donations")}
@@ -956,10 +961,12 @@ const DonorDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex md:flex-col items-center md:items-end">
-                  <p className="text-sm text-gray-600 mr-2 md:mr-0">
-                    Your total impact:
-                  </p>
-                  <p className="font-bold text-xl text-red-600">
+                  <p className="text-sm  mr-2 md:mr-0">Your total impact:</p>
+                  <p
+                    className={`font-bold text-xl ${
+                      darkMode ? "text-white" : "text-red-600"
+                    }`}
+                  >
                     {donationHistory.reduce(
                       (sum, d) => sum + Math.round(d.pintsDonated * 3),
                       0
