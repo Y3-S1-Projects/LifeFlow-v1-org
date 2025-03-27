@@ -21,10 +21,68 @@ import dynamic from "next/dynamic";
 import GlobalHeader from "../components/GlobalHeader";
 import Footer from "../components/Footer";
 import Link from "next/link";
+import { isAuthenticated } from "../utils/auth";
 
 const MapComponent = dynamic(() => import("../components/Map"), {
   ssr: false,
 });
+
+export function AuthBenefitsCard() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authStatus = await isAuthenticated();
+      setAuthenticated(authStatus);
+    };
+
+    checkAuth();
+  }, []);
+
+  // Show nothing while checking auth status
+  if (authenticated === null) {
+    return null;
+  }
+
+  // Show nothing if user is authenticated
+  if (authenticated) {
+    return null;
+  }
+
+  // Only show the card if user is not authenticated
+  return (
+    <div className="bg-white p-5 rounded-lg border border-neutral-200 mb-6 shadow-sm">
+      <h3 className="text-lg font-semibold text-primary mb-4">
+        Benefits of Creating an Account
+      </h3>
+      <ul className="space-y-2 text-neutral-700">
+        <li className="flex items-center gap-3">
+          <span className="text-primary">✓</span>
+          Book appointments for blood donation camps
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="text-primary">✓</span>
+          Earn points and redeem rewards
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="text-primary">✓</span>
+          Track donation history and milestones
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="text-primary">✓</span>
+          Receive notifications about camps and urgent needs
+        </li>
+      </ul>
+      <div className="mt-5">
+        <Link href="/donor/register" passHref>
+          <Button className="bg-primary hover:bg-primary/90">
+            <UserPlus className="mr-2 h-4 w-4" /> Register
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 const BloodCampLocations: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{
@@ -119,36 +177,7 @@ const BloodCampLocations: React.FC = () => {
 
             <CardContent className="p-6">
               {/* Account Benefits Section */}
-              <div className="bg-white p-5 rounded-lg border border-neutral-200 mb-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-primary mb-4">
-                  Benefits of Creating an Account
-                </h3>
-                <ul className="space-y-2 text-neutral-700">
-                  <li className="flex items-center gap-3">
-                    <span className="text-primary">✓</span>
-                    Book appointments for blood donation camps
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <span className="text-primary">✓</span>
-                    Earn points and redeem rewards
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <span className="text-primary">✓</span>
-                    Track donation history and milestones
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <span className="text-primary">✓</span>
-                    Receive notifications about camps and urgent needs
-                  </li>
-                </ul>
-                <div className="mt-5">
-                  <Link href="/donor/register" passHref>
-                    <Button className="bg-primary hover:bg-primary/90">
-                      <UserPlus className="mr-2 h-4 w-4" /> Register
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              <AuthBenefitsCard />
 
               {/* Camp Display Mode Selection */}
               <div className="flex justify-center mb-6 space-x-4">
