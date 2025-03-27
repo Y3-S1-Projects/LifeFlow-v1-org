@@ -21,6 +21,7 @@ import {
 } from "../controllers/organizerController.js";
 import upload from "../config/multerConfig.js";
 import { authorizeRole } from "../middleware/authMiddleware.js";
+import { updateOrganizerStatus } from "../controllers/organizerController.js";
 
 const router = express.Router();
 
@@ -73,6 +74,11 @@ router.delete(
   deleteOrganizer
 );
 router.get("/ineligible", getIneligibleOrganizers);
-
+router.get("/documents", getOrganizerDocuments);
+router.patch(
+  "/:organizerId/status",
+  authorizeRole('Admin'),
+  updateOrganizerStatus
+);
 
 export default router;
