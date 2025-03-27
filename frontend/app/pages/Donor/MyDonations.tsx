@@ -567,18 +567,6 @@ const MyDonationsPage: React.FC = () => {
                                       lives
                                     </span>
                                   </div>
-
-                                  {isEligibleForNext(donation.donationDate) &&
-                                    index === 0 && (
-                                      <Button
-                                        onClick={handleScheduleDonation}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-xs border-red-300 text-red-600 hover:bg-red-50"
-                                      >
-                                        Donate again
-                                      </Button>
-                                    )}
                                 </div>
                               </div>
                             </div>
