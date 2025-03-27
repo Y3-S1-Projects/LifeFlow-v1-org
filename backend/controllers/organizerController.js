@@ -399,9 +399,10 @@ export const uploadDocuments = async (req, res) => {
   }
 };
 
+//Get all documents uploaded by the organizer
 export const getOrganizerDocuments = async (req, res) => {
   try {
-    const organizerId = req.organizer.id;
+    const organizerId = req.query.organizerId || req.organizer.id;
     const documents = await Document.find({ organizerId })
       .select('-filePath -__v')
       .sort({ uploadDate: -1 });
@@ -415,6 +416,7 @@ export const getOrganizerDocuments = async (req, res) => {
   }
 };
 
+// Download a document
 export const downloadDocument = async (req, res) => {
   try {
     const document = await Document.findOne({
@@ -574,8 +576,45 @@ export const getOrganizerCamps = async (req, res) => {
 export const getIneligibleOrganizers = async (req, res) => {
   try {
     const organizers = await Organizer.find({ eligibleToOrganize: false }).select("-password");
+
     res.status(200).json({ organizers });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Update organizer status and eligibility
+export const updateOrganizerStatus = async (req, res) => {
+  try {
+    const { organizerId } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const organizer = await Organizer.findByIdAndUpdate(
+      organizerId,
+      { 
+        status,
+        eligibleToOrganize: status === 'approved' // Automatically set eligibility
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!organizer) {
+      return res.status(404).json({ message: 'Organizer not found' });
+    }
+
+    res.status(200).json({ 
+      message: `Organizer ${status} successfully`,
+      organizer
+    });
+  } catch (error) {
+    console.error('Status update error:', error);
+    res.status(500).json({ 
+      message: 'Error updating status', 
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };

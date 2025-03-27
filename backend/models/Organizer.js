@@ -110,6 +110,11 @@ const organizerSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
 });
 
 const Organizer = mongoose.model("Organizer", organizerSchema);
