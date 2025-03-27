@@ -1,6 +1,10 @@
 import express from "express";
 import { logoutUser } from "../middleware/authMiddleware.js"; // Adjust path as needed
 import jwt from "jsonwebtoken";
+import {
+  resetPassword,
+  forgotPassword,
+} from "../controllers/authController.js";
 
 const router = express.Router();
 
@@ -84,5 +88,8 @@ router.get("/me", (req, res) => {
     return res.status(401).json({ message: "Authentication failed" });
   }
 });
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

@@ -14,7 +14,7 @@ if (!process.env.JWT_SECRET) {
 
 // Login function
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
@@ -23,7 +23,6 @@ export const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    // Use consistent error message regardless of whether user exists
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
         message: "Invalid credentials. Please check your email and password.",
@@ -41,16 +40,18 @@ export const loginUser = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role || "User" },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: rememberMe ? "7d" : "1d" } // Token expires in 7 days if rememberMe is true
     );
 
-    // Set JWT as HttpOnly cookie instead of sending in response
-    res.cookie("authToken", token, {
+    // Set cookie expiration based on rememberMe
+    const cookieOptions = {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+      maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000, // 7 days or 1 day
+    };
+
+    res.cookie("authToken", token, cookieOptions);
 
     // Record login attempt for security logging
     const clientIP = getClientIP(req);

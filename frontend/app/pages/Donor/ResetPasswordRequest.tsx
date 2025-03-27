@@ -1,73 +1,58 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, Loader2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import "../../styles/index.css";
 import GlobalHeader from "../../components/GlobalHeader";
 import Footer from "@/app/components/Footer";
-import useUser from "@/app/hooks/useUser";
 import { toast } from "sonner";
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const Login = () => {
+const ForgotPassword = () => {
   const router = useRouter();
-  const { user, loading } = useUser();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [focusedInput, setFocusedInput] = useState("");
   const [isDarkMode] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>("");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
   const API_BASE_URL =
     process.env.NODE_ENV === "production"
       ? "https://lifeflow-v1-org-production.up.railway.app"
       : "http://localhost:3001";
+
   const autofillStyles = `
-  /* Light mode autofill styles */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 30px white inset !important;
-    -webkit-text-fill-color: rgb(17, 24, 39) !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
-
-  /* Dark mode autofill styles */
-  .dark-mode input:-webkit-autofill,
-  .dark-mode input:-webkit-autofill:hover,
-  .dark-mode input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 30px rgb(55, 65, 81) inset !important;
-    -webkit-text-fill-color: white !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
-`;
-
-  useEffect(() => {
-    if (!loading && user) {
-      if (user && user.role === "User") {
-        router.push("/donor/dashboard");
-      } else if (user && user.role === "Organizer") {
-        router.push("/organizer/dashboard");
-      }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 30px white inset !important;
+      -webkit-text-fill-color: rgb(17, 24, 39) !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
-  }, [loading, user, router]);
+
+    .dark-mode input:-webkit-autofill,
+    .dark-mode input:-webkit-autofill:hover,
+    .dark-mode input:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 30px rgb(55, 65, 81) inset !important;
+      -webkit-text-fill-color: white !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  `;
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {
       try {
         const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
-          withCredentials: true, // Ensure cookies are sent
+          withCredentials: true,
         });
-
         setCsrfToken(data.csrfToken);
-        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken; // Set globally
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
       } catch (err) {
         console.error("CSRF token fetch error:", err);
         toast.error("Failed to fetch security token");
@@ -92,7 +77,7 @@ const Login = () => {
       opacity: 1,
       transition: {
         duration: 0.4,
-        staggerChildren: 0.07, // Stagger children for better performance
+        staggerChildren: 0.07,
         delayChildren: 0.1,
       },
     },
@@ -107,22 +92,20 @@ const Login = () => {
     },
   };
 
-  // Email validation
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
       setEmailError("Email is required");
-      return false; // Return false if email is empty
+      return false;
     } else if (!emailRegex.test(email)) {
       setEmailError("Please enter a valid email address");
-      return false; // Return false if email is invalid
+      return false;
     } else {
       setEmailError("");
-      return true; // Return true if email is valid
+      return true;
     }
   };
 
-  // Real-time validation
   useEffect(() => {
     if (email) validateEmail(email);
   }, [email]);
@@ -130,45 +113,40 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage("");
-    setIsLoading(true);
+    setSuccessMessage("");
 
-    // Get the rememberMe value from the checkbox
-    const rememberMe = (
-      e.currentTarget.elements.namedItem("rememberMe") as HTMLInputElement
-    )?.checked;
+    if (!validateEmail(email)) return;
+
+    setIsLoading(true);
 
     try {
       const csrfTokenFromCookie = Cookies.get("x-csrf-token");
 
-      const response = await fetch(`${API_BASE_URL}/api/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfTokenFromCookie || csrfToken,
         },
         credentials: "include",
-        body: JSON.stringify({ email, password, rememberMe }), // Include rememberMe in the request
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         setErrorMessage(
-          "Invalid credentials. Please check your email and password."
+          data.message || "Failed to send reset link. Please try again."
         );
-
-        if (response.status === 403 && data.requiresVerification) {
-          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        }
       } else {
-        const redirectPath =
-          sessionStorage.getItem("redirectAfterLogin") || "/donor/dashboard";
-        sessionStorage.removeItem("redirectAfterLogin");
-        router.push(redirectPath);
+        setSuccessMessage(
+          "Password reset link sent to your email if an account exists."
+        );
+        toast.success("Password reset link sent!");
       }
     } catch (error) {
-      setErrorMessage("Authentication failed. Please try again.");
-      console.error("Login error:", error);
+      setErrorMessage("Network error. Please try again.");
+      console.error("Forgot password error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -181,7 +159,7 @@ const Login = () => {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className={`min-h-screen p-6 w-full md:w-3/4 lg:w-3/4  mx-auto space-y-6 flex flex-col ${
+        className={`min-h-screen p-6 w-full md:w-3/4 lg:w-3/4 mx-auto space-y-6 flex flex-col ${
           isDarkMode ? "dark-mode" : ""
         } ${
           isDarkMode
@@ -199,11 +177,7 @@ const Login = () => {
             whileTap={{ scale: 0.9 }}
             transition={{ duration: 0.5 }}
           >
-            {/* <Heart
-              className={`w-16 h-16 ${
-                isDarkMode ? "text-red-600" : "text-red-500"
-              } drop-shadow-lg`}
-            /> */}
+            {/* Your logo/icon can go here */}
           </motion.div>
           <motion.h2
             variants={itemVariants}
@@ -211,7 +185,7 @@ const Login = () => {
               isDarkMode ? "text-white" : "text-gray-900"
             } drop-shadow-sm`}
           >
-            Blood Donation Portal
+            Reset Your Password
           </motion.h2>
           <motion.p
             variants={itemVariants}
@@ -219,7 +193,7 @@ const Login = () => {
               isDarkMode ? "text-gray-300" : "text-gray-600"
             }`}
           >
-            Save lives with your contribution
+            Enter your email to receive a reset link
           </motion.p>
         </motion.div>
 
@@ -237,6 +211,14 @@ const Login = () => {
               <div className="mt-2 mb-2 w-full flex justify-center">
                 <p className="text-sm text-red-500 bg-red-100 border border-red-400 p-3 rounded-lg w-full max-w-md text-center">
                   {errorMessage}
+                </p>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mt-2 mb-2 w-full flex justify-center">
+                <p className="text-sm text-green-500 bg-green-100 border border-green-400 p-3 rounded-lg w-full max-w-md text-center">
+                  {successMessage}
                 </p>
               </div>
             )}
@@ -292,101 +274,7 @@ const Login = () => {
                 )}
               </motion.div>
 
-              {/* Password input field */}
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor="password"
-                  className={`block text-sm font-medium ${
-                    isDarkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Password
-                </label>
-                <motion.div
-                  className={`mt-1 relative rounded-lg shadow-sm overflow-hidden ${
-                    focusedInput === "password"
-                      ? "ring-2 ring-red-500 ring-opacity-50"
-                      : ""
-                  }`}
-                >
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock
-                      className={`h-5 w-5 ${
-                        focusedInput === "password"
-                          ? "text-red-500"
-                          : isDarkMode
-                          ? "text-gray-400"
-                          : "text-gray-400"
-                      }`}
-                    />
-                  </div>
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setFocusedInput("password")}
-                    onBlur={() => setFocusedInput("")}
-                    className={`block w-full pl-10 pr-12 py-3 ${
-                      isDarkMode
-                        ? "bg-gray-700 text-white"
-                        : "bg-white text-gray-900"
-                    } rounded-lg focus:outline-none transition-all duration-200`}
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
-                    )}
-                  </button>
-                </motion.div>
-              </motion.div>
-
-              {/* Remember Me and Forgot Password */}
-              <motion.div
-                variants={itemVariants}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center">
-                  <motion.input
-                    whileTap={{ scale: 0.9 }}
-                    id="rememberMe"
-                    name="rememberMe"
-                    type="checkbox"
-                    className={`h-4 w-4 ${
-                      isDarkMode ? "text-red-600" : "text-red-600"
-                    } focus:ring-red-500 border-gray-300 rounded cursor-pointer`}
-                  />
-                  <label
-                    htmlFor="rememberMe"
-                    className={`ml-2 block text-sm ${
-                      isDarkMode ? "text-gray-300" : "text-gray-900"
-                    }`}
-                  >
-                    Remember me
-                  </label>
-                </div>
-
-                <div className="text-sm">
-                  <motion.a
-                    whileHover={{ scale: 1.05, x: 5 }}
-                    href="/donor/reset-password-request"
-                    className={`font-medium ${
-                      isDarkMode ? "text-red-400" : "text-red-600"
-                    } hover:text-red-500 transition-colors duration-200`}
-                  >
-                    Forgot your password?
-                  </motion.a>
-                </div>
-              </motion.div>
-
-              {/* Sign In Button */}
+              {/* Submit Button */}
               <motion.div variants={itemVariants}>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -401,16 +289,16 @@ const Login = () => {
                   {isLoading ? (
                     <div className="flex items-center justify-center">
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Signing in...
+                      Sending...
                     </div>
                   ) : (
-                    "Sign in"
+                    "Send Reset Link"
                   )}
                 </motion.button>
               </motion.div>
             </form>
 
-            {/* Registration Section */}
+            {/* Back to Login Section */}
             <motion.div variants={containerVariants} className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -428,7 +316,7 @@ const Login = () => {
                         : "bg-white text-gray-500"
                     }`}
                   >
-                    Don&apos;t have an account?
+                    Remember your password?
                   </span>
                 </div>
               </div>
@@ -440,16 +328,17 @@ const Login = () => {
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
                   whileTap={{ scale: 0.98 }}
-                  href="/donor/register"
-                  className={`w-full flex justify-center py-3 px-4 border ${
-                    isDarkMode ? "border-red-600" : "border-red-500"
+                  href="/donor/login"
+                  className={`w-full flex justify-center items-center py-3 px-4 border ${
+                    isDarkMode ? "border-gray-600" : "border-gray-300"
                   } rounded-lg shadow-sm text-sm font-medium ${
-                    isDarkMode ? "text-red-400" : "text-red-600"
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
                   } ${
                     isDarkMode ? "bg-gray-800" : "bg-white"
-                  } hover:bg-red-50 transition-all duration-200`}
+                  } hover:bg-gray-50 transition-all duration-200`}
                 >
-                  Register as a donor
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to login
                 </motion.a>
               </div>
             </motion.div>
@@ -461,4 +350,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ForgotPassword;
