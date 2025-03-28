@@ -32,7 +32,7 @@ app.use(fileMiddleware);
 app.use(
   cors({
     origin: "http://localhost:3000", // Allow local frontend to access
-    methods: "GET,POST,PUT,DELETE",
+    methods: "GET,POST,PUT,DELETE,PATCH",
     credentials: true, // If using cookies/authentication
   })
 );

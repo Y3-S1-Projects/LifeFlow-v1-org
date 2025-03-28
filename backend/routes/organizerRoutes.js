@@ -78,7 +78,6 @@ router.get("/ineligible", getIneligibleOrganizers);
 router.get("/documents", getOrganizerDocuments);
 router.patch(
   "/:organizerId/status",
-  authorizeRole("Admin"),
   updateOrganizerStatus
 );
 
