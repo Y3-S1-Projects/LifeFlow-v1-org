@@ -121,8 +121,7 @@ const IneligibleOrganizersTable: React.FC = () => {
         {
           headers: {
             'X-CSRF-Token': csrfToken
-          }
-        }
+          }        }
       );
 
       // Update local state with server response

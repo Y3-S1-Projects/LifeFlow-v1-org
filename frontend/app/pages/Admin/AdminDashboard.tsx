@@ -28,7 +28,7 @@ import MapComponent from "@/app/components/Map"
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const stats = [
     {
       title: "Total Donations",
@@ -455,7 +455,7 @@ const AdminDashboard = () => {
             {activeTab === "centers" && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-lg font-medium mb-4">Donation Centers</h2>
-                <MapComponent apiKey={""} userLatitude={0} userLongitude={0} />
+                <MapComponent apiKey={apiKey} userLatitude={0} userLongitude={0} />
               </div>
             )}
 
