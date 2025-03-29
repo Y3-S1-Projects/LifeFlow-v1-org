@@ -132,17 +132,22 @@ const Login = () => {
     setErrorMessage("");
     setIsLoading(true);
 
+    // Get the rememberMe value from the checkbox
+    const rememberMe = (
+      e.currentTarget.elements.namedItem("rememberMe") as HTMLInputElement
+    )?.checked;
+
     try {
-      const csrfTokenFromCookie = Cookies.get("x-csrf-token"); // Retrieve from cookies
+      const csrfTokenFromCookie = Cookies.get("x-csrf-token");
 
       const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfTokenFromCookie || csrfToken, // Ensure token is sent
+          "X-CSRF-Token": csrfTokenFromCookie || csrfToken,
         },
-        credentials: "include", // Ensure cookies are sent
-        body: JSON.stringify({ email, password }),
+        credentials: "include",
+        body: JSON.stringify({ email, password, rememberMe }), // Include rememberMe in the request
       });
 
       const data = await response.json();
@@ -371,7 +376,7 @@ const Login = () => {
                 <div className="text-sm">
                   <motion.a
                     whileHover={{ scale: 1.05, x: 5 }}
-                    href="#"
+                    href="/donor/reset-password-request"
                     className={`font-medium ${
                       isDarkMode ? "text-red-400" : "text-red-600"
                     } hover:text-red-500 transition-colors duration-200`}

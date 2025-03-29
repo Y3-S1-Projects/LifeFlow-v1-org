@@ -187,23 +187,37 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
+          <nav className="hidden md:flex items-center space-x-6">
             {currentNav.map((item, index) => (
               <Link
                 key={index}
                 href={item.path}
                 className={`
-                  px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2
-                  transition-colors duration-200
-                  ${
-                    isActive(item.path)
-                      ? "bg-primary/10 text-primary"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }
-                `}
+        relative px-2 py-1.5 text-sm font-medium flex items-center space-x-2
+        transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+        ${
+          isActive(item.path)
+            ? "text-primary font-semibold"
+            : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+        }
+        group
+      `}
               >
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
+
+                {/* Active state underline (always visible if active) */}
+                {isActive(item.path) && (
+                  <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-primary rounded-full" />
+                )}
+
+                {/* Hover underline (only appears on hover) */}
+                {!isActive(item.path) && (
+                  <span
+                    className="absolute inset-x-0 -bottom-1 h-0.5 bg-current rounded-full 
+                        scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
+                  />
+                )}
               </Link>
             ))}
           </nav>

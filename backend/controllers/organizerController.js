@@ -3,8 +3,20 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Document from "../models/Document.js";
 import upload from "../config/multerConfig.js";
-import fs from 'fs';
-import path from 'path';
+import OrganizerOTP from "../models/OrganizerOTP.js";
+import emailService from "../services/emailService.js";
+import fs from "fs";
+import path from "path";
+import nodemailer from "nodemailer";
+import { getClientIP } from "./loginController.js";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER, // Your Gmail address
+    pass: process.env.EMAIL_PASS, // Your App Password (not Gmail password)
+  },
+});
 
 export const registerOrganizer = async (req, res) => {
   try {
@@ -28,10 +40,8 @@ export const registerOrganizer = async (req, res) => {
       pincode,
       facilities,
       equipmentList,
-      password
+      password,
     } = req.body;
-
-    console.log("Received registration data:", req.body);
 
     // Check if organizer already exists
     const existingOrganizer = await Organizer.findOne({ email });
@@ -76,7 +86,6 @@ export const registerOrganizer = async (req, res) => {
     });
 
     await newOrganizer.save();
-    console.log("New organizer saved:", newOrganizer);
 
     res.status(201).json({
       message: "Organizer registered successfully",
@@ -96,63 +105,333 @@ export const registerOrganizer = async (req, res) => {
 
 // Login organizer
 export const loginOrganizer = async (req, res) => {
+  const { email, password, rememberMe } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
   try {
-    const { email, password } = req.body;
-
-    // Check if organizer exists
     const organizer = await Organizer.findOne({ email });
-    if (!organizer) {
-      return res.status(400).json({ message: "Invalid credentials" });
+
+    if (!organizer || !(await bcrypt.compare(password, organizer.password))) {
+      return res.status(401).json({
+        message: "Invalid credentials. Please check your email and password.",
+      });
     }
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, organizer.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    // Check if verified
+    // Check if organizer is verified
     if (!organizer.isVerified) {
+      await sendOrganizerOTP(email); // Implement this function to send OTP to organizer's email
       return res.status(403).json({
-        message: "Account not verified",
+        message:
+          "Authentication failed. Please check your email for verification code.",
         requiresVerification: true,
       });
     }
 
-    // Generate JWT token
+    // Generate JWT token with rememberMe option
     const token = jwt.sign(
       {
         userId: organizer._id,
+        email: organizer.email,
         role: "Organizer",
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: rememberMe ? "7d" : "1d" }
     );
 
-    // Set token in HTTP-only cookie with proper configuration
-    res.cookie("authToken", token, {
+    // Set cookie with rememberMe option
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      path: "/", // Important! Make cookie available site-wide
-    });
+      maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
+      path: "/",
+    };
 
-    // Return token in response as well (for redundancy)
+    res.cookie("authToken", token, cookieOptions);
+
+    // Record login attempt for security logging
+    const clientIP = getClientIP(req);
+    let locationInfo = "Unknown";
+
+    try {
+      const geoData = await getLocationFromIP(clientIP);
+      locationInfo = geoData.country || "Unknown";
+      if (geoData.city) {
+        locationInfo = `${geoData.city}, ${locationInfo}`;
+      }
+    } catch (geoError) {
+      console.error("Error fetching location data:", geoError);
+    }
+
+    // Send login notification email
+    try {
+      await emailService.sendTemplateEmail({
+        to: organizer.email,
+        subject: "Login Notification",
+        templateParams: {
+          title: "Login Detected",
+          preheader: "New Login to Your Organizer Account",
+          userName: organizer.name || "Valued Organizer",
+          mainMessage:
+            "A new login has been detected on your LifeFlow Organizer account.",
+          details: [
+            { label: "Login Time", value: new Date().toLocaleString() },
+            { label: "IP Address", value: clientIP },
+            { label: "Location", value: locationInfo },
+          ],
+          additionalInfo:
+            "If this was not you, please contact our support team immediately.",
+          actionButton: {
+            text: "View Account Security",
+            link: `${process.env.FRONTEND_URL}/organizer/account/security`,
+          },
+        },
+      });
+    } catch (emailError) {
+      console.error("Login notification email failed:", emailError);
+    }
+
+    // Return organizer info
     res.status(200).json({
       message: "Login successful",
-      token, // Include token in response for localStorage backup
       organizer: {
         id: organizer._id,
         name: organizer.name,
         email: organizer.email,
         eligibleToOrganize: organizer.eligibleToOrganize,
+        isVerified: organizer.isVerified,
       },
     });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+  } catch (err) {
+    console.error("Organizer login error:", err);
+    res.status(500).json({
+      message: "Authentication failed. Please try again.",
+      error: err.message,
+    });
+  }
+};
+
+const OTP_COOLDOWN = 60 * 1000; // 1 minute cooldown
+const MAX_OTP_ATTEMPTS = 5;
+
+export const sendOrganizerOTP = async (email) => {
+  const recentOtp = await OrganizerOTP.findOne({
+    email,
+    createdAt: { $gte: new Date(Date.now() - OTP_COOLDOWN) },
+  });
+
+  if (recentOtp) {
+    throw new Error("Please wait before requesting a new OTP");
+  }
+
+  const generateNumericOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const otp = generateNumericOTP();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+
+  // Delete any existing OTPs for this email
+  await OrganizerOTP.deleteMany({ email });
+
+  // Create new OTP record
+  await new OrganizerOTP({
+    email,
+    otp,
+    expiresAt,
+    attempts: 0,
+  }).save();
+
+  // HTML email template with styling
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #ffffff;
+          }
+          .logo {
+            color: #e74c3c;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px 0;
+          }
+          .otp-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .otp-code {
+            font-size: 32px;
+            color: #e74c3c;
+            letter-spacing: 5px;
+            font-weight: bold;
+          }
+          .message {
+            color: #555555;
+            line-height: 1.6;
+            margin: 20px 0;
+          }
+          .footer {
+            text-align: center;
+            color: #888888;
+            font-size: 12px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="logo">LifeFlow Organizer</div>
+          <div class="message">
+            <p>Hello Organizer,</p>
+            <p>Thank you for using LifeFlow Organizer Portal. Please use the following OTP to verify your email address:</p>
+          </div>
+          <div class="otp-box">
+            <div class="otp-code">${otp}</div>
+            <p>This code will expire in 5 minutes.</p>
+          </div>
+          <div class="message">
+            <p>If you didn't request this code, please ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated message from LifeFlow Organizer Portal. Please do not reply to this email.</p>
+            <p>© ${new Date().getFullYear()} LifeFlow. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "LifeFlow Organizer - Your OTP Code",
+    text: `Your LifeFlow Organizer OTP code is ${otp}. It is valid for 5 minutes.`,
+    html: htmlContent,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+export const verifyOrganizerOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const otpRecord = await OrganizerOTP.findOne({ email });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        message: "OTP not found or expired. Please request a new OTP.",
+        code: "OTP_NOT_FOUND",
+      });
+    }
+
+    // Check if too many attempts have been made
+    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      await OrganizerOTP.deleteOne({ email });
+      return res.status(429).json({
+        message: "Too many attempts. Please request a new OTP.",
+        code: "TOO_MANY_ATTEMPTS",
+        attempts: otpRecord.attempts,
+      });
+    }
+
+    // Check if OTP is expired
+    if (new Date() > otpRecord.expiresAt) {
+      await OrganizerOTP.deleteOne({ email });
+      return res.status(400).json({
+        message: "OTP has expired. Please request a new OTP.",
+        code: "OTP_EXPIRED",
+      });
+    }
+
+    // Check if OTP is valid
+    if (otpRecord.otp !== otp) {
+      // Increment attempts after failed OTP
+      await OrganizerOTP.updateOne({ email }, { $inc: { attempts: 1 } });
+
+      const remainingAttempts = MAX_OTP_ATTEMPTS - (otpRecord.attempts + 1);
+
+      return res.status(400).json({
+        message: `Invalid OTP. ${remainingAttempts} attempts remaining.`,
+        code: "INVALID_OTP",
+        remainingAttempts,
+      });
+    }
+
+    // Find the organizer to verify
+    const organizer = await Organizer.findOne({ email });
+
+    if (!organizer) {
+      return res.status(404).json({
+        message: "Organizer not found",
+        code: "ORGANIZER_NOT_FOUND",
+      });
+    }
+
+    // Mark organizer as verified
+    const updatedOrganizer = await Organizer.findOneAndUpdate(
+      { email },
+      { isVerified: true },
+      { new: true }
+    );
+
+    // Delete OTP after successful verification
+    await OrganizerOTP.deleteOne({ email });
+
+    // Send verification confirmation email
+    try {
+      await emailService.sendTemplateEmail({
+        to: email,
+        subject: "Organizer Email Verification Successful",
+        templateParams: {
+          title: "Email Verified",
+          preheader: "Your Organizer Account is Now Verified",
+          userName: organizer.name || "Valued Organizer",
+          mainMessage:
+            "Your email has been successfully verified. You can now access your organizer account.",
+          details: [{ label: "Verified Email", value: email }],
+          actionButton: {
+            text: "Go to Dashboard",
+            link: `${process.env.FRONTEND_URL}/organizer/dashboard`,
+          },
+          additionalInfo:
+            "If you did not perform this verification, please contact our support team immediately.",
+        },
+      });
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      // Continue even if email fails
+    }
+
+    res.status(200).json({
+      message: "OTP verified successfully. Organizer account is now verified.",
+      organizer: {
+        id: updatedOrganizer._id,
+        name: updatedOrganizer.name,
+        email: updatedOrganizer.email,
+        isVerified: updatedOrganizer.isVerified,
+      },
+      code: "VERIFICATION_SUCCESS",
+    });
+  } catch (err) {
+    console.error("Organizer OTP verification error:", err);
+    res.status(500).json({
+      message: "Internal server error during OTP verification",
+      code: "INTERNAL_ERROR",
+    });
   }
 };
 
@@ -315,25 +594,25 @@ export const changePassword = async (req, res) => {
 export const verifyDocument = async (req, res) => {
   try {
     const { documentId } = req.params;
-    
+
     const document = await Document.findByIdAndUpdate(
       documentId,
       { verified: true },
       { new: true }
     );
-    
+
     if (!document) {
       return res.status(404).json({ message: "Document not found" });
     }
 
     res.status(200).json({
       message: "Document verified successfully",
-      document
+      document,
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error verifying document",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -343,7 +622,7 @@ export const uploadDocuments = async (req, res) => {
     const organizerId = req.body.organizerId;
     console.log("Organizer ID:", organizerId);
     const files = req.files;
-    
+
     if (!files || files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
     }
@@ -352,38 +631,38 @@ export const uploadDocuments = async (req, res) => {
       files.map(async (file) => {
         const newDocument = new Document({
           organizerId,
-          documentType: req.body.documentType || 'other',
+          documentType: req.body.documentType || "other",
           originalName: file.originalname,
           fileName: file.filename,
           filePath: file.path,
           fileType: file.mimetype,
-          fileSize: file.size
+          fileSize: file.size,
         });
         return await newDocument.save();
       })
     );
 
     // Update organizer to mark documents as uploaded
-    await Organizer.findByIdAndUpdate(organizerId, { 
-      $set: { documentsUploaded: true } 
+    await Organizer.findByIdAndUpdate(organizerId, {
+      $set: { documentsUploaded: true },
     });
 
     res.status(201).json({
       message: "Documents uploaded successfully",
-      documents: savedDocuments.map(doc => ({
+      documents: savedDocuments.map((doc) => ({
         id: doc._id,
         name: doc.originalName,
         type: doc.documentType,
         size: doc.fileSize,
-        uploadedAt: doc.uploadDate
-      }))
+        uploadedAt: doc.uploadDate,
+      })),
     });
   } catch (error) {
     console.error("Error uploading documents:", error);
-    
+
     // Clean up uploaded files if error occurs
     if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
+      req.files.forEach((file) => {
         try {
           fs.unlinkSync(file.path);
         } catch (err) {
@@ -391,35 +670,37 @@ export const uploadDocuments = async (req, res) => {
         }
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       message: "Server error during document upload",
-      error: error.message 
+      error: error.message,
     });
   }
 };
 
+//Get all documents uploaded by the organizer
 export const getOrganizerDocuments = async (req, res) => {
   try {
-    const organizerId = req.organizer.id;
+    const organizerId = req.query.organizerId || req.organizer.id;
     const documents = await Document.find({ organizerId })
-      .select('-filePath -__v')
+      .select("-filePath -__v")
       .sort({ uploadDate: -1 });
-    
+
     res.status(200).json({ documents });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error fetching documents",
-      error: error.message 
+      error: error.message,
     });
   }
 };
 
+// Download a document
 export const downloadDocument = async (req, res) => {
   try {
     const document = await Document.findOne({
       _id: req.params.documentId,
-      organizerId: req.organizer.id
+      organizerId: req.organizer.id,
     });
 
     if (!document) {
@@ -427,16 +708,16 @@ export const downloadDocument = async (req, res) => {
     }
 
     const filePath = path.join(process.cwd(), document.filePath);
-    
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ message: "File not found on server" });
     }
 
     res.download(filePath, document.originalName);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error downloading document",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -445,7 +726,7 @@ export const deleteDocument = async (req, res) => {
   try {
     const document = await Document.findOneAndDelete({
       _id: req.params.documentId,
-      organizerId: req.organizer.id
+      organizerId: req.organizer.id,
     });
 
     if (!document) {
@@ -461,9 +742,9 @@ export const deleteDocument = async (req, res) => {
 
     res.status(200).json({ message: "Document deleted successfully" });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error deleting document",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -567,5 +848,54 @@ export const getOrganizerCamps = async (req, res) => {
     res.status(200).json({ camps: organizer.createdCamps });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Get organizers who are not eligible to organize
+export const getIneligibleOrganizers = async (req, res) => {
+  try {
+    const organizers = await Organizer.find({
+      eligibleToOrganize: false,
+    }).select("-password");
+
+    res.status(200).json({ organizers });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Update organizer status and eligibility
+export const updateOrganizerStatus = async (req, res) => {
+  try {
+    const { organizerId } = req.params;
+    const { status } = req.body;
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const organizer = await Organizer.findByIdAndUpdate(
+      organizerId,
+      {
+        status,
+        eligibleToOrganize: status === "approved", // Automatically set eligibility
+      },
+      { new: true }
+    ).select("-password");
+
+    if (!organizer) {
+      return res.status(404).json({ message: "Organizer not found" });
+    }
+
+    res.status(200).json({
+      message: `Organizer ${status} successfully`,
+      organizer,
+    });
+  } catch (error) {
+    console.error("Status update error:", error);
+    res.status(500).json({
+      message: "Error updating status",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };

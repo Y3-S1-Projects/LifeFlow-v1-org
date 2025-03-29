@@ -3,6 +3,9 @@ import Otp from "../models/OTP.js";
 import nodemailer from "nodemailer";
 import emailService from "../services/emailService.js";
 import dotenv from "dotenv";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
+import PasswordResetToken from "../models/PasswordResetToken.js";
 
 // Nodemailer configuration
 dotenv.config();
@@ -237,5 +240,98 @@ export const resendOTP = async (req, res) => {
     res.status(200).json({ message: "OTP sent again. Check your email." });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({
+        message:
+          "If an account exists with this email, a reset link has been sent.",
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 3600000);
+
+    await PasswordResetToken.create({ userId: user._id, token, expiresAt });
+
+    const resetLink = `http://localhost:3000/donor/reset-password?token=${token}&email=${encodeURIComponent(
+      email
+    )}`;
+
+    await emailService.sendTemplateEmail({
+      to: email,
+      subject: "LifeFlow - Password Reset Request",
+      templateParams: {
+        title: "Password Reset",
+        preheader: "Reset your LifeFlow account password",
+        userName: user.name || "LifeFlow User",
+        mainMessage:
+          "We received a request to reset your password. Click the button below to set a new password:",
+        actionButton: { text: "Reset Password", link: resetLink },
+        additionalInfo:
+          "This link will expire in 1 hour. If you didn’t request this, please ignore this email.",
+        companyName: "LifeFlow",
+      },
+    });
+
+    res.status(200).json({
+      message:
+        "If an account exists with this email, a reset link has been sent.",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to process password reset request" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, token, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "Invalid reset request" });
+
+    const resetToken = await PasswordResetToken.findOne({
+      userId: user._id,
+      token,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!resetToken)
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+    await PasswordResetToken.deleteMany({ userId: user._id });
+
+    await emailService.sendTemplateEmail({
+      to: email,
+      subject: "LifeFlow - Password Reset Confirmation",
+      templateParams: {
+        title: "Password Updated",
+        preheader: "Your password has been successfully reset",
+        userName: user.name || "LifeFlow User",
+        mainMessage:
+          "Your LifeFlow account password has been successfully updated.",
+        additionalInfo:
+          "If you did not make this change, please contact our support team immediately.",
+        companyName: "LifeFlow",
+      },
+    });
+
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 };

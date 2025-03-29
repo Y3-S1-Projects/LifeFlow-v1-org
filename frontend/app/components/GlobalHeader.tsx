@@ -28,7 +28,7 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
   const menuItems = [
     { title: "Home", href: "/" },
     { title: "About", href: "/about" },
-    { title: "Donate", href: "/donate" },
+    { title: "Organize", href: "/organizer/login" },
     { title: "Find Camps", href: "/find-camps" },
     { title: "Contact", href: "/contact" },
   ];
@@ -226,10 +226,10 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
               </div>
             ) : (
               <Link
-                href="/donor/register"
+                href="/donor/login"
                 className="px-4 py-1 rounded-full text-sm font-medium transition-colors bg-red-600 text-white hover:bg-red-700"
               >
-                Join
+                Login
               </Link>
             )}
           </nav>
