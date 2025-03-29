@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
 import express from "express";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoute.js";
 import loginUser from "./routes/loginRoute.js";
@@ -14,7 +14,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import contactRoutes from "./routes/contactRoutes.js";
 import fileMiddleware from "./middleware/fileMiddleware.js";
-import faqRoutes from "./routes/faqRoute.js"; // FAQ routes import
+import faqRoutes from "./routes/faqRoute.js";
 
 dotenv.config();
 
@@ -31,9 +31,9 @@ app.use(fileMiddleware);
 // Allow requests from your frontend
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allow local frontend to access
-    methods: "GET,POST,PUT,DELETE",
-    credentials: true, // If using cookies/authentication
+    origin: "http://localhost:3000",
+    methods: "GET,POST,PUT,DELETE,PATCH",
+    credentials: true,
   })
 );
 
@@ -58,7 +58,6 @@ app.get("/api/csrf-token", (req, res) => {
 // Routes that DO NOT need CSRF protection
 app.use("/contact", contactRoutes);
 
-
 // Routes that NEED CSRF protection
 app.use("/users", userRoutes);
 app.use("/api", loginUser);
@@ -68,15 +67,13 @@ app.use("/organizers", doubleCsrfProtection, organizerRoutes);
 app.use("/auth", doubleCsrfProtection, authRoutes);
 app.use("/chatbot", doubleCsrfProtection, chatbotRoutes);
 app.use("/admin", doubleCsrfProtection, adminRoutes);
-app.use("/api/v1/faqs", doubleCsrfProtection, faqRoutes); // Added FAQ routes with CSRF protection
+app.use("/api/v1/faqs", doubleCsrfProtection, faqRoutes);
 
-// MongoDB Connection with Error Handling
+// MongoDB Connection
 const uri = process.env.ATLAS_URI;
 mongoose
   .connect(uri)
-  .then(() =>
-    console.log("MongoDB database connection established successfully")
-  )
+  .then(() => console.log("MongoDB database connection established successfully"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
 app.listen(port, () => {

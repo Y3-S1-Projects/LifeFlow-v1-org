@@ -48,6 +48,45 @@ export const createFAQ = async (req, res) => {
   }
 };
 
+export const updateFAQ = async (req, res) => {
+  try {
+    const { question, answer } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Please provide both question and answer",
+      });
+    }
+
+    const updatedFAQ = await FAQ.findByIdAndUpdate(
+      req.params.id,
+      { question, answer },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedFAQ) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No FAQ found with that ID",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        faq: updatedFAQ,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: "error",
+      message: "Failed to update FAQ",
+      error: err.message,
+    });
+  }
+};
+
 export const deleteFAQ = async (req, res) => {
   try {
     const faq = await FAQ.findByIdAndDelete(req.params.id);

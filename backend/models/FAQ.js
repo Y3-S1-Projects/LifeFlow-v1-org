@@ -21,9 +21,14 @@ const faqSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field before saving
+// Update the updatedAt field before saving or updating
 faqSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
+  next();
+});
+
+faqSchema.pre('findOneAndUpdate', function(next) {
+  this.set({ updatedAt: Date.now() });
   next();
 });
 
