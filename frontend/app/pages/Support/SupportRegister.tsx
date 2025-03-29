@@ -46,6 +46,7 @@ export default function RegistrationForm() {
   const [success, setSuccess] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState<number>(0);
   const [emailValid, setEmailValid] = useState<boolean | null>(null);
+  const [nicValid, setNicValid] = useState<boolean | null>(null);
 
   useEffect(() => {
     setError(null);
@@ -88,6 +89,18 @@ export default function RegistrationForm() {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     setEmailValid(emailRegex.test(formData.email));
   }, [formData.email]);
+
+  // NIC validation
+  useEffect(() => {
+    if (!formData.nic) {
+      setNicValid(null);
+      return;
+    }
+    
+    // Check if it's 10 digits OR 9 digits followed by 'v' or 'V'
+    const nicRegex = /^(\d{10}|\d{9}[vV])$/;
+    setNicValid(nicRegex.test(formData.nic.trim()));
+  }, [formData.nic]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -140,6 +153,13 @@ export default function RegistrationForm() {
       return;
     }
 
+    // NIC validation
+    const nicRegex = /^(\d{10}|\d{9}[vV])$/;
+    if (!nicRegex.test(formData.nic.trim())) {
+      setError("NIC must be 10 digits or 9 digits followed by 'V'.");
+      return;
+    }
+
     try {
       const csrfResponse = await axios.get(`${publicApi}/api/csrf-token`, {
         withCredentials: true,
@@ -188,7 +208,7 @@ export default function RegistrationForm() {
               </div>
             </div>
             <CardTitle className="text-center text-2xl font-bold bg-gradient-to-r from-red-700 to-red-900 bg-clip-text text-transparent">
-              Blood Donation Support Registration
+              Life Flow Support Registration
             </CardTitle>
           </CardHeader>
         </div>
@@ -351,10 +371,10 @@ export default function RegistrationForm() {
                   onValueChange={(value) => handleRoleChange(value as "superadmin" | "support")}
                   className="grid grid-cols-2 gap-2"
                 >
-                  <div className="flex items-center justify-center p-3 border rounded-md hover:bg-red-50 cursor-pointer transition-all border-gray-200">
+                  {/*<div className="flex items-center justify-center p-3 border rounded-md hover:bg-red-50 cursor-pointer transition-all border-gray-200">
                     <RadioGroupItem value="superadmin" id="superadmin" className="mr-2 text-red-600" />
                     <Label htmlFor="superadmin" className="cursor-pointer text-sm">Superadmin</Label>
-                  </div>
+                  </div>*/}
                   <div className="flex items-center justify-center p-3 border rounded-md hover:bg-red-50 cursor-pointer transition-all border-gray-200">
                     <RadioGroupItem value="support" id="support" className="mr-2 text-red-600" />
                     <Label htmlFor="support" className="cursor-pointer text-sm">Support</Label>
@@ -363,14 +383,25 @@ export default function RegistrationForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="nic" className="text-sm font-medium text-gray-700">NIC</Label>
+                <Label htmlFor="nic" className="text-sm font-medium text-gray-700 flex justify-between">
+                  <span>NIC</span>
+                  {nicValid !== null && (
+                    <span className={`text-xs ${nicValid ? 'text-green-600' : 'text-red-600'}`}>
+                      {nicValid ? 'Valid NIC' : 'Must be 10 digits or 9 digits with V'}
+                    </span>
+                  )}
+                </Label>
                 <Input 
                   id="nic" 
                   name="nic"
                   value={formData.nic}
                   onChange={handleChange}
                   required 
-                  className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
+                  className={`rounded-md transition-all ${
+                    nicValid === null ? 'border-gray-300' : 
+                    nicValid ? 'border-green-500 focus:ring-green-500 focus:border-green-500' : 
+                    'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  }`}
                   placeholder="National Identity Card number"
                 />
               </div>
