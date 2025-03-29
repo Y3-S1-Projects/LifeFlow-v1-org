@@ -24,6 +24,8 @@ import Footer from "../../components/Footer"
 import Header from "../../components/Header"
 import OrganizerTable from "./IneligibleOrganizersTable"
 import MapComponent from "@/app/components/Map"
+import CampRequest from "./CampRequest"
+import Report from "./Report"
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview")
@@ -74,9 +76,10 @@ const AdminDashboard = () => {
       icon: <Activity className="h-5 w-5" />,
     },
     {
-      id: "inventory",
-      label: "Blood Inventory",
-      icon: <Droplet className="h-5 w-5" />,
+      id: "Report",
+      label: "Reports",
+      icon: <PieChart className="h-5 w-5" />,
+     // icon: <Droplet className="h-5 w-5" />,
     },
     {
       id: "centers",
@@ -149,7 +152,7 @@ const AdminDashboard = () => {
         <div className="hidden lg:flex flex-col w-72 bg-white border-r border-gray-200 shadow-md">
           <div className="p-5 bg-gradient-to-r from-red-600 to-red-700">
             <h2 className="text-xl font-bold text-white flex items-center">
-              <Heart className="mr-2 h-6 w-6 fill-white" /> BloodConnect
+              <Heart className="mr-2 h-6 w-6 fill-white" /> LifeFlow
             </h2>
           </div>
 
@@ -445,11 +448,10 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {activeTab === "inventory" && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-medium mb-4">Blood Inventory</h2>
-                <p>Blood inventory content will go here.</p>
-              </div>
+            {activeTab === "Report" && (
+               <div className="bg-white rounded-lg shadow-md">
+               <Report /> 
+             </div>
             )}
 
             {activeTab === "centers" && (
@@ -468,6 +470,12 @@ const AdminDashboard = () => {
             {activeTab === "Organizer" && (
               <div className="bg-white rounded-lg shadow-md">
                 <OrganizerTable />
+              </div>
+            )}
+
+             {activeTab === "Camp" && (
+              <div className="bg-white rounded-lg shadow-md">
+                <CampRequest /> 
               </div>
             )}
           </div>

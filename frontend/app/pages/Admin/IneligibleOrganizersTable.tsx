@@ -277,8 +277,8 @@ const IneligibleOrganizersTable: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+              {/*<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</th>*/}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
@@ -290,9 +290,7 @@ const IneligibleOrganizersTable: React.FC = () => {
             {filteredOrganizers.length > 0 ? (
               filteredOrganizers.map(organizer => (
                 <tr key={organizer._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{organizer.orgName}</div>
-                  </td>
+                  
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {organizer.firstName} {organizer.lastName}
                   </td>
@@ -392,13 +390,13 @@ const IneligibleOrganizersTable: React.FC = () => {
         <div>
           Showing {filteredOrganizers.length} of {organizers.length} organizers
         </div>
-        <button
+       {/* <button
           onClick={fetchIneligibleOrganizers}
           className="flex items-center text-red-600 hover:text-red-800"
         >
           <RefreshCw className="h-4 w-4 mr-1" />
           Refresh
-        </button>
+        </button>*/}
       </div>
     </div>
   );
