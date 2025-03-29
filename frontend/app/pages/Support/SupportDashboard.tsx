@@ -1,9 +1,28 @@
 "use client"
-
+import SupportHeader from "@/app/components/SupportHeader"
 import { useState, useEffect } from "react"
 import { BarChart, Bar, PieChart, Pie, Cell, Tooltip, Legend, XAxis, YAxis, ResponsiveContainer } from "recharts"
-import { Phone, MessageSquare, Clock, Calendar, Users, MapPin, Activity, TrendingUp, AlertCircle, Eye, CheckCircle, Mail, User, X, Plus, Trash2, HelpCircle } from "lucide-react"
-import SupportHeader from "@/app/components/SupportHeader"
+import {
+  Phone,
+  MessageSquare,
+  Clock,
+  Calendar,
+  Users,
+  MapPin,
+  Activity,
+  TrendingUp,
+  AlertCircle,
+  Eye,
+  CheckCircle,
+  Mail,
+  User,
+  X,
+  Plus,
+  Trash2,
+  HelpCircle,
+  Edit,
+  Search,
+} from "lucide-react"
 import axios from "axios"
 import { toast } from "sonner"
 
@@ -31,34 +50,38 @@ const SupportDashboard = () => {
   const [allMessages, setAllMessages] = useState<ContactMessage[]>([])
   const [activeMessages, setActiveMessages] = useState<ContactMessage[]>([])
   const [resolvedMessages, setResolvedMessages] = useState<ContactMessage[]>([])
+  const [filteredMessages, setFilteredMessages] = useState<ContactMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'support' | 'faq'>('overview')
+  const [activeTab, setActiveTab] = useState<"overview" | "support" | "faq-management" | "faq-viewer">("overview")
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null)
   const [showResolved, setShowResolved] = useState(false)
   const [error, setError] = useState<string | null>(null)
-    const [csrfToken, setCsrfToken] = useState<string>("");
-  
+  const [csrfToken, setCsrfToken] = useState<string>("")
+  const [searchTerm, setSearchTerm] = useState("")
+
   // FAQ states
   const [faqs, setFaqs] = useState<FAQ[]>([])
-  const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' })
+  const [newFAQ, setNewFAQ] = useState({ question: "", answer: "" })
   const [isFaqLoading, setIsFaqLoading] = useState(false)
+  const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null)
+  const [editFAQData, setEditFAQData] = useState({ question: "", answer: "" })
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {
       try {
         const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
           withCredentials: true,
-        });
-        setCsrfToken(data.csrfToken);
-        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken;
+        })
+        setCsrfToken(data.csrfToken)
+        axios.defaults.headers.common["X-CSRF-Token"] = data.csrfToken
       } catch (err) {
-        console.error("CSRF token fetch error:", err);
-        toast.error("Failed to fetch security token");
+        console.error("CSRF token fetch error:", err)
+        toast.error("Failed to fetch security token")
       }
-    };
+    }
 
-    fetchCsrfToken();
-  }, [API_BASE_URL]);
+    fetchCsrfToken()
+  }, [API_BASE_URL])
 
   // Fetch messages from API
   const fetchMessages = async () => {
@@ -72,10 +95,11 @@ const SupportDashboard = () => {
       const data = await response.json()
       const messagesWithResolved = data.map((msg: ContactMessage) => ({
         ...msg,
-        resolved: msg.resolved || false
+        resolved: msg.resolved || false,
       }))
-      
+
       setAllMessages(messagesWithResolved)
+      setFilteredMessages(messagesWithResolved)
     } catch (err) {
       console.error("Fetch error:", err)
       setError("Failed to load messages. Please try again.")
@@ -83,6 +107,18 @@ const SupportDashboard = () => {
       setIsLoading(false)
     }
   }
+
+  // Filter messages based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredMessages(showResolved ? resolvedMessages : activeMessages)
+    } else {
+      const filtered = (showResolved ? resolvedMessages : activeMessages).filter((message) =>
+        message.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+      setFilteredMessages(filtered)
+    }
+  }, [searchTerm, showResolved, activeMessages, resolvedMessages])
 
   // Fetch FAQs from API
   const fetchFAQs = async () => {
@@ -111,13 +147,13 @@ const SupportDashboard = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/faqs`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token':csrfToken,
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
         },
-        credentials : "include",
-        body: JSON.stringify(newFAQ)
+        credentials: "include",
+        body: JSON.stringify(newFAQ),
       })
 
       if (!response.ok) {
@@ -126,7 +162,7 @@ const SupportDashboard = () => {
 
       const data = await response.json()
       setFaqs([data.data.faq, ...faqs])
-      setNewFAQ({ question: '', answer: '' })
+      setNewFAQ({ question: "", answer: "" })
       setError(null)
     } catch (err) {
       console.error("Create FAQ error:", err)
@@ -138,19 +174,19 @@ const SupportDashboard = () => {
   const handleDeleteFAQ = async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/faqs/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken,
         },
-        credentials: "include"
+        credentials: "include",
       })
 
       if (!response.ok) {
         throw new Error(`Failed to delete FAQ: ${response.status}`)
       }
 
-      setFaqs(faqs.filter(faq => faq._id !== id))
+      setFaqs(faqs.filter((faq) => faq._id !== id))
       setError(null)
     } catch (err) {
       console.error("Delete FAQ error:", err)
@@ -158,27 +194,74 @@ const SupportDashboard = () => {
     }
   }
 
+  // Start editing FAQ
+  const startEditingFAQ = (faq: FAQ) => {
+    setEditingFAQ(faq)
+    setEditFAQData({
+      question: faq.question,
+      answer: faq.answer,
+    })
+  }
+
+  // Cancel editing FAQ
+  const cancelEditingFAQ = () => {
+    setEditingFAQ(null)
+    setEditFAQData({ question: "", answer: "" })
+  }
+
+  // Update FAQ
+  const handleUpdateFAQ = async () => {
+    if (!editingFAQ) return
+
+    if (!editFAQData.question || !editFAQData.answer) {
+      setError("Please fill both question and answer fields")
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/faqs/${editingFAQ._id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
+        body: JSON.stringify(editFAQData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update FAQ: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setFaqs(faqs.map((faq) => (faq._id === editingFAQ._id ? data.data.faq : faq)))
+      cancelEditingFAQ()
+      setError(null)
+    } catch (err) {
+      console.error("Update FAQ error:", err)
+      setError("Failed to update FAQ. Please try again.")
+    }
+  }
+
   // Handle resolving a message
   const handleResolveMessage = async (messageId: string) => {
     setError(null)
     try {
-      const messageToResolve = allMessages.find(msg => msg._id === messageId)
-      
+      const messageToResolve = allMessages.find((msg) => msg._id === messageId)
+
       if (!messageToResolve) {
         throw new Error("Message not found")
       }
 
-      const updatedMessages = allMessages.map(msg => 
-        msg._id === messageId ? { ...msg, resolved: true } : msg
-      )
-      
+      const updatedMessages = allMessages.map((msg) => (msg._id === messageId ? { ...msg, resolved: true } : msg))
+
       setAllMessages(updatedMessages)
 
       const response = await fetch(`${API_BASE_URL}/contact/messages/${messageId}/resolve`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-        }
+          "Content-Type": "application/json",
+        },
       })
 
       if (!response.ok) {
@@ -197,24 +280,26 @@ const SupportDashboard = () => {
 
   // Update active/resolved messages when allMessages changes
   useEffect(() => {
-    const resolved = allMessages.filter(msg => msg.resolved)
-    const active = allMessages.filter(msg => !msg.resolved)
-    
+    const resolved = allMessages.filter((msg) => msg.resolved)
+    const active = allMessages.filter((msg) => !msg.resolved)
+
     setResolvedMessages(resolved)
     setActiveMessages(active)
-  }, [allMessages])
+    setFilteredMessages(showResolved ? resolved : active)
+  }, [allMessages, showResolved])
 
   // Initial data fetch
   useEffect(() => {
     fetchMessages()
     fetchFAQs()
   }, [])
+
   // Chart data
   const caseData = [
-    { name: "Delhi", value: 35 },
-    { name: "Mumbai", value: 28 },
-    { name: "Chennai", value: 12 },
-    { name: "Bangalore", value: 18 },
+    { name: "Colombo", value: 35 },
+    { name: "Kandy", value: 28 },
+    { name: "Kurunagala", value: 12 },
+    { name: "Malabe", value: 18 },
     { name: "Others", value: 7 },
   ]
 
@@ -260,7 +345,7 @@ const SupportDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-gray-100">
       <SupportHeader />
 
       {/* Error Display */}
@@ -271,10 +356,7 @@ const SupportDashboard = () => {
               <AlertCircle className="h-5 w-5 mr-2" />
               <p>{error}</p>
             </div>
-            <button 
-              onClick={() => setError(null)} 
-              className="text-red-700 hover:text-red-900"
-            >
+            <button onClick={() => setError(null)} className="text-red-700 hover:text-red-900">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -286,45 +368,54 @@ const SupportDashboard = () => {
         <div className="mb-6 border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => setActiveTab('overview')}
+              onClick={() => setActiveTab("overview")}
               className={`py-4 px-1 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'overview' 
-                  ? 'text-red-600 border-b-2 border-red-600' 
-                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "overview"
+                  ? "text-red-600 border-b-2 border-red-600"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Overview
             </button>
             <button
-              onClick={() => setActiveTab('support')}
+              onClick={() => setActiveTab("support")}
               className={`py-4 px-1 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'support' 
-                  ? 'text-red-600 border-b-2 border-red-600' 
-                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "support"
+                  ? "text-red-600 border-b-2 border-red-600"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Support
             </button>
             <button
-              onClick={() => setActiveTab('faq')}
+              onClick={() => setActiveTab("faq-management")}
               className={`py-4 px-1 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'faq' 
-                  ? 'text-red-600 border-b-2 border-red-600' 
-                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "faq-management"
+                  ? "text-red-600 border-b-2 border-red-600"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               FAQ Management
             </button>
+            <button
+              onClick={() => setActiveTab("faq-viewer")}
+              className={`py-4 px-1 text-sm font-medium transition-all duration-200 ${
+                activeTab === "faq-viewer"
+                  ? "text-red-600 border-b-2 border-red-600"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              FAQ Viewer
+            </button>
           </nav>
         </div>
 
-
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <>
+        {/* Overview Tab Content */}
+        {activeTab === "overview" && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+                <h1 className="text-2xl font-bold text-gray-800 flex items-center">
                   <Activity className="mr-2 text-red-500" />
                   Support Dashboard
                 </h1>
@@ -368,7 +459,7 @@ const SupportDashboard = () => {
                     <Calendar className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Camp Requests</p>
+                    <p className="text-sm font-medium text-gray-500">Requests</p>
                     <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-red-600 transition-colors duration-200">
                       34
                     </h3>
@@ -421,7 +512,7 @@ const SupportDashboard = () => {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
                 <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
                   <MapPin className="h-5 w-5 mr-2 text-red-500" />
@@ -478,14 +569,14 @@ const SupportDashboard = () => {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
-        {/* Support Tab */}
-        {activeTab === 'support' && (
+        {/* Support Tab Content */}
+        {activeTab === "support" && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center">
                 <MessageSquare className="h-5 w-5 mr-2 text-green-500" />
                 Contact Messages
               </h2>
@@ -493,24 +584,43 @@ const SupportDashboard = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setShowResolved(false)}
-                    className={`px-3 py-1 text-sm rounded-md ${!showResolved ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}
+                    className={`px-3 py-1 text-sm rounded-md ${!showResolved ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}
                   >
                     Active ({activeMessages.length})
                   </button>
                   <button
                     onClick={() => setShowResolved(true)}
-                    className={`px-3 py-1 text-sm rounded-md ${showResolved ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
+                    className={`px-3 py-1 text-sm rounded-md ${showResolved ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}
                   >
                     Resolved ({resolvedMessages.length})
                   </button>
                 </div>
-                <button 
+                <button
                   onClick={fetchMessages}
                   className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
                 >
                   Refresh
                 </button>
               </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="mb-6 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm transition-all duration-200"
+                placeholder="Search by name..."
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -546,11 +656,11 @@ const SupportDashboard = () => {
                       </td>
                     </tr>
                   ) : showResolved ? (
-                    resolvedMessages.length > 0 ? (
-                      resolvedMessages.map((msg, index) => (
+                    filteredMessages.length > 0 ? (
+                      filteredMessages.map((msg, index) => (
                         <tr
                           key={msg._id}
-                          className={`hover:bg-gray-50 transition-colors duration-150 ${index === resolvedMessages.length - 1 ? "rounded-b-lg" : ""}`}
+                          className={`hover:bg-gray-50 transition-colors duration-150 ${index === filteredMessages.length - 1 ? "rounded-b-lg" : ""}`}
                         >
                           <td className="px-4 py-4 text-sm font-medium text-gray-900 truncate">{msg.name}</td>
                           <td className="px-4 py-4 text-sm text-gray-500 truncate" title={msg.email}>
@@ -560,7 +670,7 @@ const SupportDashboard = () => {
                           <td className="px-4 py-4 text-sm text-gray-500 truncate">{msg.message}</td>
                           <td className="px-4 py-4 text-sm text-gray-500">
                             <div className="flex space-x-2">
-                              <button 
+                              <button
                                 onClick={() => setSelectedMessage(msg)}
                                 className="text-blue-500 hover:text-blue-700 flex items-center"
                                 title="View Full Message"
@@ -577,15 +687,16 @@ const SupportDashboard = () => {
                           <p className="text-gray-500 flex flex-col items-center justify-center">
                             <CheckCircle className="h-10 w-10 text-gray-300 mb-2" />
                             <span>No resolved messages found.</span>
+                            {searchTerm && <span className="mt-1">No matches for "{searchTerm}"</span>}
                           </p>
                         </td>
                       </tr>
                     )
-                  ) : activeMessages.length > 0 ? (
-                    activeMessages.map((msg, index) => (
+                  ) : filteredMessages.length > 0 ? (
+                    filteredMessages.map((msg, index) => (
                       <tr
                         key={msg._id}
-                        className={`hover:bg-gray-50 transition-colors duration-150 ${index === activeMessages.length - 1 ? "rounded-b-lg" : ""}`}
+                        className={`hover:bg-gray-50 transition-colors duration-150 ${index === filteredMessages.length - 1 ? "rounded-b-lg" : ""}`}
                       >
                         <td className="px-4 py-4 text-sm font-medium text-gray-900 truncate">{msg.name}</td>
                         <td className="px-4 py-4 text-sm text-gray-500 truncate" title={msg.email}>
@@ -595,14 +706,14 @@ const SupportDashboard = () => {
                         <td className="px-4 py-4 text-sm text-gray-500 truncate">{msg.message}</td>
                         <td className="px-4 py-4 text-sm text-gray-500">
                           <div className="flex space-x-2">
-                            <button 
+                            <button
                               onClick={() => setSelectedMessage(msg)}
                               className="text-blue-500 hover:text-blue-700 flex items-center"
                               title="View Full Message"
                             >
                               <Eye className="h-5 w-5" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleResolveMessage(msg._id)}
                               className="text-green-500 hover:text-green-700 flex items-center"
                               title="Resolve Message"
@@ -619,6 +730,7 @@ const SupportDashboard = () => {
                         <p className="text-gray-500 flex flex-col items-center justify-center">
                           <MessageSquare className="h-10 w-10 text-gray-300 mb-2" />
                           <span>No active messages found.</span>
+                          {searchTerm && <span className="mt-1">No matches for "{searchTerm}"</span>}
                         </p>
                       </td>
                     </tr>
@@ -629,16 +741,15 @@ const SupportDashboard = () => {
           </div>
         )}
 
-
-         {/* FAQ Management Tab */}
-         {activeTab === 'faq' && (
+        {/* FAQ Management Tab Content */}
+        {activeTab === "faq-management" && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center">
                 <HelpCircle className="h-5 w-5 mr-2 text-blue-500" />
                 FAQ Management
               </h2>
-              <button 
+              <button
                 onClick={fetchFAQs}
                 className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
               >
@@ -658,7 +769,7 @@ const SupportDashboard = () => {
                     type="text"
                     id="question"
                     value={newFAQ.question}
-                    onChange={(e) => setNewFAQ({...newFAQ, question: e.target.value})}
+                    onChange={(e) => setNewFAQ({ ...newFAQ, question: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                     placeholder="Enter question"
                   />
@@ -670,7 +781,7 @@ const SupportDashboard = () => {
                   <textarea
                     id="answer"
                     value={newFAQ.answer}
-                    onChange={(e) => setNewFAQ({...newFAQ, answer: e.target.value})}
+                    onChange={(e) => setNewFAQ({ ...newFAQ, answer: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                     placeholder="Enter answer"
@@ -682,7 +793,7 @@ const SupportDashboard = () => {
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {isFaqLoading ? 'Adding...' : 'Add FAQ'}
+                  {isFaqLoading ? "Adding..." : "Add FAQ"}
                 </button>
               </div>
             </div>
@@ -700,9 +811,7 @@ const SupportDashboard = () => {
                     <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
                       Question
                     </th>
-                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Answer
-                    </th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Answer</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
                       Actions
                     </th>
@@ -721,21 +830,67 @@ const SupportDashboard = () => {
                   ) : faqs.length > 0 ? (
                     faqs.map((faq) => (
                       <tr key={faq._id} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                          {faq.question}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-500">
-                          {faq.answer}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-500">
-                          <button 
-                            onClick={() => handleDeleteFAQ(faq._id)}
-                            className="text-red-500 hover:text-red-700 flex items-center"
-                            title="Delete FAQ"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                        </td>
+                        {editingFAQ?._id === faq._id ? (
+                          <>
+                            <td className="px-4 py-4">
+                              <input
+                                type="text"
+                                value={editFAQData.question}
+                                onChange={(e) => setEditFAQData({ ...editFAQData, question: e.target.value })}
+                                className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                              />
+                            </td>
+                            <td className="px-4 py-4">
+                              <textarea
+                                value={editFAQData.answer}
+                                onChange={(e) => setEditFAQData({ ...editFAQData, answer: e.target.value })}
+                                rows={3}
+                                className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                              />
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={handleUpdateFAQ}
+                                  className="text-green-500 hover:text-green-700 flex items-center"
+                                  title="Save Changes"
+                                >
+                                  <CheckCircle className="h-5 w-5" />
+                                </button>
+                                <button
+                                  onClick={cancelEditingFAQ}
+                                  className="text-gray-500 hover:text-gray-700 flex items-center"
+                                  title="Cancel"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-4 py-4 text-sm font-medium text-gray-900">{faq.question}</td>
+                            <td className="px-4 py-4 text-sm text-gray-500">{faq.answer}</td>
+                            <td className="px-4 py-4 text-sm text-gray-500">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => startEditingFAQ(faq)}
+                                  className="text-blue-500 hover:text-blue-700 flex items-center"
+                                  title="Edit FAQ"
+                                >
+                                  <Edit className="h-5 w-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteFAQ(faq._id)}
+                                  className="text-red-500 hover:text-red-700 flex items-center"
+                                  title="Delete FAQ"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))
                   ) : (
@@ -754,6 +909,42 @@ const SupportDashboard = () => {
           </div>
         )}
 
+        {/* FAQ Viewer Tab Content */}
+        {activeTab === "faq-viewer" && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md mb-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                <HelpCircle className="h-5 w-5 mr-2 text-blue-500" />
+                FAQ Viewer
+              </h2>
+              <p className="text-gray-500">How FAQs appear to users</p>
+            </div>
+
+            <div className="space-y-6">
+              {isFaqLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                </div>
+              ) : faqs.length > 0 ? (
+                faqs.map((faq) => (
+                  <div key={faq._id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{faq.question}</h3>
+                    <p className="text-gray-600">{faq.answer}</p>
+                    <div className="mt-2 text-sm text-gray-400">
+                      Last updated: {new Date(faq.updatedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <HelpCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No FAQs available. Add some in the FAQ Management tab.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Message Detail Modal */}
         {selectedMessage && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -764,7 +955,7 @@ const SupportDashboard = () => {
                     <MessageSquare className="h-6 w-6 mr-2 text-red-500" />
                     Message Details
                   </h2>
-                  <button 
+                  <button
                     onClick={() => setSelectedMessage(null)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-2 transition-colors"
                   >
@@ -812,14 +1003,14 @@ const SupportDashboard = () => {
                 </div>
               </div>
               <div className="bg-gray-50 rounded-b-2xl p-4 flex justify-end space-x-3">
-                <button 
+                <button
                   onClick={() => setSelectedMessage(null)}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Close
                 </button>
                 {!selectedMessage.resolved && (
-                  <button 
+                  <button
                     onClick={() => {
                       handleResolveMessage(selectedMessage._id)
                       setSelectedMessage(null)
@@ -840,3 +1031,4 @@ const SupportDashboard = () => {
 }
 
 export default SupportDashboard
+
