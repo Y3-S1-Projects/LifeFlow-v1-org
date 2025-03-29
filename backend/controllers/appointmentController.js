@@ -26,9 +26,10 @@ export const createAppointment = async (req, res) => {
     // Check if user has already booked for the same camp
     const existingAppointment = await Appointment.findOne({ userId, campId });
     if (existingAppointment) {
-      return res
-        .status(400)
-        .json({ message: "You have already booked this camp" });
+      return res.status(400).json({
+        message: "You have already booked this camp",
+        errorType: "ALREADY_BOOKED",
+      });
     }
 
     // Create appointment
@@ -53,7 +54,7 @@ export const createAppointment = async (req, res) => {
         ],
         actionButton: {
           text: "View Appointment",
-          link: `${process.env.FRONTEND_URL}/appointments/${appointment._id}`,
+          link: `http://localhost:3000/donor/appointments`,
         },
       },
     });

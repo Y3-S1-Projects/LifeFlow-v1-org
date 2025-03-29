@@ -317,7 +317,6 @@ const DonorDashboard: React.FC = () => {
     } catch (error) {
       console.error("Error submitting data:", error);
     } finally {
-      console.log("Eligibility update process completed");
       setIsLoading(false);
       setIsModalOpen(false);
     }

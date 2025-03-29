@@ -44,6 +44,15 @@ interface Contact {
   phone: string;
   email: string;
 }
+interface AxiosErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+      errorType?: string;
+    };
+  };
+}
 
 interface Location {
   type: string;
@@ -126,6 +135,9 @@ const BloodDonationAppointments: React.FC = () => {
   const [csrfToken, setCsrfToken] = useState<string>("");
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
+  const isAxiosError = (error: unknown): error is AxiosErrorResponse => {
+    return typeof error === "object" && error !== null && "response" in error;
+  };
   const [rescheduleAppointment, setRescheduleAppointment] =
     useState<Appointment | null>(null);
   const router = useRouter();
@@ -394,7 +406,7 @@ const BloodDonationAppointments: React.FC = () => {
       );
 
       if (response.status === 201) {
-        toast.success("Appointment added to the waiting list", {
+        toast.success("Appointment booked", {
           style: {
             background: "#DCFCE7",
             border: "1px solid #22C55E",
@@ -403,13 +415,16 @@ const BloodDonationAppointments: React.FC = () => {
         });
       }
     } catch (error) {
-      toast.error("Failed to book appointment. Please try again.", {
-        style: {
-          background: "#FEE2E2",
-          border: "1px solid #EF4444",
-          color: "#DC2626",
-        },
-      });
+      if (isAxiosError(error)) {
+        if (error.response?.status === 400) {
+          toast.error("You have already booked this camp");
+        } else {
+          toast.error("Failed to book appointment. Please try again.");
+        }
+      } else {
+        // Handle non-Axios errors (network errors, etc.)
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
