@@ -161,10 +161,6 @@ export const processGeminiQuery = async (req, res) => {
 
           // Save to database
           const savedAppointment = await newAppointment.save();
-          console.log(
-            "Appointment saved directly to database:",
-            savedAppointment
-          );
 
           return savedAppointment;
         } catch (dbError) {
@@ -175,13 +171,6 @@ export const processGeminiQuery = async (req, res) => {
           throw dbError;
         }
       }
-
-      console.log("Appointment intent detected:", appointmentIntent);
-      console.log(
-        "Extracted details:",
-        extractAppointmentDetails(message, nearbyCamps)
-      );
-      console.log("nearbyCamps available:", nearbyCamps.length);
 
       if (isAppointment && campId && date && time) {
         let appointmentCreated = false;
@@ -196,15 +185,8 @@ export const processGeminiQuery = async (req, res) => {
           time: time,
         };
 
-        console.log(
-          "Attempting to create appointment with data:",
-          appointmentData
-        );
-
         try {
           const csrfToken = await fetchCsrfToken();
-
-          console.log("CSRF token:", csrfToken);
 
           const apiBaseUrl =
             process.env.API_BASE_URL || "http://localhost:3001";
@@ -225,7 +207,6 @@ export const processGeminiQuery = async (req, res) => {
           if (appointmentResponse.data && appointmentResponse.data._id) {
             appointmentCreated = true;
             appointmentDetails = appointmentResponse.data;
-            console.log("Appointment created via API:", appointmentDetails._id);
           } else {
             errorMessage =
               "API returned success but without valid appointment data";
@@ -239,9 +220,6 @@ export const processGeminiQuery = async (req, res) => {
           // ATTEMPT 2: Try direct database insertion as fallback
           if (process.env.ENABLE_DIRECT_DB_FALLBACK === "true") {
             try {
-              console.log(
-                "Attempting direct database insertion as fallback..."
-              );
               const directResult = await createAppointmentDirectly(
                 appointmentData
               );
@@ -250,10 +228,6 @@ export const processGeminiQuery = async (req, res) => {
                 appointmentCreated = true;
                 appointmentDetails = directResult;
                 errorMessage = null;
-                console.log(
-                  "Appointment created via direct DB insertion:",
-                  directResult._id
-                );
               }
             } catch (dbError) {
               console.error(

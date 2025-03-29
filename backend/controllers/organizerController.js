@@ -46,7 +46,6 @@ export const registerOrganizer = async (req, res) => {
     // Check if organizer already exists
     const existingOrganizer = await Organizer.findOne({ email });
     if (existingOrganizer) {
-      console.log("Organizer already exists with email:", email);
       return res
         .status(400)
         .json({ message: "Organizer already exists with this email" });
@@ -55,7 +54,6 @@ export const registerOrganizer = async (req, res) => {
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    console.log("Password hashed successfully");
 
     // Create new organizer
     const newOrganizer = new Organizer({
@@ -620,7 +618,6 @@ export const verifyDocument = async (req, res) => {
 export const uploadDocuments = async (req, res) => {
   try {
     const organizerId = req.body.organizerId;
-    console.log("Organizer ID:", organizerId);
     const files = req.files;
 
     if (!files || files.length === 0) {
