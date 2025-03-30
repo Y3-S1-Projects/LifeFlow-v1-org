@@ -48,6 +48,32 @@ interface Settings {
   savedSuccess: boolean;
 }
 
+type UserData = {
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  bloodType: string;
+  phoneNumber: string;
+  weight: number;
+  nicNo: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+  };
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  dateOfBirth: string;
+  emergencyContact: {
+    fullName: string;
+    relationship: string;
+    phone: string;
+    customRelationship: string;
+  };
+};
+
 interface FormErrors {
   fullName?: string;
   email?: string;
@@ -88,6 +114,9 @@ export default function DonorProfilePage() {
   const minDate = new Date(1920, 0, 1); // January 1, 1920
   const maxDate = new Date(2010, 11, 31); // December 31, 2010
   const [errors, setErrors] = useState<FormErrors>({});
+  const [originalUserData, setOriginalUserData] = useState<UserData | null>(
+    null
+  );
   const [age, setAge] = useState<number | null>(null);
   // Form state
   const [formData, setFormData] = useState({
@@ -135,7 +164,7 @@ export default function DonorProfilePage() {
   // Initialize form data when user data is loaded
   useEffect(() => {
     if (user) {
-      setFormData({
+      const originalData = {
         fullName: user.fullName || "",
         firstName: user.firstName || "",
         lastName: user.lastName || "",
@@ -159,7 +188,9 @@ export default function DonorProfilePage() {
           phone: user.emergencyContact?.phoneNumber || "",
           customRelationship: user.emergencyContact?.relationship || "",
         },
-      });
+      };
+      setFormData(originalData);
+      setOriginalUserData(originalData);
     }
   }, [user]);
 
@@ -216,6 +247,12 @@ export default function DonorProfilePage() {
     const newDate = new Date(currentView);
     newDate.setFullYear(year);
     setCurrentView(newDate);
+  };
+
+  const hasChanges = () => {
+    if (!originalUserData) return false;
+
+    return JSON.stringify(formData) !== JSON.stringify(originalUserData);
   };
 
   const handleInputChange = (
@@ -788,7 +825,7 @@ export default function DonorProfilePage() {
                       <Button
                         size="sm"
                         onClick={handleSubmit}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !hasChanges()}
                       >
                         {isSubmitting ? (
                           <div className="flex items-center">
