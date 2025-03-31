@@ -26,6 +26,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { getUserIdFromToken } from "@/app/utils/auth";
+import DonationReportGenerator from "@/app/components/DonationReportGenerator";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { RouteGuard } from "@/app/components/RouteGuard";
@@ -279,7 +280,6 @@ const MyDonationsPage: React.FC = () => {
                 Track your donation history and see the impact you&apos;ve made
               </p>
             </div>
-
             <Button
               onClick={handleScheduleDonation}
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -440,7 +440,7 @@ const MyDonationsPage: React.FC = () => {
               {/* Donation Timeline Card */}
               <Card className="shadow-sm hover:shadow-md transition-all">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl ">
+                  <CardTitle className="text-xl">
                     Your Donation Journey
                   </CardTitle>
                 </CardHeader>
@@ -467,18 +467,30 @@ const MyDonationsPage: React.FC = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-medium ">Your donation timeline</h3>
-                        <Select
-                          defaultValue={sortOrder}
-                          onValueChange={(value) => setSortOrder(value)}
-                        >
-                          <SelectTrigger className="w-32 text-xs">
-                            <SelectValue placeholder="Sort by" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="newest">Newest first</SelectItem>
-                            <SelectItem value="oldest">Oldest first</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <DonationReportGenerator
+                            donations={donationHistory}
+                            stats={donationStats}
+                            user={user}
+                            nextEligibleDate={nextEligibleDate}
+                          />
+                          <Select
+                            defaultValue={sortOrder}
+                            onValueChange={(value) => setSortOrder(value)}
+                          >
+                            <SelectTrigger className="w-32 text-xs">
+                              <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="newest">
+                                Newest first
+                              </SelectItem>
+                              <SelectItem value="oldest">
+                                Oldest first
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div
                         className={`overflow-y-auto ${
