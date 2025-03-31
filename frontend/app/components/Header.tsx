@@ -194,7 +194,7 @@ const Header = () => {
                 href={item.path}
                 className={`
         relative px-2 py-1.5 text-sm font-medium flex items-center space-x-2
-        transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+        transition-all duration-300 ease-custom-ease
         ${
           isActive(item.path)
             ? "text-primary font-semibold"
@@ -203,21 +203,22 @@ const Header = () => {
         group
       `}
               >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
+                <span className="relative">
+                  {item.label}
 
-                {/* Active state underline (always visible if active) */}
-                {isActive(item.path) && (
-                  <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-primary rounded-full" />
-                )}
+                  {/* Active state underline (always visible if active) */}
+                  {isActive(item.path) && (
+                    <span className="absolute left-0 right-0 -bottom-1 h-0.5 bg-primary rounded-full" />
+                  )}
 
-                {/* Hover underline (only appears on hover) */}
-                {!isActive(item.path) && (
-                  <span
-                    className="absolute inset-x-0 -bottom-1 h-0.5 bg-current rounded-full 
-                        scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
-                  />
-                )}
+                  {/* Hover underline (only appears on hover) */}
+                  {!isActive(item.path) && (
+                    <span
+                      className="absolute left-0 right-0 -bottom-1 h-0.5 bg-current rounded-full 
+              scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"
+                    />
+                  )}
+                </span>
               </Link>
             ))}
           </nav>

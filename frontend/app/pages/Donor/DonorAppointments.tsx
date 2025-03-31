@@ -133,6 +133,8 @@ const BloodDonationAppointments: React.FC = () => {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedCampId, setSelectedCampId] = useState<string>("");
   const [csrfToken, setCsrfToken] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [filteredCamps, setFilteredCamps] = useState<Camp[]>([]);
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
   const isAxiosError = (error: unknown): error is AxiosErrorResponse => {
@@ -227,6 +229,24 @@ const BloodDonationAppointments: React.FC = () => {
 
     return () => clearTimeout(timeout); // Cleanup function to prevent memory leaks
   }, [user]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredCamps(camps);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = camps.filter(
+      (camp) =>
+        camp.name.toLowerCase().includes(query) ||
+        camp.address.city.toLowerCase().includes(query) ||
+        camp.address.street.toLowerCase().includes(query) ||
+        camp.address.postalCode.toLowerCase().includes(query)
+    );
+
+    setFilteredCamps(filtered);
+  }, [searchQuery, camps]);
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {
@@ -553,88 +573,122 @@ const BloodDonationAppointments: React.FC = () => {
                     type="text"
                     placeholder="Search by name or location"
                     className="w-full bg-transparent border-none focus:outline-none text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 rounded-full"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <X className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  )}
                 </div>
                 <div className="max-h-[460px] overflow-y-auto p-2">
-                  {camps.map((camp) => (
-                    <div
-                      key={camp._id}
-                      className={`border p-4 mb-2 rounded-lg cursor-pointer transition-all hover:border-red-200 ${
-                        selectedCampId === camp._id
-                          ? "bg-red-50 border-red-300"
-                          : "bg-white"
-                      }`}
-                      onClick={() => handleCampClick(camp)}
-                    >
-                      <div className="flex items-center mb-2 justify-between">
-                        <div className="flex items-center">
-                          <Hospital className="mr-2 text-red-500" />
-                          <h3 className="font-semibold">{camp.name}</h3>
-                        </div>
-                        <Badge className={`${getStatusColor(camp.status)}`}>
-                          {camp.status}
-                        </Badge>
-                      </div>
-
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                        {camp.description}
-                      </p>
-
-                      <div className="flex flex-col space-y-2 mt-3">
-                        <div className="flex items-start gap-2">
-                          <MapPin
-                            className="text-red-400 flex-shrink-0 mt-0.5"
-                            size={16}
-                          />
-                          <p className="text-sm">
-                            {camp.address.street}, {camp.address.city}{" "}
-                            {camp.address.postalCode}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center">
-                          <Clock className="mr-2 text-red-400" size={16} />
-                          <span className="text-sm">{camp.operatingHours}</span>
-                        </div>
-
-                        {camp.distance && (
+                  {filteredCamps.length > 0 ? (
+                    filteredCamps.map((camp) => (
+                      <div
+                        key={camp._id}
+                        className={`border p-4 mb-2 rounded-lg cursor-pointer transition-all hover:border-red-200 ${
+                          selectedCampId === camp._id
+                            ? "bg-red-50 border-red-300"
+                            : "bg-white"
+                        }`}
+                        onClick={() => handleCampClick(camp)}
+                      >
+                        <div className="flex items-center mb-2 justify-between">
                           <div className="flex items-center">
-                            <Navigation
-                              className="mr-2 text-red-400"
+                            <Hospital className="mr-2 text-red-500" />
+                            <h3 className="font-semibold">{camp.name}</h3>
+                          </div>
+                          <Badge className={`${getStatusColor(camp.status)}`}>
+                            {camp.status}
+                          </Badge>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                          {camp.description}
+                        </p>
+
+                        <div className="flex flex-col space-y-2 mt-3">
+                          <div className="flex items-start gap-2">
+                            <MapPin
+                              className="text-red-400 flex-shrink-0 mt-0.5"
                               size={16}
                             />
-                            <span className="text-sm font-medium">
-                              {camp.distance} {camp.distanceUnit} away
+                            <p className="text-sm">
+                              {camp.address.street}, {camp.address.city}{" "}
+                              {camp.address.postalCode}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center">
+                            <Clock className="mr-2 text-red-400" size={16} />
+                            <span className="text-sm">
+                              {camp.operatingHours}
                             </span>
                           </div>
-                        )}
-                      </div>
 
-                      <div className="mt-3 pt-3 border-t border-dashed flex flex-wrap gap-2">
-                        {camp.availableDates.slice(0, 3).map((date, index) => (
-                          <Badge
-                            key={`${date}-${index}`} // Ensures uniqueness
-                            variant="outline"
-                            className="bg-gray-50 border-gray-200 text-gray-700 text-xs"
-                          >
-                            {new Date(date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </Badge>
-                        ))}
+                          {camp.distance && (
+                            <div className="flex items-center">
+                              <Navigation
+                                className="mr-2 text-red-400"
+                                size={16}
+                              />
+                              <span className="text-sm font-medium">
+                                {camp.distance} {camp.distanceUnit} away
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-                        {camp.availableDates.length > 3 && (
-                          <Badge
-                            variant="outline"
-                            className="bg-gray-50 border-gray-200 text-gray-700 text-xs"
-                          >
-                            +{camp.availableDates.length - 3} more
-                          </Badge>
-                        )}
+                        <div className="mt-3 pt-3 border-t border-dashed flex flex-wrap gap-2">
+                          {camp.availableDates
+                            .slice(0, 3)
+                            .map((date, index) => (
+                              <Badge
+                                key={`${date}-${index}`} // Ensures uniqueness
+                                variant="outline"
+                                className="bg-gray-50 border-gray-200 text-gray-700 text-xs"
+                              >
+                                {new Date(date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </Badge>
+                            ))}
+
+                          {camp.availableDates.length > 3 && (
+                            <Badge
+                              variant="outline"
+                              className="bg-gray-50 border-gray-200 text-gray-700 text-xs"
+                            >
+                              +{camp.availableDates.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500">No matching centers found</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Try a different search term or clear your search
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        Clear Search
+                      </Button>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
