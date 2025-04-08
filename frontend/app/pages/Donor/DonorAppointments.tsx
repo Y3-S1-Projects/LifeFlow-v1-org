@@ -396,18 +396,31 @@ const BloodDonationAppointments: React.FC = () => {
   };
 
   const handleAppointmentBooking = async () => {
+    // Validate inputs first
     if (!selectedCamp || !appointmentDate || !appointmentTime) {
-      toast.error("Please select a camp, date, and time", {
+      toast.error("Please complete all booking details", {
+        icon: "ℹ️",
         style: {
-          background: "#FEE2E2",
-          border: "1px solid #EF4444",
-          color: "#DC2626",
+          background: "#FEF3C7",
+          border: "1px solid #F59E0B",
+          color: "#92400E",
         },
       });
       return;
     }
 
     try {
+      setLoading(true);
+
+      // First check local state for existing appointments
+      const activeAppointments = appointments.filter(
+        (app) => app.status === "Pending" || app.status === "Confirmed"
+      ).length;
+
+      if (activeAppointments >= 3) {
+        throw new Error("APPOINTMENT_LIMIT_REACHED");
+      }
+
       const response = await axios.post(
         `${publicApi}/appointments/create`,
         {
@@ -426,25 +439,106 @@ const BloodDonationAppointments: React.FC = () => {
       );
 
       if (response.status === 201) {
-        toast.success("Appointment booked", {
+        toast.success("Appointment booked successfully!", {
+          icon: "✅",
           style: {
             background: "#DCFCE7",
             border: "1px solid #22C55E",
-            color: "#16A34A",
+            color: "#166534",
           },
         });
+        // Only reset the form fields without refreshing
+        setAppointmentDate("");
+        setAppointmentTime("");
+
+        // Optionally update the appointments list without refresh
+        const updatedAppointments = await axios.get(
+          `${publicApi}/appointments/getByUser/${user?._id}`
+        );
+        setAppointments(updatedAppointments.data);
       }
-    } catch (error) {
-      if (isAxiosError(error)) {
-        if (error.response?.status === 400) {
-          toast.error("You have already booked this camp");
-        } else {
-          toast.error("Failed to book appointment. Please try again.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        // Handle our locally thrown error
+        if (error.message === "APPOINTMENT_LIMIT_REACHED") {
+          toast.error("You've reached the maximum of 3 active appointments", {
+            icon: "⚠️",
+            style: {
+              background: "#FFEDD5",
+              border: "1px solid #F97316",
+              color: "#9A3412",
+            },
+          });
+          return;
+        }
+      }
+
+      // Handle axios errors
+      if (axios.isAxiosError(error)) {
+        const errorData = error.response?.data;
+
+        switch (errorData?.errorType) {
+          case "APPOINTMENT_LIMIT_REACHED":
+            toast.error("You've reached the maximum of 3 active appointments", {
+              icon: "⚠️",
+              style: {
+                background: "#FFEDD5",
+                border: "1px solid #F97316",
+                color: "#9A3412",
+              },
+            });
+            break;
+
+          case "ALREADY_BOOKED":
+            toast.error("You already have an appointment at this location", {
+              icon: "ℹ️",
+              style: {
+                background: "#E0F2FE",
+                border: "1px solid #0EA5E9",
+                color: "#075985",
+              },
+            });
+            break;
+
+          case "CAMP_NOT_FOUND":
+            toast.error("This donation camp is no longer available", {
+              icon: "❌",
+              style: {
+                background: "#FEE2E2",
+                border: "1px solid #EF4444",
+                color: "#991B1B",
+              },
+            });
+            setSelectedCamp(null);
+            setSelectedCampId("");
+            break;
+
+          default:
+            toast.error(errorData?.message || "Failed to book appointment", {
+              icon: "⚠️",
+              style: {
+                background: "#FEE2E2",
+                border: "1px solid #EF4444",
+                color: "#991B1B",
+              },
+            });
         }
       } else {
-        // Handle non-Axios errors (network errors, etc.)
-        toast.error("An unexpected error occurred");
+        // Handle network errors or other exceptions
+        toast.error(
+          "Connection issue. Please check your network and try again.",
+          {
+            icon: "📶",
+            style: {
+              background: "#F3F4F6",
+              border: "1px solid #9CA3AF",
+              color: "#4B5563",
+            },
+          }
+        );
       }
+    } finally {
+      setLoading(false);
     }
   };
 
