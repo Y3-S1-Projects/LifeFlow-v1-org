@@ -23,8 +23,26 @@ export const createAppointment = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Check if user has reached the maximum number of appointments (3)
+    const appointmentCount = await Appointment.countDocuments({
+      userId,
+      status: { $in: ["Pending", "Confirmed"] },
+    });
+
+    if (appointmentCount >= 3) {
+      return res.status(400).json({
+        message: "You cannot have more than 3 active appointments",
+        errorType: "APPOINTMENT_LIMIT_REACHED",
+      });
+    }
+
     // Check if user has already booked for the same camp
-    const existingAppointment = await Appointment.findOne({ userId, campId });
+    const existingAppointment = await Appointment.findOne({
+      userId,
+      campId,
+      status: { $in: ["Pending", "Confirmed"] },
+    });
+
     if (existingAppointment) {
       return res.status(400).json({
         message: "You have already booked this camp",

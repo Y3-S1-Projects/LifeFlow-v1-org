@@ -23,6 +23,24 @@ const appointmentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Pre-save hook to check appointment limit
+appointmentSchema.pre("save", async function (next) {
+  // Only check for new appointments (not updates)
+  if (this.isNew) {
+    const existingAppointments = await mongoose
+      .model("Appointment")
+      .countDocuments({
+        userId: this.userId,
+        status: { $in: ["Pending", "Confirmed"] }, // Only count active appointments
+      });
+
+    if (existingAppointments >= 3) {
+      throw new Error("User cannot have more than 3 active appointments");
+    }
+  }
+  next();
+});
+
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 
 export default Appointment;
