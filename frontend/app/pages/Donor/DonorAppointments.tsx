@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CancelConfirmationModal } from "@/app/components/CancelConfirmationModal";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import MapComponent from "../../components/Map";
@@ -125,6 +126,9 @@ const BloodDonationAppointments: React.FC = () => {
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>("");
   const [appointmentTime, setAppointmentTime] = useState<string>("");
+  const [appointmentToCancel, setAppointmentToCancel] =
+    useState<Appointment | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const [camps, setCamps] = useState<Camp[]>([]);
@@ -373,12 +377,11 @@ const BloodDonationAppointments: React.FC = () => {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfToken,
           },
-          credentials: "include", // This ensures cookies are sent with the request
+          credentials: "include",
         }
       );
 
       if (response.ok) {
-        // Remove the cancelled appointment from state
         setAppointments(
           appointments.filter((app) => app._id !== appointmentId)
         );
@@ -390,8 +393,6 @@ const BloodDonationAppointments: React.FC = () => {
     } catch (error) {
       console.error("Error cancelling appointment:", error);
       toast.error("An error occurred while cancelling your appointment");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -935,12 +936,25 @@ const BloodDonationAppointments: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs border-red-300 text-red-600 hover:bg-red-50"
-                          onClick={() =>
-                            handleCancelAppointment(appointment._id)
-                          }
+                          onClick={() => setAppointmentToCancel(appointment)}
                         >
                           Cancel
                         </Button>
+                        <CancelConfirmationModal
+                          isOpen={!!appointmentToCancel}
+                          onClose={() => setAppointmentToCancel(null)}
+                          onConfirm={async () => {
+                            if (appointmentToCancel) {
+                              setIsCancelling(true);
+                              await handleCancelAppointment(
+                                appointmentToCancel._id
+                              );
+                              setIsCancelling(false);
+                              setAppointmentToCancel(null);
+                            }
+                          }}
+                          loading={isCancelling}
+                        />
                       </div>
                       {/* Mobile Actions (3-dot menu) */}
                       <div className="sm:hidden">
@@ -952,22 +966,48 @@ const BloodDonationAppointments: React.FC = () => {
                           </PopoverTrigger>
                           <PopoverContent className="w-36 p-2">
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              className="w-full justify-start"
+                              className="text-xs border-gray-300"
+                              onClick={() =>
+                                setRescheduleAppointment(appointment)
+                              }
                             >
                               Reschedule
                             </Button>
+                            {rescheduleAppointment && (
+                              <RescheduleModal
+                                isOpen={!!rescheduleAppointment}
+                                onClose={() => setRescheduleAppointment(null)}
+                                appointment={rescheduleAppointment}
+                                onReschedule={handleRescheduleAppointment}
+                              />
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
                               className="w-full justify-start text-red-600"
                               onClick={() =>
-                                handleCancelAppointment(appointment._id)
+                                setAppointmentToCancel(appointment)
                               }
                             >
                               Cancel
                             </Button>
+                            <CancelConfirmationModal
+                              isOpen={!!appointmentToCancel}
+                              onClose={() => setAppointmentToCancel(null)}
+                              onConfirm={async () => {
+                                if (appointmentToCancel) {
+                                  setIsCancelling(true);
+                                  await handleCancelAppointment(
+                                    appointmentToCancel._id
+                                  );
+                                  setIsCancelling(false);
+                                  setAppointmentToCancel(null);
+                                }
+                              }}
+                              loading={isCancelling}
+                            />
                           </PopoverContent>
                         </Popover>
                       </div>
