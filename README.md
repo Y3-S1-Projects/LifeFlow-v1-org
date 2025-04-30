@@ -122,7 +122,7 @@ bash
     -   Create a `.env.local` file in the `frontend` directory.
     - Add the following environment variable:
 ```
-        NEXT_PUBLIC_API_URL=http://localhost:3000
+        NEXT_PUBLIC_API_URL=<frontend-url>
     
 ```
 4.  **Run the application:**
