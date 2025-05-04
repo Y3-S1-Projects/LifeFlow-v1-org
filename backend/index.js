@@ -66,14 +66,16 @@ app.use("/appointments", doubleCsrfProtection, appointmentRoutes);
 app.use("/organizers", doubleCsrfProtection, organizerRoutes);
 app.use("/auth", doubleCsrfProtection, authRoutes);
 app.use("/chatbot", doubleCsrfProtection, chatbotRoutes);
-app.use("/admin", doubleCsrfProtection, adminRoutes);
+app.use("/admin", adminRoutes);
 app.use("/api/v1/faqs", doubleCsrfProtection, faqRoutes);
 
 // MongoDB Connection
 const uri = process.env.ATLAS_URI;
 mongoose
   .connect(uri)
-  .then(() => console.log("MongoDB database connection established successfully"))
+  .then(() =>
+    console.log("MongoDB database connection established successfully")
+  )
   .catch((err) => console.error("MongoDB connection error:", err));
 
 app.listen(port, () => {

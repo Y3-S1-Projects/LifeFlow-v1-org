@@ -83,6 +83,31 @@ export const getUserIdFromToken = async (): Promise<string | null> => {
   }
 };
 
+export const getAdminIdFromToken = async (): Promise<string | null> => {
+  if (typeof window === "undefined") return null; // Check if running on server
+
+  try {
+    // Make a request to get user info including ID
+    const response = await fetch(`${API_BASE_URL}/auth/admin/me`, {
+      method: "GET",
+      credentials: "include", // Important for sending cookies
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const userData = await response.json();
+    return userData.userId || null;
+  } catch (error) {
+    console.error("Error fetching user ID:", error);
+    return null;
+  }
+};
+
 // For backward compatibility during transition (will be removed later)
 export const getToken = (): string | null => {
   if (typeof window === "undefined") return null; // Check if running on server

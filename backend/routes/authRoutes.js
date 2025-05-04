@@ -89,6 +89,28 @@ router.get("/me", (req, res) => {
   }
 });
 
+router.get("/admin/me", (req, res) => {
+  try {
+    const token = req.cookies.adminToken;
+
+    if (!token) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Make sure to include the role in the response
+    return res.status(200).json({
+      userId: decoded.id,
+      email: decoded.email,
+      role: decoded.role || "User", // Provide fallback role
+    });
+  } catch (error) {
+    console.error("Auth verification error:", error);
+    return res.status(401).json({ message: "Authentication failed" });
+  }
+});
+
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 

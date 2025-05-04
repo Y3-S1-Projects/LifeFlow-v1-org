@@ -223,16 +223,16 @@ export const loginAdmin = async (req, res) => {
     //if (!captchaToken) {
     //  return res.status(400).json({ message: "CAPTCHA verification required" });
     //}
-//// Verify captcha with Google
-   // const captchaVerification = await fetch(
-   //   `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`,
+    //// Verify captcha with Google
+    // const captchaVerification = await fetch(
+    //   `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`,
     //  { method: "POST" }
-   // );
+    // );
 
-   // const captchaResult = await captchaVerification.json();
-   // console.log("captchaResult", captchaResult);
+    // const captchaResult = await captchaVerification.json();
+    // console.log("captchaResult", captchaResult);
 
-   // if (!captchaResult.success) {
+    // if (!captchaResult.success) {
     //  return res.status(400).json({ message: "CAPTCHA verification failed" });
     //}
 
@@ -683,7 +683,9 @@ export const handleSupportTicket = async (req, res) => {
 export const getAllSupportAdmins = async (req, res) => {
   try {
     // Find all admins with the role "support"
-    const supportAdmins = await Admin.find({ role: "support" }).select("-password");
+    const supportAdmins = await Admin.find({ role: "support" }).select(
+      "-password"
+    );
 
     res.status(200).json({ success: true, supportAdmins });
   } catch (error) {
@@ -742,7 +744,10 @@ export const deleteSupportAdmin = async (req, res) => {
     const { id } = req.params; // ID of the support admin to delete
 
     // Find and delete the support admin by ID and role
-    const supportAdmin = await Admin.findOneAndDelete({ _id: id, role: "support" });
+    const supportAdmin = await Admin.findOneAndDelete({
+      _id: id,
+      role: "support",
+    });
     if (!supportAdmin) {
       return res.status(404).json({ message: "Support admin not found" });
     }
@@ -755,5 +760,3 @@ export const deleteSupportAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-

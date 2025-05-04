@@ -41,7 +41,7 @@ router.put("/change-password", adminAuth, changePassword);
 
 // Superadmin routes
 router.post("/register", adminAuth, isSuperAdmin, registerAdmin);
-router.get("/all",getAllAdmins);
+router.get("/all", getAllAdmins);
 
 // Moderator/Superadmin routes
 router.post(
@@ -71,11 +71,9 @@ router.post(
   handleSupportTicket
 );
 
-
 router.post("/login", loginAdmin);
 router.post("/verify-otp", verifyAdminOTP);
 router.post("/resend-otp", resendAdminOTP);
-
 
 router.get("/support-admins", getAllSupportAdmins);
 
