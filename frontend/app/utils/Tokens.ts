@@ -4,7 +4,7 @@ const API_BASE_URL =
     ? "https://lifeflow-v1-org-production.up.railway.app"
     : "http://localhost:3001";
 
-export const fetchCsrfToken = async (): Promise<void> => {
+export const getCsrfToken = async (): Promise<string | undefined> => {
   try {
     const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
       withCredentials: true,
@@ -12,5 +12,6 @@ export const fetchCsrfToken = async (): Promise<void> => {
     return data.csrfToken;
   } catch (err) {
     console.error("CSRF token fetch error:", err);
+    return undefined;
   }
 };
