@@ -15,6 +15,7 @@ import cookieParser from "cookie-parser";
 import contactRoutes from "./routes/contactRoutes.js";
 import fileMiddleware from "./middleware/fileMiddleware.js";
 import faqRoutes from "./routes/faqRoute.js";
+import statRoutes from "./routes/statRoutes.js";
 
 dotenv.config();
 
@@ -68,6 +69,7 @@ app.use("/auth", doubleCsrfProtection, authRoutes);
 app.use("/chatbot", doubleCsrfProtection, chatbotRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api/v1/faqs", doubleCsrfProtection, faqRoutes);
+app.use("/api/stats", statRoutes);
 
 // MongoDB Connection
 const uri = process.env.ATLAS_URI;

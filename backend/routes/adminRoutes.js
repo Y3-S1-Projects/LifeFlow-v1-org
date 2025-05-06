@@ -34,7 +34,7 @@ router.post("/initialize", initializeFirstAdmin); // Add this special route for 
 
 router.post("/send-otp", sendAdminOTP);
 // Protected routes
-router.post("/logout", adminAuth, logoutAdmin);
+router.post("/logout", logoutAdmin);
 router.get("/profile", adminAuth, getAdminProfile);
 router.put("/profile", adminAuth, updateAdminProfile);
 router.put("/change-password", adminAuth, changePassword);
