@@ -164,12 +164,30 @@ const AdminDashboard = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/admin/logout", {
+        method: "POST",
+        credentials: "include", // Important for cookies
+      });
+
+      if (response.ok) {
+        // Redirect to login page or handle as needed
+        window.location.href = "/admin/login";
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="flex min-h-screen bg-gray-100">
         {/* Sidebar - Desktop */}
         <div
-          className={`hidden lg:flex flex-col bg-white border-r border-gray-200 shadow-md transition-all duration-300 ${
+          className={`hidden lg:flex flex-col bg-white border-r border-gray-200 shadow-md transition-all duration-300 fixed h-screen ${
             sidebarCollapsed ? "w-20" : "w-72"
           }`}
         >
@@ -268,7 +286,10 @@ const AdminDashboard = () => {
                     admin@bloodconnect.org
                   </p>
                 </div>
-                <LogOut className="h-4 w-4 text-gray-400" />
+                <LogOut
+                  className="h-4 w-4 text-gray-400"
+                  onClick={handleLogout}
+                />
               </div>
             ) : (
               <div className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
@@ -281,7 +302,8 @@ const AdminDashboard = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1">
+        <div className={`flex-1 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"}`}>
+          {" "}
           {/* Mobile Header */}
           <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between shadow-sm">
             <h2 className="text-xl font-bold text-red-600 flex items-center">
@@ -298,7 +320,6 @@ const AdminDashboard = () => {
               )}
             </button>
           </header>
-
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="lg:hidden bg-white border-b shadow-lg fixed top-16 left-0 right-0 z-30">
@@ -359,7 +380,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-
           {/* Page Header */}
           <div className="bg-white p-6 border-b shadow-sm">
             <div className="flex items-center justify-between">
@@ -387,7 +407,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
           {/* Page Content */}
           <div className="p-6 bg-gray-50">
             {activeTab === "overview" && (

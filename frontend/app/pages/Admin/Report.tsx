@@ -375,7 +375,7 @@ const BloodCampReport: React.FC = () => {
       pdf.setFillColor(230, 230, 230);
       pdf.rect(startX, yPosition, sum(colWidths), 7, "F");
       pdf.setTextColor(33, 33, 33);
-      pdf.setFont(undefined, "bold");
+      pdf.setFont("undefined", "bold");
 
       currentX = startX;
       pdf.text("Total", currentX + 2, yPosition + 5);
@@ -402,7 +402,7 @@ const BloodCampReport: React.FC = () => {
       pdf.text(totalAvg.toString(), currentX + 2, yPosition + 5);
 
       // Add footer
-      pdf.setFont(undefined, "normal");
+      pdf.setFont("undefined", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(120, 120, 120);
       const pageCount = pdf.getNumberOfPages();
