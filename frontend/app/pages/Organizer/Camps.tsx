@@ -29,7 +29,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash, Edit, Users, Calendar, MapPin, Phone } from "lucide-react";
+import { Trash, Edit, Users, Calendar, MapPin, Phone, Search, RefreshCw, Download } from "lucide-react";
 import { format } from "date-fns";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { getUserIdFromToken, getToken } from "@/app/utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
 import dynamic from "next/dynamic";
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 
 // Import Map component with dynamic loading to prevent SSR issues
 const MapComponent = dynamic(() => import("@/app/components/Map"), {
@@ -75,6 +76,186 @@ interface User {
   phoneNumber?: string;
 }
 
+// PDF Document Styles
+const styles = StyleSheet.create({
+  page: {
+    padding: 30,
+    fontSize: 12,
+  },
+  header: {
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    paddingBottom: 10,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  section: {
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    marginBottom: 5,
+  },
+  label: {
+    width: 120,
+    fontWeight: 'bold',
+  },
+  value: {
+    flex: 1,
+  },
+  mapPlaceholder: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  table: {
+    display: "flex",
+    width: "auto",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    marginBottom: 15,
+  },
+  tableRow: {
+    margin: "auto",
+    flexDirection: "row",
+  },
+  tableColHeader: {
+    width: "25%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    backgroundColor: '#f0f0f0',
+    padding: 5,
+  },
+  tableCol: {
+    width: "25%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    padding: 5,
+  },
+  tableCellHeader: {
+    fontWeight: 'bold',
+    fontSize: 10,
+  },
+  tableCell: {
+    fontSize: 10,
+  },
+});
+
+// PDF Report Component
+const CampReport = ({ camp }: { camp: Camp }) => (
+  <Document>
+    <Page style={styles.page}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>{camp.name}</Text>
+          <Text style={styles.subtitle}>Blood Donation Camp Report</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Camp Details</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Status:</Text>
+          <Text style={styles.value}>{camp.status}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Description:</Text>
+          <Text style={styles.value}>{camp.description}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Operating Hours:</Text>
+          <Text style={styles.value}>{camp.operatingHours}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Contact Information</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.value}>{camp.contact.phone}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.value}>{camp.contact.email}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Location</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Address:</Text>
+          <Text style={styles.value}>
+            {camp.address.street}, {camp.address.city}, {camp.address.postalCode}
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Coordinates:</Text>
+          <Text style={styles.value}>
+            Latitude: {camp.location.coordinates[1]}, Longitude: {camp.location.coordinates[0]}
+          </Text>
+        </View>
+        <View style={styles.mapPlaceholder}>
+          <Text>Map Location</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Available Dates</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <View style={styles.tableColHeader}>
+              <Text style={styles.tableCellHeader}>Date</Text>
+            </View>
+            <View style={styles.tableColHeader}>
+              <Text style={styles.tableCellHeader}>Day</Text>
+            </View>
+          </View>
+          {camp.availableDates.map((date, index) => (
+            <View style={styles.tableRow} key={index}>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>{format(new Date(date), "MMMM d, yyyy")}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>{format(new Date(date), "EEEE")}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Report Metadata</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Generated On:</Text>
+          <Text style={styles.value}>{format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</Text>
+        </View>
+      </View>
+    </Page>
+  </Document>
+);
+
 const Camps = () => {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
@@ -85,6 +266,7 @@ const Camps = () => {
   const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {
@@ -179,6 +361,12 @@ const Camps = () => {
     }
   };
 
+  const filteredCamps = camps.filter(camp =>
+    camp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    camp.address.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    camp.status.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <RouteGuard requiredRoles={["Organizer"]}>
       <div className="w-full">
@@ -192,15 +380,37 @@ const Camps = () => {
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader>
-                  <CardTitle>Your Camps</CardTitle>
-                  <CardDescription>
-                    Manage your blood donation camps
-                  </CardDescription>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Your Camps</CardTitle>
+                      <CardDescription>
+                        Manage your blood donation camps
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchCamps()}
+                      title="Refresh camps list"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  <div className="relative mb-4">
+                    <input
+                      type="text"
+                      placeholder="Search camps..."
+                      className="w-full pl-8 pr-4 py-2 border rounded-md text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  </div>
                   <div className="space-y-2">
-                    {camps.length > 0 ? (
-                      camps.map((camp) => (
+                    {filteredCamps.length > 0 ? (
+                      filteredCamps.map((camp) => (
                         <div
                           key={camp._id}
                           className={`p-3 border rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
@@ -225,7 +435,7 @@ const Camps = () => {
                       ))
                     ) : (
                       <p className="text-gray-500">
-                        No camps found. Create your first camp to get started.
+                        {searchTerm ? "No matching camps found" : "No camps found. Create your first camp to get started."}
                       </p>
                     )}
                   </div>
@@ -257,6 +467,7 @@ const Camps = () => {
                           variant="outline"
                           size="icon"
                           onClick={() => handleEditCamp(selectedCamp._id)}
+                          title="Edit camp"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -265,9 +476,29 @@ const Camps = () => {
                           size="icon"
                           onClick={() => handleDelete(selectedCamp._id)}
                           disabled={isDeleting}
+                          title="Delete camp"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
+                        <PDFDownloadLink 
+                          document={<CampReport camp={selectedCamp} />} 
+                          fileName={`${selectedCamp.name.replace(/\s+/g, '_')}_Report.pdf`}
+                        >
+                          {({ loading }) => (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              title="Download report"
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                        </PDFDownloadLink>
                       </div>
                     </div>
                   </CardHeader>
