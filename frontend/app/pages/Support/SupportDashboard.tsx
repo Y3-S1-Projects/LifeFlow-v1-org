@@ -1,6 +1,6 @@
 "use client";
 import SupportHeader from "@/app/components/SupportHeader";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -33,10 +33,12 @@ import {
   HelpCircle,
   Edit,
   Search,
+  Download,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { SupportTab } from "./components/SupportTab";
+import { usePDF } from "react-to-pdf";
 
 interface ContactMessage {
   _id: string;
@@ -46,6 +48,7 @@ interface ContactMessage {
   message: string;
   createdAt: string;
   resolved: boolean;
+  region?: string; // Optional region property
 }
 
 interface FAQ {
@@ -79,6 +82,12 @@ const SupportDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // PDF export ref and hook
+  const reportRef = useRef(null);
+  const { toPDF, targetRef } = usePDF({
+    filename: `support_report_${new Date().toISOString().split('T')[0]}.pdf`,
+  });
 
   // FAQ states
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -114,13 +123,18 @@ const SupportDashboard = () => {
         throw new Error(`Failed to fetch: ${response.status}`);
       }
       const data = await response.json();
-      const messagesWithResolved = data.map((msg: ContactMessage) => ({
+      
+      // Assign random regions to messages for demo purposes
+      // Remove this in production and use actual regions from your data
+      const regions = ["Colombo", "Kandy", "Kurunagala", "Malabe", "Others"];
+      const messagesWithRegions = data.map((msg: ContactMessage) => ({
         ...msg,
         resolved: msg.resolved || false,
+        region: regions[Math.floor(Math.random() * regions.length)] // Remove this line in production
       }));
 
-      setAllMessages(messagesWithResolved);
-      setFilteredMessages(messagesWithResolved);
+      setAllMessages(messagesWithRegions);
+      setFilteredMessages(messagesWithRegions);
     } catch (err) {
       console.error("Fetch error:", err);
       setError("Failed to load messages. Please try again.");
@@ -327,26 +341,66 @@ const SupportDashboard = () => {
     fetchFAQs();
   }, []);
 
+  // Function to prepare data for the Cases by Region pie chart
+  const prepareCasesByRegionData = () => {
+    // Count cases by region
+    const regionCounts = activeMessages.reduce((acc, message) => {
+      // Use optional chaining and type assertion to avoid TypeScript errors
+      const region = (message as any).region || "Others";
+      acc[region] = (acc[region] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  
+    // Convert to array format needed for the pie chart
+    const data = Object.entries(regionCounts).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  
+    // If no data, return default
+    return data.length > 0 ? data : [
+      { name: "Colombo", value: 35 },
+      { name: "Kandy", value: 28 },
+      { name: "Kurunagala", value: 12 },
+      { name: "Malabe", value: 18 },
+      { name: "Others", value: 7 },
+    ];
+  };
+  
+  // Function to prepare data for the Weekly Case Load bar chart
+  const prepareWeeklyCaseData = () => {
+    // Get dates for the last 7 days - corrected order to match UI
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const today = new Date();
+    const result = Array(7).fill().map((_, i) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - i));
+      return {
+        day: days[i], // Use index directly since we've ordered the array correctly
+        date: date,
+        cases: 0
+      };
+    });
+  
+    // Count messages by day
+    activeMessages.forEach(message => {
+      const messageDate = new Date(message.createdAt);
+      // Check if message date is within the last 7 days
+      result.forEach(day => {
+        if (messageDate.toDateString() === day.date.toDateString()) {
+          day.cases += 1;
+        }
+      });
+    });
+  
+    return result.map(({ day, cases }) => ({ day, cases }));
+  };
+
   // Chart data
-  const caseData = [
-    { name: "Colombo", value: 35 },
-    { name: "Kandy", value: 28 },
-    { name: "Kurunagala", value: 12 },
-    { name: "Malabe", value: 18 },
-    { name: "Others", value: 7 },
-  ];
+  const caseData = prepareCasesByRegionData();
+  const weeklyCaseData = prepareWeeklyCaseData();
 
   const COLORS = ["#0088FE", "#FF8042", "#00C49F", "#FFBB28", "#A28DFF"];
-
-  const weeklyCaseData = [
-    { day: "Mon", cases: 4 },
-    { day: "Tue", cases: 6 },
-    { day: "Wed", cases: 8 },
-    { day: "Thu", cases: 10 },
-    { day: "Fri", cases: 9 },
-    { day: "Sat", cases: 7 },
-    { day: "Sun", cases: 5 },
-  ];
 
   // Custom tooltip components
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -375,6 +429,39 @@ const SupportDashboard = () => {
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return `${text.substring(0, maxLength)}...`;
+  };
+
+  // Function to export active cases as CSV
+  const exportActiveCasesCSV = () => {
+    // Create CSV headers
+    const headers = ["ID", "Name", "Email", "Subject", "Region", "Date Created"];
+    
+    // Map data to CSV rows
+    const csvData = activeMessages.map(msg => [
+      msg._id,
+      msg.name,
+      msg.email,
+      msg.subject,
+      (msg as any).region || "Others",
+      new Date(msg.createdAt).toLocaleDateString()
+    ]);
+    
+    // Combine headers and data
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.join(","))
+    ].join("\n");
+    
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `active_cases_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -460,172 +547,219 @@ const SupportDashboard = () => {
                   Blood Camp Finder Support Overview
                 </p>
               </div>
-              <div className="mt-4 md:mt-0">
+              <div className="mt-4 md:mt-0 flex space-x-2">
                 <div className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm font-medium">
                   <AlertCircle className="h-4 w-4 mr-1" />
                   Live Updates
                 </div>
+                <button 
+                  onClick={() => toPDF()} 
+                  className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export PDF
+                </button>
+                <button 
+                  onClick={exportActiveCasesCSV} 
+                  className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium hover:bg-green-100 transition-colors"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export CSV
+                </button>
               </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-blue-50 text-blue-600 mr-4 group-hover:bg-blue-100 transition-colors duration-200">
-                    <Users className="h-6 w-6" />
+            {/* Content to be exported as PDF */}
+            <div ref={targetRef}>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-blue-50 text-blue-600 mr-4 group-hover:bg-blue-100 transition-colors duration-200">
+                      <Users className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        Active Cases
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-blue-600 transition-colors duration-200">
+                        {activeMessages.length}
+                      </h3>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Active Cases
-                    </p>
-                    <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-blue-600 transition-colors duration-200">
-                      {activeMessages.length}
-                    </h3>
+                  <div className="mt-4 flex items-center text-xs text-gray-500">
+                    <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                    <span className="text-green-500 font-medium">+8%</span>
+                    <span className="ml-1">from last week</span>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center text-xs text-gray-500">
-                  <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                  <span className="text-green-500 font-medium">+8%</span>
-                  <span className="ml-1">from last week</span>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-red-50 text-red-600 mr-4 group-hover:bg-red-100 transition-colors duration-200">
+                      <Calendar className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        Requests
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-red-600 transition-colors duration-200">
+                        34
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-xs text-gray-500">
+                    <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                    <span className="text-green-500 font-medium">+12%</span>
+                    <span className="ml-1">from last month</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-green-50 text-green-600 mr-4 group-hover:bg-green-100 transition-colors duration-200">
+                      <Phone className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        Calls Today
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-green-600 transition-colors duration-200">
+                        28
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-xs text-gray-500">
+                    <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                    <span className="text-green-500 font-medium">+5%</span>
+                    <span className="ml-1">from yesterday</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-purple-50 text-purple-600 mr-4 group-hover:bg-purple-100 transition-colors duration-200">
+                      <Clock className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        Avg Response
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-purple-600 transition-colors duration-200">
+                        14 min
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-xs text-gray-500">
+                    <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                    <span className="text-green-500 font-medium">-2 min</span>
+                    <span className="ml-1">from last week</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-red-50 text-red-600 mr-4 group-hover:bg-red-100 transition-colors duration-200">
-                    <Calendar className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Requests
-                    </p>
-                    <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-red-600 transition-colors duration-200">
-                      34
-                    </h3>
+              {/* Charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
+                  <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
+                    <MapPin className="h-5 w-5 mr-2 text-red-500" />
+                    Cases by Region
+                  </h2>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={caseData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          fill="#8884d8"
+                          labelLine={true}
+                          label={({ name, percent }) =>
+                            `${name}: ${(percent * 100).toFixed(0)}%`
+                          }
+                        >
+                          {caseData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<PieCustomTooltip />} />
+                        <Legend
+                          layout="horizontal"
+                          verticalAlign="bottom"
+                          align="center"
+                          wrapperStyle={{ paddingTop: "20px" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center text-xs text-gray-500">
-                  <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                  <span className="text-green-500 font-medium">+12%</span>
-                  <span className="ml-1">from last month</span>
-                </div>
-              </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-green-50 text-green-600 mr-4 group-hover:bg-green-100 transition-colors duration-200">
-                    <Phone className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Calls Today
-                    </p>
-                    <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-green-600 transition-colors duration-200">
-                      28
-                    </h3>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-xs text-gray-500">
-                  <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                  <span className="text-green-500 font-medium">+5%</span>
-                  <span className="ml-1">from yesterday</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md hover:border-red-100 group">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-purple-50 text-purple-600 mr-4 group-hover:bg-purple-100 transition-colors duration-200">
-                    <Clock className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Avg Response
-                    </p>
-                    <h3 className="text-2xl font-bold text-gray-800 mt-1 group-hover:text-purple-600 transition-colors duration-200">
-                      14 min
-                    </h3>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-xs text-gray-500">
-                  <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                  <span className="text-green-500 font-medium">-2 min</span>
-                  <span className="ml-1">from last week</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
-                <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
-                  <MapPin className="h-5 w-5 mr-2 text-red-500" />
-                  Cases by Region
-                </h2>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={caseData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={100}
-                        fill="#8884d8"
-                        labelLine={true}
-                        label={({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
-                        }
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
+                  <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-blue-500" />
+                    Weekly Case Load
+                  </h2>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={weeklyCaseData}
+                        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                       >
-                        {caseData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<PieCustomTooltip />} />
-                      <Legend
-                        layout="horizontal"
-                        verticalAlign="bottom"
-                        align="center"
-                        wrapperStyle={{ paddingTop: "20px" }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Bar
+                          dataKey="cases"
+                          fill="#8884d8"
+                          radius={[4, 4, 0, 0]}
+                          barSize={36}
+                        >
+                          {weeklyCaseData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={index === 3 ? "#8884d8" : "#a794f7"}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
-                <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
-                  <Activity className="h-5 w-5 mr-2 text-blue-500" />
-                  Weekly Case Load
+              {/* Active Cases Table for PDF */}
+              <div className="mt-8">
+                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <Users className="h-5 w-5 mr-2 text-blue-500" />
+                  Active Cases Summary
                 </h2>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={weeklyCaseData}
-                      margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                    >
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar
-                        dataKey="cases"
-                        fill="#8884d8"
-                        radius={[4, 4, 0, 0]}
-                        barSize={36}
-                      >
-                        {weeklyCaseData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={index === 3 ? "#8884d8" : "#a794f7"}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
+                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {activeMessages.slice(0, 5).map((message) => (
+                        <tr key={message._id} className="hover:bg-gray-50">
+                          <td className="py-3 px-4 text-sm text-gray-800">{message.name}</td>
+                          <td className="py-3 px-4 text-sm text-gray-800">{truncateText(message.subject, 30)}</td>
+                          <td className="py-3 px-4 text-sm text-gray-800">{(message as any).region || "Others"}</td>
+                          <td className="py-3 px-4 text-sm text-gray-800">{new Date(message.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -640,21 +774,21 @@ const SupportDashboard = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                <HelpCircle className="h-5 w-5 mr-2 text-blue-500" />
+                <HelpCircle className="h-5 w-5 mr-2 text-purple-500" />
                 FAQ Management
               </h2>
               <button
                 onClick={fetchFAQs}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                className="mt-4 md:mt-0 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm"
               >
-                Refresh
+                Refresh FAQs
               </button>
             </div>
 
-            {/* Add New FAQ Form */}
-            <div className="mb-8 bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-md font-medium text-gray-700 mb-3">
-                Add New FAQ
+            {/* Create FAQ Form */}
+            <div className="bg-purple-50 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-bold text-purple-800 mb-4">
+                Create New FAQ
               </h3>
               <div className="space-y-4">
                 <div>
@@ -671,8 +805,8 @@ const SupportDashboard = () => {
                     onChange={(e) =>
                       setNewFAQ({ ...newFAQ, question: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                    placeholder="Enter question"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="Enter question here..."
                   />
                 </div>
                 <div>
@@ -688,150 +822,146 @@ const SupportDashboard = () => {
                     onChange={(e) =>
                       setNewFAQ({ ...newFAQ, answer: e.target.value })
                     }
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                    placeholder="Enter answer"
-                  />
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="Enter answer here..."
+                  ></textarea>
                 </div>
                 <button
                   onClick={handleCreateFAQ}
-                  disabled={isFaqLoading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {isFaqLoading ? "Adding..." : "Add FAQ"}
+                  Create FAQ
                 </button>
               </div>
             </div>
 
             {/* FAQ List */}
-            <div className="overflow-x-auto">
-              <table className="w-full table-fixed">
-                <colgroup>
-                  <col className="w-[40%]" /> {/* Question */}
-                  <col className="w-[50%]" /> {/* Answer */}
-                  <col className="w-[10%]" /> {/* Actions */}
-                </colgroup>
-                <thead>
-                  <tr className="bg-gray-50 text-left">
-                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">
-                      Question
-                    </th>
-                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Answer
-                    </th>
-                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {isFaqLoading ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8">
-                        <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">
+                Existing FAQs
+              </h3>
+              {isFaqLoading ? (
+                <div className="text-center py-8">
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500">Loading FAQs...</p>
+                </div>
+              ) : faqs.length > 0 ? (
+                <div className="space-y-6">
+                  {faqs.map((faq) => (
+                    <div
+                      key={faq._id}
+                      className="bg-white rounded-lg border border-gray-200 p-6 transition-all duration-200 hover:shadow-sm"
+                    >
+                      {editingFAQ && editingFAQ._id === faq._id ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label
+                              htmlFor={`edit-question-${faq._id}`}
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Question
+                            </label>
+                            <input
+                              type="text"
+                              id={`edit-question-${faq._id}`}
+                              value={editFAQData.question}
+                              onChange={(e) =>
+                                setEditFAQData({
+                                  ...editFAQData,
+                                  question: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor={`edit-answer-${faq._id}`}
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Answer
+                            </label>
+                            <textarea
+                              id={`edit-answer-${faq._id}`}
+                              value={editFAQData.answer}
+                              onChange={(e) =>
+                                setEditFAQData({
+                                  ...editFAQData,
+                                  answer: e.target.value,
+                                })
+                              }
+                              rows={4}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            ></textarea>
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={handleUpdateFAQ}
+                              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelEditingFAQ}
+                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Loading FAQs...
-                        </p>
-                      </td>
-                    </tr>
-                  ) : faqs.length > 0 ? (
-                    faqs.map((faq) => (
-                      <tr
-                        key={faq._id}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        {editingFAQ?._id === faq._id ? (
-                          <>
-                            <td className="px-4 py-4">
-                              <input
-                                type="text"
-                                value={editFAQData.question}
-                                onChange={(e) =>
-                                  setEditFAQData({
-                                    ...editFAQData,
-                                    question: e.target.value,
-                                  })
-                                }
-                                className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                              />
-                            </td>
-                            <td className="px-4 py-4">
-                              <textarea
-                                value={editFAQData.answer}
-                                onChange={(e) =>
-                                  setEditFAQData({
-                                    ...editFAQData,
-                                    answer: e.target.value,
-                                  })
-                                }
-                                rows={3}
-                                className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                              />
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={handleUpdateFAQ}
-                                  className="text-green-500 hover:text-green-700 flex items-center"
-                                  title="Save Changes"
-                                >
-                                  <CheckCircle className="h-5 w-5" />
-                                </button>
-                                <button
-                                  onClick={cancelEditingFAQ}
-                                  className="text-gray-500 hover:text-gray-700 flex items-center"
-                                  title="Cancel"
-                                >
-                                  <X className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-start">
+                            <h4 className="text-lg font-bold text-gray-800 mb-2">
                               {faq.question}
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-500">
-                              {faq.answer}
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-500">
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => startEditingFAQ(faq)}
-                                  className="text-blue-500 hover:text-blue-700 flex items-center"
-                                  title="Edit FAQ"
-                                >
-                                  <Edit className="h-5 w-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteFAQ(faq._id)}
-                                  className="text-red-500 hover:text-red-700 flex items-center"
-                                  title="Delete FAQ"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8">
-                        <p className="text-gray-500 flex flex-col items-center justify-center">
-                          <HelpCircle className="h-10 w-10 text-gray-300 mb-2" />
-                          <span>No FAQs found. Add one to get started.</span>
-                        </p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                            </h4>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => startEditingFAQ(faq)}
+                                className="text-blue-500 hover:text-blue-700 flex items-center"
+                                title="Edit FAQ"
+                              >
+                                <Edit className="h-5 w-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFAQ(faq._id)}
+                                className="text-red-500 hover:text-red-700 flex items-center"
+                                title="Delete FAQ"
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-gray-600 mt-2">{faq.answer}</p>
+                          <div className="mt-4 text-xs text-gray-400">
+                            <p>
+                              Created:{" "}
+                              {new Date(faq.createdAt).toLocaleString()}
+                            </p>
+                            <p>
+                              Last Updated:{" "}
+                              {new Date(faq.updatedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 flex flex-col items-center justify-center">
+                    <HelpCircle className="h-10 w-10 text-gray-300 mb-2" />
+                    <span>No FAQs found. Create your first FAQ above.</span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -842,41 +972,90 @@ const SupportDashboard = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800 flex items-center">
                 <HelpCircle className="h-5 w-5 mr-2 text-blue-500" />
-                FAQ Viewer
+                Frequently Asked Questions
               </h2>
-              <p className="text-gray-500">How FAQs appear to users</p>
             </div>
 
-            <div className="space-y-6">
-              {isFaqLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-                </div>
-              ) : faqs.length > 0 ? (
-                faqs.map((faq) => (
-                  <div
-                    key={faq._id}
-                    className="border-b border-gray-200 pb-6 last:border-b-0"
-                  >
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      {faq.question}
-                    </h3>
-                    <p className="text-gray-600">{faq.answer}</p>
-                    <div className="mt-2 text-sm text-gray-400">
-                      Last updated:{" "}
-                      {new Date(faq.updatedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <HelpCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">
-                    No FAQs available. Add some in the FAQ Management tab.
-                  </p>
-                </div>
+            {/* Search Bar */}
+            <div className="mb-6 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                placeholder="Search FAQs..."
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                </button>
               )}
             </div>
+
+            {/* FAQ Accordion */}
+            {isFaqLoading ? (
+              <div className="text-center py-8">
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">Loading FAQs...</p>
+              </div>
+            ) : faqs.length > 0 ? (
+              <div className="space-y-4">
+                {faqs
+                  .filter((faq) =>
+                    faq.question
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase())
+                  )
+                  .map((faq, index) => (
+                    <div
+                      key={faq._id}
+                      className="border border-gray-200 rounded-lg overflow-hidden"
+                    >
+                      <details className="group">
+                        <summary className="flex justify-between items-center cursor-pointer p-6 bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <h3 className="text-lg font-medium text-gray-800">
+                            {faq.question}
+                          </h3>
+                          <span className="text-blue-500 group-open:rotate-180 transition-transform">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </span>
+                        </summary>
+                        <div className="p-6 bg-white">
+                          <p className="text-gray-600">{faq.answer}</p>
+                        </div>
+                      </details>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 flex flex-col items-center justify-center">
+                  <HelpCircle className="h-10 w-10 text-gray-300 mb-2" />
+                  <span>No FAQs available at this time.</span>
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
