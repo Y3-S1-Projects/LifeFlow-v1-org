@@ -101,7 +101,7 @@ const SupportAdminTable: React.FC = () => {
       };
 
       const response = await axios.get(
-        `${API_BASE_URL}/support-admins`,
+        `${API_BASE_URL}/admin/support-admins`,
         config
       );
 
