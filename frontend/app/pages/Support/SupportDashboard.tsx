@@ -59,8 +59,7 @@ interface FAQ {
   updatedAt: string;
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 const SupportDashboard = () => {
   const [allMessages, setAllMessages] = useState<ContactMessage[]>([]);
@@ -285,46 +284,6 @@ const SupportDashboard = () => {
     }
   };
 
-  // Handle resolving a message
-  const handleResolveMessage = async (messageId: string) => {
-    setError(null);
-    try {
-      const messageToResolve = allMessages.find((msg) => msg._id === messageId);
-
-      if (!messageToResolve) {
-        throw new Error("Message not found");
-      }
-
-      const updatedMessages = allMessages.map((msg) =>
-        msg._id === messageId ? { ...msg, resolved: true } : msg
-      );
-
-      setAllMessages(updatedMessages);
-
-      const response = await fetch(
-        `${API_BASE_URL}/contact/messages/${messageId}/resolve`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to resolve: ${response.status}`);
-      }
-
-      if (selectedMessage?._id === messageId) {
-        setSelectedMessage(null);
-      }
-    } catch (err) {
-      console.error("Resolve error:", err);
-      setError("Failed to resolve message. Please try again.");
-      fetchMessages();
-    }
-  };
-
   // Update active/resolved messages when allMessages changes
   useEffect(() => {
     const resolved = allMessages.filter((msg) => msg.resolved);
@@ -350,7 +309,7 @@ const SupportDashboard = () => {
       acc[region] = (acc[region] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-  
+    
     // Convert to array format needed for the pie chart
     const data = Object.entries(regionCounts).map(([name, value]) => ({
       name,
@@ -381,7 +340,7 @@ const SupportDashboard = () => {
         cases: 0
       };
     });
-  
+    
     // Count messages by day
     activeMessages.forEach(message => {
       const messageDate = new Date(message.createdAt);

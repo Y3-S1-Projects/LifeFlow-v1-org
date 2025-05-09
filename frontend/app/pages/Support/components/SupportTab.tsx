@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import react, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface ContactMessage {
   _id: string;
@@ -42,6 +43,69 @@ export const SupportTab = () => {
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return `${text.substring(0, maxLength)}...`;
+  };
+
+  // Handle replying to a message via email - improved implementation
+  const handleReplyToMessage = (email: string, subject: string) => {
+    try {
+      // Create a mailto link with the recipient's email and subject
+      const mailtoLink = `mailto:${email}?subject=Re: ${encodeURIComponent(subject)}`;
+      
+      // Create an actual anchor element (more reliable than window.location)
+      const link = document.createElement('a');
+      link.href = mailtoLink;
+      link.target = '_blank'; // Open in new tab/window
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Fallback in case the above doesn't trigger
+      setTimeout(() => {
+        window.open(mailtoLink, '_blank');
+      }, 300);
+      
+      toast.success("Opening email client...");
+    } catch (err) {
+      console.error("Error opening email client:", err);
+      toast.error("Unable to open email client. Please check your browser settings.");
+    }
+  };
+
+  // Handle replying to a message and marking it as resolved
+  const handleReplyAndResolve = (messageId: string, email: string, subject: string) => {
+    try {
+      // First, open the email client
+      handleReplyToMessage(email, subject);
+      
+      // Update local state immediately for better UX
+      const updatedMessages = allMessages.map((msg) =>
+        msg._id === messageId ? { ...msg, resolved: true } : msg
+      );
+      
+      setAllMessages(updatedMessages);
+      
+      // Try to update on the server, but don't block UI on this
+      fetch(`${API_BASE_URL}/contact/messages/${messageId}/resolve`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).catch(err => {
+        console.error("Server update error:", err);
+        // Even if server update fails, keep UI state as resolved
+      });
+      
+      // Show success notification
+      toast.success("Message marked as resolved after reply");
+      
+      // Close the modal if it's open
+      if (selectedMessage?._id === messageId) {
+        setSelectedMessage(null);
+      }
+    } catch (err) {
+      console.error("Error in reply and resolve:", err);
+      toast.error("Failed to mark message as resolved");
+    }
   };
 
   useEffect(() => {
@@ -103,25 +167,23 @@ export const SupportTab = () => {
         throw new Error("Message not found");
       }
 
+      // Update local state immediately
       const updatedMessages = allMessages.map((msg) =>
         msg._id === messageId ? { ...msg, resolved: true } : msg
       );
 
       setAllMessages(updatedMessages);
 
-      const response = await fetch(
-        `${API_BASE_URL}/contact/messages/${messageId}/resolve`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to resolve: ${response.status}`);
-      }
+      // Try to update on the server, but don't block UI
+      fetch(`${API_BASE_URL}/contact/messages/${messageId}/resolve`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).catch(err => {
+        console.error("Server update error:", err);
+        // Even if server update fails, keep UI state as resolved
+      });
 
       if (selectedMessage?._id === messageId) {
         setSelectedMessage(null);
@@ -129,7 +191,6 @@ export const SupportTab = () => {
     } catch (err) {
       console.error("Resolve error:", err);
       setError("Failed to resolve message. Please try again.");
-      fetchMessages();
     }
   };
 
@@ -276,6 +337,13 @@ export const SupportTab = () => {
                         >
                           <Eye className="h-5 w-5" />
                         </button>
+                        <button
+                          onClick={() => handleReplyToMessage(msg.email, msg.subject)}
+                          className="text-blue-500 hover:text-blue-700 flex items-center"
+                          title="Reply to message"
+                        >
+                          <Mail className="h-5 w-5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -330,9 +398,16 @@ export const SupportTab = () => {
                         <Eye className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleResolveMessage(msg._id)}
+                        onClick={() => handleReplyToMessage(msg.email, msg.subject)}
+                        className="text-blue-500 hover:text-blue-700 flex items-center"
+                        title="Reply to message"
+                      >
+                        <Mail className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleReplyAndResolve(msg._id, msg.email, msg.subject)}
                         className="text-green-500 hover:text-green-700 flex items-center"
-                        title="Resolve Message"
+                        title="Reply and Resolve Message"
                       >
                         <CheckCircle className="h-5 w-5" />
                       </button>
@@ -429,16 +504,20 @@ export const SupportTab = () => {
               >
                 Close
               </button>
+              <button
+                onClick={() => handleReplyToMessage(selectedMessage.email, selectedMessage.subject)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center"
+              >
+                <Mail className="h-5 w-5 mr-2" />
+                Reply
+              </button>
               {!selectedMessage.resolved && (
                 <button
-                  onClick={() => {
-                    handleResolveMessage(selectedMessage._id);
-                    setSelectedMessage(null);
-                  }}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center"
+                  onClick={() => handleReplyAndResolve(selectedMessage._id, selectedMessage.email, selectedMessage.subject)}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center"
                 >
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  Resolve
+                  Reply & Resolve
                 </button>
               )}
             </div>
