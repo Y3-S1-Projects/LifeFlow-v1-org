@@ -14,6 +14,17 @@ export default {
           "400": "#ff6b6b",
           "500": "#ff4b4b",
         },
+        "blood-red": {
+          100: "#ffebee",
+          200: "#ffcdd2",
+          300: "#ef9a9a",
+          400: "#e57373",
+          500: "#ef4444",
+          600: "#e53935",
+          700: "#d32f2f",
+          800: "#c62828",
+          900: "#b71c1c",
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

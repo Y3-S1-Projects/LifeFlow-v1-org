@@ -609,7 +609,6 @@ function extractAppointmentDetails(message, nearbyCamps) {
       moment(d).format("YYYY-MM-DD")
     );
     if (!availableDates.includes(parsedDate)) {
-      // Date not available, find the closest available date
       if (availableDates.length > 0) {
         const closestDate = availableDates.reduce((prev, curr) => {
           const prevDiff = Math.abs(moment(prev).diff(parsedDate, "days"));
@@ -623,12 +622,11 @@ function extractAppointmentDetails(message, nearbyCamps) {
     }
   }
 
-  // If we have both camp and date (and time is optional), it's an appointment
   if (selectedCamp && parsedDate) {
     result.isAppointment = true;
     result.campId = selectedCamp._id.toString();
     result.date = parsedDate;
-    result.time = formattedTime || "10:00 AM"; // Default time if not specified
+    result.time = formattedTime || "10:00 AM";
   }
 
   return result;
