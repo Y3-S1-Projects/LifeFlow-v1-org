@@ -49,62 +49,47 @@ export const SupportTab = () => {
   const handleReplyToMessage = (email: string, subject: string) => {
     try {
       // Create a mailto link with the recipient's email and subject
-      const mailtoLink = `mailto:${email}?subject=Re: ${encodeURIComponent(subject)}`;
-      
+      const mailtoLink = `mailto:${email}?subject=Re: ${encodeURIComponent(
+        subject
+      )}`;
+
       // Create an actual anchor element (more reliable than window.location)
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = mailtoLink;
-      link.target = '_blank'; // Open in new tab/window
+      link.target = "_blank"; // Open in new tab/window
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Fallback in case the above doesn't trigger
       setTimeout(() => {
-        window.open(mailtoLink, '_blank');
+        window.open(mailtoLink, "_blank");
       }, 300);
-      
+
       toast.success("Opening email client...");
     } catch (err) {
       console.error("Error opening email client:", err);
-      toast.error("Unable to open email client. Please check your browser settings.");
+      toast.error(
+        "Unable to open email client. Please check your browser settings."
+      );
     }
   };
 
   // Handle replying to a message and marking it as resolved
-  const handleReplyAndResolve = (messageId: string, email: string, subject: string) => {
+  const handleReplyAndResolve = async (
+    messageId: string,
+    email: string,
+    subject: string
+  ) => {
     try {
       // First, open the email client
       handleReplyToMessage(email, subject);
-      
-      // Update local state immediately for better UX
-      const updatedMessages = allMessages.map((msg) =>
-        msg._id === messageId ? { ...msg, resolved: true } : msg
-      );
-      
-      setAllMessages(updatedMessages);
-      
-      // Try to update on the server, but don't block UI on this
-      fetch(`${API_BASE_URL}/contact/messages/${messageId}/resolve`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).catch(err => {
-        console.error("Server update error:", err);
-        // Even if server update fails, keep UI state as resolved
-      });
-      
-      // Show success notification
-      toast.success("Message marked as resolved after reply");
-      
-      // Close the modal if it's open
-      if (selectedMessage?._id === messageId) {
-        setSelectedMessage(null);
-      }
+
+      // Then mark as resolved
+      await handleResolveMessage(messageId);
     } catch (err) {
       console.error("Error in reply and resolve:", err);
-      toast.error("Failed to mark message as resolved");
+      toast.error("Failed to complete operation");
     }
   };
 
@@ -126,20 +111,35 @@ export const SupportTab = () => {
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/contact/messages`);
+
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
       }
-      const data = await response.json();
-      const messagesWithResolved = data.map((msg: ContactMessage) => ({
-        ...msg,
-        resolved: msg.resolved || false,
+
+      const result = await response.json();
+
+      // Check if response has data property and it's an array
+      const messagesArray = Array.isArray(result.data)
+        ? result.data
+        : Array.isArray(result)
+        ? result
+        : [];
+
+      const messagesWithResolved = messagesArray.map((msg: any) => ({
+        _id: msg._id,
+        name: msg.name || "",
+        email: msg.email || "",
+        subject: msg.subject || "",
+        message: msg.message || "",
+        createdAt: msg.createdAt || new Date().toISOString(),
+        resolved: Boolean(msg.resolved),
       }));
 
       setAllMessages(messagesWithResolved);
-      setFilteredMessages(messagesWithResolved);
     } catch (err) {
       console.error("Fetch error:", err);
       setError("Failed to load messages. Please try again.");
+      toast.error("Failed to load messages");
     } finally {
       setIsLoading(false);
     }
@@ -157,40 +157,39 @@ export const SupportTab = () => {
     setActiveMessages(active);
     setFilteredMessages(showResolved ? resolved : active);
   }, [allMessages, showResolved]);
-
   const handleResolveMessage = async (messageId: string) => {
-    setError(null);
     try {
-      const messageToResolve = allMessages.find((msg) => msg._id === messageId);
-
-      if (!messageToResolve) {
-        throw new Error("Message not found");
-      }
-
-      // Update local state immediately
-      const updatedMessages = allMessages.map((msg) =>
-        msg._id === messageId ? { ...msg, resolved: true } : msg
+      const response = await fetch(
+        `${API_BASE_URL}/contact/${messageId}/resolve`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      setAllMessages(updatedMessages);
+      if (!response.ok) {
+        throw new Error(`Failed to resolve message: ${response.status}`);
+      }
 
-      // Try to update on the server, but don't block UI
-      fetch(`${API_BASE_URL}/contact/messages/${messageId}/resolve`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).catch(err => {
-        console.error("Server update error:", err);
-        // Even if server update fails, keep UI state as resolved
-      });
+      const data = await response.json();
+
+      // Update local state with the resolved message
+      setAllMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, resolved: true } : msg
+        )
+      );
+
+      toast.success("Message marked as resolved");
 
       if (selectedMessage?._id === messageId) {
         setSelectedMessage(null);
       }
     } catch (err) {
       console.error("Resolve error:", err);
-      setError("Failed to resolve message. Please try again.");
+      toast.error("Failed to resolve message");
     }
   };
 
@@ -338,7 +337,9 @@ export const SupportTab = () => {
                           <Eye className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => handleReplyToMessage(msg.email, msg.subject)}
+                          onClick={() =>
+                            handleReplyToMessage(msg.email, msg.subject)
+                          }
                           className="text-blue-500 hover:text-blue-700 flex items-center"
                           title="Reply to message"
                         >
@@ -398,14 +399,18 @@ export const SupportTab = () => {
                         <Eye className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleReplyToMessage(msg.email, msg.subject)}
+                        onClick={() =>
+                          handleReplyToMessage(msg.email, msg.subject)
+                        }
                         className="text-blue-500 hover:text-blue-700 flex items-center"
                         title="Reply to message"
                       >
                         <Mail className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleReplyAndResolve(msg._id, msg.email, msg.subject)}
+                        onClick={() =>
+                          handleReplyAndResolve(msg._id, msg.email, msg.subject)
+                        }
                         className="text-green-500 hover:text-green-700 flex items-center"
                         title="Reply and Resolve Message"
                       >
@@ -505,7 +510,12 @@ export const SupportTab = () => {
                 Close
               </button>
               <button
-                onClick={() => handleReplyToMessage(selectedMessage.email, selectedMessage.subject)}
+                onClick={() =>
+                  handleReplyToMessage(
+                    selectedMessage.email,
+                    selectedMessage.subject
+                  )
+                }
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center"
               >
                 <Mail className="h-5 w-5 mr-2" />
@@ -513,7 +523,13 @@ export const SupportTab = () => {
               </button>
               {!selectedMessage.resolved && (
                 <button
-                  onClick={() => handleReplyAndResolve(selectedMessage._id, selectedMessage.email, selectedMessage.subject)}
+                  onClick={() =>
+                    handleReplyAndResolve(
+                      selectedMessage._id,
+                      selectedMessage.email,
+                      selectedMessage.subject
+                    )
+                  }
                   className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center"
                 >
                   <CheckCircle className="h-5 w-5 mr-2" />

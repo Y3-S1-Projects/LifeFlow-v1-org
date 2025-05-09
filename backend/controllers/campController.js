@@ -99,50 +99,77 @@ export const getNearbyCamps = async (req, res) => {
   try {
     const { lat, lng, radius } = req.query;
 
+    // Validate required parameters
     if (!lat || !lng || !radius) {
-      return res.status(400).json({ error: "Missing location parameters" });
+      return res.status(400).json({
+        error: "Missing location parameters",
+        details: `Required: lat, lng, radius. Received: ${Object.keys(
+          req.query
+        ).join(", ")}`,
+      });
+    }
+
+    // Validate parameter types
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    const parsedRadius = parseFloat(radius);
+
+    if (isNaN(parsedLat) || isNaN(parsedLng) || isNaN(parsedRadius)) {
+      return res.status(400).json({
+        error: "Invalid parameter types",
+        details: "lat, lng, and radius must be valid numbers",
+      });
     }
 
     const nearbyCamps = await Camp.aggregate([
       {
-        $match: {
-          approvalStatus: "Approved" // Only show approved camps
-        }
-      },
-      {
         $geoNear: {
           near: {
             type: "Point",
-            coordinates: [parseFloat(lng), parseFloat(lat)],
+            coordinates: [parsedLng, parsedLat],
           },
-          distanceField: "distance", // Distance in meters
-          maxDistance: parseFloat(radius) * 1000, // Convert km to meters
+          distanceField: "distance",
+          maxDistance: parsedRadius * 1000,
           spherical: true,
+          query: { approvalStatus: "Approved" },
         },
       },
       {
         $addFields: {
           distance: {
             $cond: {
-              if: { $lt: ["$distance", 1000] }, // If distance is less than 1000 meters
-              then: { $round: ["$distance", 0] }, // Show in meters (rounded to nearest integer)
-              else: { $round: [{ $divide: ["$distance", 1000] }, 2] }, // Show in kilometers (rounded to 2 decimal places)
+              if: { $lt: ["$distance", 1000] },
+              then: { $round: ["$distance", 0] },
+              else: { $round: [{ $divide: ["$distance", 1000] }, 2] },
             },
           },
           distanceUnit: {
             $cond: {
-              if: { $lt: ["$distance", 1000] }, // If distance is less than 1000 meters
-              then: "m", // Unit is meters
-              else: "km", // Unit is kilometers
+              if: { $lt: ["$distance", 1000] },
+              then: "m",
+              else: "km",
             },
           },
         },
       },
     ]);
 
-    res.status(200).json(nearbyCamps);
+    // // Handle empty results
+    // if (!nearbyCamps || nearbyCamps.length === 0) {
+    //   return res.status(200).json({
+    //     message: "No approved camps found within the specified radius",
+    //     results: [],
+    //     params: { lat: parsedLat, lng: parsedLng, radiusKm: parsedRadius },
+    //   });
+    // }
+
+    return res.status(200).json(nearbyCamps);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch nearby camps" });
+    console.error("Error in getNearbyCamps:", error);
+    res.status(500).json({
+      error: "Database query failed",
+      details: "Failed to retrieve nearby camps data",
+    });
   }
 };
 
@@ -186,8 +213,8 @@ export const approveCamp = async (req, res) => {
     }
 
     if (camp.approvalStatus !== "Pending") {
-      return res.status(400).json({ 
-        message: `Camp already ${camp.approvalStatus.toLowerCase()}. No action needed.` 
+      return res.status(400).json({
+        message: `Camp already ${camp.approvalStatus.toLowerCase()}. No action needed.`,
       });
     }
 
@@ -195,18 +222,20 @@ export const approveCamp = async (req, res) => {
       id,
       {
         approvalStatus: "Approved",
-        "approvalDetails.approvedAt": new Date()
+        "approvalDetails.approvedAt": new Date(),
       },
       { new: true }
     );
-    
-    res.status(200).json({ 
-      message: "Camp approved successfully", 
-      camp: updatedCamp 
+
+    res.status(200).json({
+      message: "Camp approved successfully",
+      camp: updatedCamp,
     });
   } catch (error) {
     console.error("Error approving camp:", error);
-    res.status(500).json({ message: "Failed to approve camp", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to approve camp", error: error.message });
   }
 };
 
@@ -231,8 +260,8 @@ export const rejectCamp = async (req, res) => {
     }
 
     if (camp.approvalStatus !== "Pending") {
-      return res.status(400).json({ 
-        message: `Camp already ${camp.approvalStatus.toLowerCase()}. No action needed.` 
+      return res.status(400).json({
+        message: `Camp already ${camp.approvalStatus.toLowerCase()}. No action needed.`,
       });
     }
 
@@ -241,18 +270,20 @@ export const rejectCamp = async (req, res) => {
       {
         approvalStatus: "Rejected",
         "approvalDetails.approvedAt": new Date(),
-        "approvalDetails.rejectionReason": rejectionReason
+        "approvalDetails.rejectionReason": rejectionReason,
       },
       { new: true }
     );
-    
-    res.status(200).json({ 
-      message: "Camp rejected successfully", 
-      camp: updatedCamp 
+
+    res.status(200).json({
+      message: "Camp rejected successfully",
+      camp: updatedCamp,
     });
   } catch (error) {
     console.error("Error rejecting camp:", error);
-    res.status(500).json({ message: "Failed to reject camp", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to reject camp", error: error.message });
   }
 };
 
@@ -260,11 +291,11 @@ export const rejectCamp = async (req, res) => {
 export const getCampsByApprovalStatus = async (req, res) => {
   try {
     const { status } = req.params;
-    
+
     // Validate the status parameter
     if (!["Pending", "Approved", "Rejected"].includes(status)) {
-      return res.status(400).json({ 
-        message: "Invalid status. Must be 'Pending', 'Approved', or 'Rejected'" 
+      return res.status(400).json({
+        message: "Invalid status. Must be 'Pending', 'Approved', or 'Rejected'",
       });
     }
 
@@ -316,15 +347,24 @@ export const updateCamp = async (req, res) => {
 
     // Check if the update is substantial and needs re-approval
     const camp = await Camp.findById(id);
-    
+
     if (!camp) {
       return res.status(404).json({ message: "Camp not found" });
     }
-    
+
     // Determine if this update should reset approval status
-    const resetFields = ['name', 'description', 'operatingHours', 'location', 'address', 'availableDates'];
-    const needsReapproval = Object.keys(updates).some(key => resetFields.includes(key));
-    
+    const resetFields = [
+      "name",
+      "description",
+      "operatingHours",
+      "location",
+      "address",
+      "availableDates",
+    ];
+    const needsReapproval = Object.keys(updates).some((key) =>
+      resetFields.includes(key)
+    );
+
     // If substantial changes were made and camp was previously approved, reset to pending
     if (needsReapproval && camp.approvalStatus === "Approved") {
       updates.approvalStatus = "Pending";
@@ -339,9 +379,9 @@ export const updateCamp = async (req, res) => {
 
     res.status(200).json({
       camp: updatedCamp,
-      message: needsReapproval ? 
-        "Camp updated successfully and sent for re-approval" : 
-        "Camp updated successfully"
+      message: needsReapproval
+        ? "Camp updated successfully and sent for re-approval"
+        : "Camp updated successfully",
     });
   } catch (error) {
     res
@@ -452,19 +492,22 @@ export const getOrganizerCampsByApprovalStatus = async (req, res) => {
     }
 
     if (!["Pending", "Approved", "Rejected"].includes(status)) {
-      return res.status(400).json({ 
-        message: "Invalid status. Must be 'Pending', 'Approved', or 'Rejected'" 
+      return res.status(400).json({
+        message: "Invalid status. Must be 'Pending', 'Approved', or 'Rejected'",
       });
     }
 
-    const camps = await Camp.find({ 
+    const camps = await Camp.find({
       organizer: organizerId,
-      approvalStatus: status 
+      approvalStatus: status,
     }).sort({ createdAt: -1 });
 
     res.status(200).json({ camps });
   } catch (error) {
-    console.error(`Error fetching ${req.params.status} camps for organizer:`, error);
+    console.error(
+      `Error fetching ${req.params.status} camps for organizer:`,
+      error
+    );
     res.status(500).json({ message: "Internal server error" });
   }
 };
