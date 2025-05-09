@@ -26,7 +26,7 @@ import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import OrganizerTable from "./IneligibleOrganizersTable";
 import MapComponent from "@/app/components/Map";
-import CampRequest from "./CampRequest";
+import CampApprovalTable from "./CampApprovalTable";
 import Report from "./Report";
 import CampTable from "./CampTable";  // Import the CampTable component
 
@@ -638,7 +638,7 @@ const AdminDashboard = () => {
 
             {activeTab === "Camp" && (
               <div className="bg-white rounded-lg shadow-md">
-                <CampRequest />
+                <CampApprovalTable />
               </div>
             )}
           </div>
