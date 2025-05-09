@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Header from "@/app/components/Header";
 import GlobalHeader from "@/app/components/GlobalHeader";
+import BloodDonationChatbot from "@/app/components/SupportChatBot";
 
 type FAQ = {
   question: string;
@@ -100,6 +101,7 @@ const SupportPage = () => {
     <>
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <div className="min-h-screen mt-10  bg-gray-50">
+        <BloodDonationChatbot />
         {/* Hero Section */}
         <motion.div
           className="bg-gradient-to-r from-red-600 to-red-800 text-white py-16 w-screen"

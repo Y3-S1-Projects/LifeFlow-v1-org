@@ -1,0 +1,36 @@
+{
+  "faqs": [
+    {
+      "question": "Who can donate blood?",
+      "answer": "Generally, donors must be at least 17 years old (16 with parental consent in some areas), weigh at least 110 pounds, and be in good health. Specific eligibility criteria may vary by location."
+    },
+    {
+      "question": "How often can I donate blood?",
+      "answer": "You can donate whole blood every 56 days (8 weeks). For platelet donations, you can donate every 7 days, up to 24 times per year."
+    },
+    {
+      "question": "What should I do before donating blood?",
+      "answer": "Eat a healthy meal, drink plenty of fluids, bring your ID, and get a good night's sleep. Avoid fatty foods before donating."
+    },
+    {
+      "question": "How long does the donation process take?",
+      "answer": "The actual blood donation takes about 8-10 minutes. The entire process, including registration and recovery, takes about an hour."
+    },
+    {
+      "question": "Is blood donation safe?",
+      "answer": "Yes, sterile equipment is used for each donor and discarded after use. There's no risk of contracting diseases from donating blood."
+    },
+    {
+      "question": "Where can I find blood donation camps?",
+      "answer": "You can use our camp finder tool to locate the nearest blood donation camps. Just enter your location and we'll show you upcoming events."
+    },
+    {
+      "question": "What blood types are most needed?",
+      "answer": "Type O-negative is the universal donor type and is always in high demand. However, all blood types are needed for different patients."
+    },
+    {
+      "question": "Can I donate if I have a cold?",
+      "answer": "No, you should wait until you're feeling well and symptom-free before donating blood."
+    }
+  ]
+}
