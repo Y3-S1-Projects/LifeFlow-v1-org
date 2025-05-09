@@ -165,6 +165,8 @@ const MyDonationsPage: React.FC = () => {
     setDonationHistory(sortedDonations);
   };
 
+  console.log(donationHistory);
+
   const calculateDonationStats = () => {
     const totalDonations = donationHistory.length;
     const totalPints = donationHistory.reduce(
