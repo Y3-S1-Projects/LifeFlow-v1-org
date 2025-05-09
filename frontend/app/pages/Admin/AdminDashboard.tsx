@@ -28,6 +28,7 @@ import OrganizerTable from "./IneligibleOrganizersTable";
 import MapComponent from "@/app/components/Map";
 import CampRequest from "./CampRequest";
 import Report from "./Report";
+import CampTable from "./CampTable";  // Import the CampTable component
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -615,6 +616,11 @@ const AdminDashboard = () => {
                   userLatitude={0}
                   userLongitude={0}
                 />
+                {/* Camp Table Component */}
+                <div className="mt-6">
+                <h3 className="text-md font-medium mb-2">Available Camps</h3>
+                <CampTable />
+                </div>
               </div>
             )}
 
