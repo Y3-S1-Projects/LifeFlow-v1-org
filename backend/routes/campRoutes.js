@@ -9,6 +9,7 @@ import {
   getCampsByOrganizer,
   getUpcomingCampsByOrganizer,
   getCampById,
+  
 } from "../controllers/campController.js";
 
 const router = express.Router();
@@ -22,5 +23,7 @@ router.get("/:campId/users", getUsersRegisteredInCamp);
 router.get("/get-camps/:organizerId", getCampsByOrganizer);
 router.get("/get-upcoming-camps/:organizerId", getUpcomingCampsByOrganizer);
 router.get("/:id", getCampById);
+
+
 
 export default router;
