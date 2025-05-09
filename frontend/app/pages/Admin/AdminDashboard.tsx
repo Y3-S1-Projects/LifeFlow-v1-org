@@ -92,14 +92,14 @@ const AdminDashboard = () => {
   ];
 
   const tabData = [
-    {
-      id: "overview",
-      label: "Overview",
-      icon: <Activity className="h-5 w-5" />,
-    },
+    // {
+    //   id: "overview",
+    //   label: "Overview",
+    //   icon: <Activity className="h-5 w-5" />,
+    // },
     {
       id: "Report",
-      label: "Reports",
+      label: "Overview",
       icon: <PieChart className="h-5 w-5" />,
     },
     {
@@ -157,8 +157,8 @@ const AdminDashboard = () => {
   ];
 
   const sections = [
-    { title: "Main", range: [0, 3] },
-    { title: "Management", range: [3, 8] },
+    { title: "Main", range: [0, 2] },
+    { title: "Management", range: [2, 8] },
   ];
 
   const toggleMobileMenu = () => {
