@@ -13,6 +13,7 @@ import {
 import Header from "@/app/components/Header";
 import GlobalHeader from "@/app/components/GlobalHeader";
 import BloodDonationChatbot from "@/app/components/SupportChatBot";
+import Footer from "@/app/components/Footer";
 
 type FAQ = {
   question: string;
@@ -517,6 +518,7 @@ const SupportPage = () => {
             </div>
           </div>
         </motion.div>
+        <Footer isDarkMode={false} />
       </div>
     </>
   );
