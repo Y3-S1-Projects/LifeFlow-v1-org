@@ -9,11 +9,16 @@ import {
   getCampsByOrganizer,
   getUpcomingCampsByOrganizer,
   getCampById,
-  
+  getOrganizerCampsByApprovalStatus,
+  getPendingApprovalCamps,
+  approveCamp,
+  rejectCamp,
+  getCampsByApprovalStatus,
 } from "../controllers/campController.js";
 
 const router = express.Router();
 
+// Original routes
 router.post("/create", createCamp);
 router.get("/nearby", getNearbyCamps);
 router.get("/all", getCamps);
@@ -24,6 +29,13 @@ router.get("/get-camps/:organizerId", getCampsByOrganizer);
 router.get("/get-upcoming-camps/:organizerId", getUpcomingCampsByOrganizer);
 router.get("/:id", getCampById);
 
+// New routes for organizer camp status
+router.get("/organizer/:organizerId/status/:status", getOrganizerCampsByApprovalStatus);
 
+// Admin-like routes for approval management (all integrated in camp controller)
+router.get("/admin/pending", getPendingApprovalCamps);
+router.put("/admin/approve/:id", approveCamp);
+router.put("/admin/reject/:id", rejectCamp);
+router.get("/admin/status/:status", getCampsByApprovalStatus);
 
 export default router;

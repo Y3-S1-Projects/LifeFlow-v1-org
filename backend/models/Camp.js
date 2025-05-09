@@ -22,6 +22,15 @@ const CampSchema = new mongoose.Schema({
     enum: ["Open", "Closed", "Full", "Upcoming"],
     default: "Upcoming",
   },
+  approvalStatus: {
+    type: String,
+    enum: ["Pending", "Approved", "Rejected"],
+    default: "Pending",
+  },
+  approvalDetails: {
+    approvedAt: Date,
+    rejectionReason: String,
+  },
   availableDates: {
     type: [Date],
     required: true,
