@@ -14,6 +14,7 @@ import {
   approveCamp,
   rejectCamp,
   getCampsByApprovalStatus,
+  getAllCamps
 } from "../controllers/campController.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ const router = express.Router();
 router.post("/create", createCamp);
 router.get("/nearby", getNearbyCamps);
 router.get("/all", getCamps);
+router.get("/all-camps", getAllCamps); // New route to get
 router.delete("/delete/:id", deleteCamp);
 router.put("/update/:id", updateCamp);
 router.get("/:campId/users", getUsersRegisteredInCamp);

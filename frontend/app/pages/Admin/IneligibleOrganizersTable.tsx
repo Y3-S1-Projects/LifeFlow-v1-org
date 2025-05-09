@@ -65,37 +65,56 @@ const IneligibleOrganizersTable: React.FC = () => {
   }, []);
 
   // Fetch Ineligible Organizers
-  const fetchIneligibleOrganizers = async () => {
+  // const fetchIneligibleOrganizers = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+
+  //     const response = await apiClient.get('/organizers/ineligible');
+      
+  //     const organizersWithDocuments = await Promise.all(
+  //       response.data.organizers.map(async (organizer: Organizer) => {
+  //         try {
+  //           const documentsResponse = await apiClient.get('/organizers/documents', {
+  //             params: { organizerId: organizer._id }
+  //           });
+  //           return {
+  //             ...organizer,
+  //             documents: documentsResponse.data.documents || [],
+  //             status: organizer.eligibleToOrganize ? 'approved' : (organizer.status || 'pending')
+  //           };
+  //         } catch (docErr) {
+  //           console.error(`Error fetching documents for organizer ${organizer._id}:`, docErr);
+  //           return {
+  //             ...organizer,
+  //             documents: [],
+  //             status: organizer.eligibleToOrganize ? 'approved' : (organizer.status || 'pending')
+  //           };
+  //         }
+  //       })
+  //     );
+
+  //     setOrganizers(organizersWithDocuments);
+  //     setFilteredOrganizers(organizersWithDocuments);
+  //   } catch (err: any) {
+  //     console.error('Error fetching organizers:', err);
+  //     if (err.response?.status === 401) {
+  //       router.push('/login');
+  //     } else {
+  //       setError(err.response?.data?.message || 'Failed to fetch organizers');
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchAllOrganizers = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const response = await apiClient.get('/organizers/ineligible');
-      
-      const organizersWithDocuments = await Promise.all(
-        response.data.organizers.map(async (organizer: Organizer) => {
-          try {
-            const documentsResponse = await apiClient.get('/organizers/documents', {
-              params: { organizerId: organizer._id }
-            });
-            return {
-              ...organizer,
-              documents: documentsResponse.data.documents || [],
-              status: organizer.eligibleToOrganize ? 'approved' : (organizer.status || 'pending')
-            };
-          } catch (docErr) {
-            console.error(`Error fetching documents for organizer ${organizer._id}:`, docErr);
-            return {
-              ...organizer,
-              documents: [],
-              status: organizer.eligibleToOrganize ? 'approved' : (organizer.status || 'pending')
-            };
-          }
-        })
-      );
-
-      setOrganizers(organizersWithDocuments);
-      setFilteredOrganizers(organizersWithDocuments);
+      const response = await apiClient.get('/organizers/all');
+      setOrganizers(response.data.organizers);
+      setFilteredOrganizers(response.data.organizers);
     } catch (err: any) {
       console.error('Error fetching organizers:', err);
       if (err.response?.status === 401) {
@@ -228,7 +247,7 @@ const IneligibleOrganizersTable: React.FC = () => {
 
   // Fetch organizers on component mount
   useEffect(() => {
-    fetchIneligibleOrganizers();
+    fetchAllOrganizers();
   }, []);
 
   // Render loading state
@@ -244,7 +263,7 @@ const IneligibleOrganizersTable: React.FC = () => {
       <p className="font-bold">Error</p>
       <p>{error}</p>
       <button
-        onClick={fetchIneligibleOrganizers}
+        onClick={fetchAllOrganizers}
         className="mt-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
       >
         Retry
@@ -391,7 +410,7 @@ const IneligibleOrganizersTable: React.FC = () => {
           Showing {filteredOrganizers.length} of {organizers.length} organizers
         </div>
        {/* <button
-          onClick={fetchIneligibleOrganizers}
+          onClick={fetchAllOrganizers}
           className="flex items-center text-red-600 hover:text-red-800"
         >
           <RefreshCw className="h-4 w-4 mr-1" />

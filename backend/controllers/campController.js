@@ -183,6 +183,15 @@ export const getCamps = async (req, res) => {
   }
 };
 
+export const getAllCamps = async (req, res) => {
+  try {
+    const camps = await Camp.find({}).sort({ createdAt: -1 });
+    res.status(200).json(camps);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching camps", error });
+  }
+};
+
 // Get all camps that need approval (for admin dashboard)
 export const getPendingApprovalCamps = async (req, res) => {
   try {
