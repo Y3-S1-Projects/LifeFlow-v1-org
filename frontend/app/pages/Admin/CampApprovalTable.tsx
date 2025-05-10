@@ -192,7 +192,7 @@ const CampApprovalTable: React.FC = () => {
 
       {loading ? (
         <div className="flex justify-center items-center h-full p-6">
-          <div className="animate-spin h-8 w-8 text-red-600">Loading...</div>
+          <div className="animate-spin h-8 w-8 text-red-600"></div>
         </div>
       ) : error ? (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
