@@ -274,3 +274,57 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// Controller function to find a user by ID
+export const findUserById = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Validate the userId
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find user by ID
+    const user = await User.findById(userId).select({
+      fullName: 1,
+      firstName: 1,
+      lastName: 1,
+      email: 1,
+      bloodType: 1,
+      phoneNumber: 1,
+      address: 1,
+      lastDonationDate: 1,
+      isEligible: 1,
+      isEligibleToDonate: 1,
+      role: 1,
+      nextEligibleDonationDate: 1,
+      donationHistory: 1,
+      totalPintsDonated: 1,
+    });
+
+    // If user not found
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if this is a donor (not an organizer)
+    if (user.role === "organizer") {
+      return res.status(400).json({
+        message: "The provided ID belongs to an organizer, not a donor",
+      });
+    }
+
+    // Return user data
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error("Error finding user by ID:", err);
+
+    // Handle invalid ID format
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
