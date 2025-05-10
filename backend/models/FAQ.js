@@ -1,3 +1,4 @@
+// models/FAQ.js
 import mongoose from "mongoose";
 
 const faqSchema = new mongoose.Schema({
@@ -10,6 +11,23 @@ const faqSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Answer is required'],
     trim: true
+  },
+  category: {
+    type: String,
+    default: 'General',
+    trim: true
+  },
+  helpfulCount: {
+    type: Number,
+    default: 0
+  },
+  notHelpfulCount: {
+    type: Number,
+    default: 0
+  },
+  viewCount: {
+    type: Number,
+    default: 0
   },
   createdAt: {
     type: Date,
