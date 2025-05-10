@@ -31,7 +31,7 @@ import Report from "./Report";
 import CampTable from "./CampTable";  // Import the CampTable component
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("Report");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
@@ -613,8 +613,10 @@ const AdminDashboard = () => {
                 <h2 className="text-lg font-medium mb-4">Donation Centers</h2>
                 <MapComponent
                   apiKey={apiKey}
-                  userLatitude={0}
-                  userLongitude={0}
+                  userLatitude={6.9271}
+                  userLongitude={79.8612}
+                  showAllCamps={true}
+                  isClickable={true}
                 />
                 {/* Camp Table Component */}
                 <div className="mt-6">
