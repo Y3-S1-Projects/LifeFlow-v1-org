@@ -61,6 +61,11 @@ interface Camp {
   };
   address: Address;
   status: "Upcoming" | "Active" | "Completed" | "Cancelled";
+  approvalStatus: "Pending" | "Approved" | "Rejected"; // Add this
+  approvalDetails?: { // Add this
+    approvedAt?: Date;
+    rejectionReason?: string;
+  };
   availableDates: string[];
   contact: {
     phone: string;
@@ -162,6 +167,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 });
+
+const getApprovalStatusColor = (status: string) => {
+  switch (status) {
+    case "Approved":
+      return "bg-green-100 text-green-800";
+    case "Pending":
+      return "bg-yellow-100 text-yellow-800";
+    case "Rejected":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
+
 
 // PDF Report Component
 const CampReport = ({ camp }: { camp: Camp }) => (
@@ -377,79 +396,84 @@ const Camps = () => {
           </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>Your Camps</CardTitle>
-                      <CardDescription>
-                        Manage your blood donation camps
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchCamps()}
-                      title="Refresh camps list"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
+  <div className="lg:col-span-1">
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Your Camps</CardTitle>
+            <CardDescription>
+              Manage your blood donation camps
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchCamps()}
+            title="Refresh camps list"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder="Search camps..."
+            className="w-full pl-8 pr-4 py-2 border rounded-md text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+        </div>
+        <div className="space-y-2">
+          {filteredCamps.length > 0 ? (
+            filteredCamps.map((camp) => (
+              <div
+                key={camp._id}
+                className={`p-3 border rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
+                  selectedCamp && selectedCamp._id === camp._id
+                    ? "border-blue-500 bg-blue-50"
+                    : ""
+                }`}
+                onClick={() => setSelectedCamp(camp)}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{camp.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {camp.address.city}
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative mb-4">
-                    <input
-                      type="text"
-                      placeholder="Search camps..."
-                      className="w-full pl-8 pr-4 py-2 border rounded-md text-sm"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge className={getStatusColor(camp.status)}>
+                      {camp.status}
+                    </Badge>
+                    <Badge className={getApprovalStatusColor(camp.approvalStatus)}>
+                      {camp.approvalStatus}
+                    </Badge>
                   </div>
-                  <div className="space-y-2">
-                    {filteredCamps.length > 0 ? (
-                      filteredCamps.map((camp) => (
-                        <div
-                          key={camp._id}
-                          className={`p-3 border rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
-                            selectedCamp && selectedCamp._id === camp._id
-                              ? "border-blue-500 bg-blue-50"
-                              : ""
-                          }`}
-                          onClick={() => setSelectedCamp(camp)}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">{camp.name}</h3>
-                              <p className="text-sm text-gray-500">
-                                {camp.address.city}
-                              </p>
-                            </div>
-                            <Badge className={getStatusColor(camp.status)}>
-                              {camp.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">
-                        {searchTerm ? "No matching camps found" : "No camps found. Create your first camp to get started."}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    className="w-full"
-                    onClick={() => router.push("/organizer/camps/create")}
-                  >
-                    Create New Camp
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">
+              {searchTerm ? "No matching camps found" : "No camps found. Create your first camp to get started."}
+            </p>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button
+          className="w-full"
+          onClick={() => router.push("/organizer/camps/create")}
+        >
+          Create New Camp
+        </Button>
+      </CardFooter>
+    </Card>
+  </div>
 
             <div className="lg:col-span-2">
               {selectedCamp ? (
@@ -510,21 +534,30 @@ const Camps = () => {
                         <TabsTrigger value="location">Location</TabsTrigger>
                       </TabsList>
                       <TabsContent value="details" className="space-y-4 mt-4">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Badge
-                            className={getStatusColor(selectedCamp.status)}
-                          >
-                            {selectedCamp.status}
-                          </Badge>
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-medium mb-1">
-                            Operating Hours
-                          </h3>
-                          <p className="text-sm">
-                            {selectedCamp.operatingHours}
-                          </p>
-                        </div>
+  <div className="flex items-center gap-2 text-sm">
+    <Badge className={getStatusColor(selectedCamp.status)}>
+      {selectedCamp.status}
+    </Badge>
+    <Badge className={getApprovalStatusColor(selectedCamp.approvalStatus)}>
+      {selectedCamp.approvalStatus}
+    </Badge>
+  </div>
+  
+  {selectedCamp.approvalStatus === "Rejected" && selectedCamp.approvalDetails?.rejectionReason && (
+    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+      <h4 className="text-sm font-medium text-red-800">Rejection Reason</h4>
+      <p className="text-sm text-red-700">{selectedCamp.approvalDetails.rejectionReason}</p>
+    </div>
+  )}
+
+  {selectedCamp.approvalStatus === "Approved" && selectedCamp.approvalDetails?.approvedAt && (
+    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+      <h4 className="text-sm font-medium text-green-800">Approved On</h4>
+      <p className="text-sm text-green-700">
+        {format(new Date(selectedCamp.approvalDetails.approvedAt), "MMMM d, yyyy 'at' h:mm a")}
+      </p>
+    </div>
+  )}
                         <div>
                           <h3 className="text-sm font-medium mb-1">
                             Contact Information
