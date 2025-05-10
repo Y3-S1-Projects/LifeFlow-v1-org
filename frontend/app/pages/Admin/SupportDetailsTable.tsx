@@ -142,7 +142,7 @@ const SupportAdminTable: React.FC = () => {
       };
 
       const response = await axios.delete(
-        `${API_BASE_URL}/support-admins/${id}`,
+        `${API_BASE_URL}/admin/support-admins/${id}`,
         config
       );
 
@@ -238,6 +238,11 @@ const SupportAdminTable: React.FC = () => {
   // Update Support Admin
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentAdmin || !currentAdmin._id) {
+      alert("Invalid admin ID");
+      return;
+    }
+
     try {
       const config = {
         headers: {
@@ -247,8 +252,10 @@ const SupportAdminTable: React.FC = () => {
         withCredentials: true,
       };
 
+      console.log("Updating admin with ID:", currentAdmin._id);
+
       const response = await axios.put(
-        `${API_BASE_URL}/support-admins/${currentAdmin!._id}`,
+        `${API_BASE_URL}/admin/support-admins/${currentAdmin._id}`,
         formData,
         config
       );
