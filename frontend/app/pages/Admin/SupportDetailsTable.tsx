@@ -501,9 +501,9 @@ const SupportAdminTable: React.FC = () => {
               <th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">
                 Actions
               </th>
-              <th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">
+              {/* <th className="text-center py-3 px-4 font-medium text-gray-600 text-sm">
                 Feedback
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody>
