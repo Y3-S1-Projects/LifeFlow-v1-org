@@ -807,7 +807,8 @@ export default function EligibilityForm() {
               )}
               <div>
                 <Label htmlFor="emergencyContactRelationship">
-                  Relationship<span className="text-red-500">*</span>
+                  Emergency Contact Relationship
+                  <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.emergencyContact.relationship}
@@ -869,7 +870,8 @@ export default function EligibilityForm() {
               )}
               <div>
                 <Label htmlFor="emergencyContactPhoneNumber">
-                  Phone Number<span className="text-red-500">*</span>
+                  Emergency Contact Phone Number
+                  <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="emergencyContactPhoneNumber"
@@ -893,6 +895,8 @@ export default function EligibilityForm() {
                 )}
               </div>
             </div>
+
+            <div className="w-full h-px bg-gray-200 my-4"></div>
 
             <div className="space-y-4">
               <Label htmlFor="weight">
