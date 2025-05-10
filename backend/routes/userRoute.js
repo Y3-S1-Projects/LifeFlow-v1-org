@@ -9,6 +9,7 @@ import {
   addDonationRecord,
   deleteUser,
   getUserDonationHistory,
+  findUserById,
 } from "../controllers/userController.js";
 import {
   authenticateUser,
@@ -28,6 +29,7 @@ router.get("/allUsers", getUsers);
 router.get("/donation-history", getUserDonationHistory);
 router.get("/getUserDetails/:id", getUserDetails);
 router.put("/updateUser/:id", updateUser);
+router.get("/findUser/:userId", findUserById);
 router.post("/addUserDonationRecord/:id", addDonationRecord);
 router.delete("/deleteUser/:id", deleteUser);
 

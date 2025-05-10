@@ -152,6 +152,11 @@ const Header = () => {
         icon: <PieChart size={18} />,
       },
       { label: "Camps", path: "/organizer/camps", icon: <Home size={18} /> },
+      {
+        label: "Records",
+        path: "/organizer/records",
+        icon: <Calendar size={18} />,
+      },
     ],
   };
 
