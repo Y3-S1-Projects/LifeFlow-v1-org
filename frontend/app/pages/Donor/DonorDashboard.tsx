@@ -798,7 +798,7 @@ const DonorDashboard: React.FC = () => {
                     />
                     <span className="font-bold ">
                       {donationHistory.reduce(
-                        (sum, d) => sum + Math.round(d.pintsDonated * 3),
+                        (sum, d) => sum + Math.floor(d.pintsDonated * 3),
                         0
                       )}{" "}
                       lives impacted
@@ -967,7 +967,7 @@ const DonorDashboard: React.FC = () => {
                     }`}
                   >
                     {donationHistory.reduce(
-                      (sum, d) => sum + Math.round(d.pintsDonated * 3),
+                      (sum, d) => sum + Math.floor(d.pintsDonated * 3),
                       0
                     )}{" "}
                     lives saved

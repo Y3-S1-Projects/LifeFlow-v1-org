@@ -18,6 +18,8 @@ import {
 import Footer from "../components/Footer";
 import Link from "next/link";
 import GlobalHeader from "../components/GlobalHeader";
+import BloodDonationChatbot from "../components/ChatBot";
+import SupportChatBot from "../components/SupportChatBot";
 
 const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -210,6 +212,7 @@ const Home = () => {
   return (
     <div className="min-h-screen w-screen bg-white">
       <GlobalHeader isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+      <SupportChatBot />
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-red-600 to-red-800 text-white ">
         <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 lg:py-24 flex flex-col md:flex-row items-center w-full md:w-3/4 lg:w-3/4">

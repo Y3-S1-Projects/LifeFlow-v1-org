@@ -153,8 +153,7 @@ const DonorAchievements: React.FC = () => {
       (sum, donation) => sum + donation.pintsDonated,
       0
     );
-    const livesImpacted = totalPints * 3; // Assuming 1 pint helps 3 people
-
+    const livesImpacted = Math.floor(totalPints * 3); // Calculate with floor applied
     // Sort donations by date
     const sortedByDate = [...donationHistory].sort((a, b) => {
       return (

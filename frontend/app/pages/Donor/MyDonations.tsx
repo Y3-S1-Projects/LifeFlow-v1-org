@@ -165,15 +165,15 @@ const MyDonationsPage: React.FC = () => {
     setDonationHistory(sortedDonations);
   };
 
-  console.log(donationHistory);
-
   const calculateDonationStats = () => {
     const totalDonations = donationHistory.length;
     const totalPints = donationHistory.reduce(
       (sum, donation) => sum + donation.pintsDonated,
       0
     );
-    const livesImpacted = totalPints * 3; // Assuming 1 pint helps 3 people
+
+    const livesImpacted = totalPints * 3; // Calculate the raw value
+    const flooredLivesImpacted = Math.floor(livesImpacted); // Simply floor the value
 
     // Find first and most recent donation dates
     const sortedByDate = [...donationHistory].sort((a, b) => {
@@ -181,7 +181,6 @@ const MyDonationsPage: React.FC = () => {
         new Date(a.donationDate).getTime() - new Date(b.donationDate).getTime()
       );
     });
-
     const firstDonation =
       sortedByDate.length > 0 ? sortedByDate[0].donationDate : null;
     const mostRecentDonation =
@@ -192,11 +191,12 @@ const MyDonationsPage: React.FC = () => {
     setDonationStats({
       totalDonations,
       totalPints,
-      livesImpacted,
+      livesImpacted: flooredLivesImpacted, // Now using Math.floor() to round down
       firstDonation,
       mostRecentDonation,
     });
   };
+
   const calculateNextEligibleDate = (donations: Donation[]) => {
     if (!donations || donations.length === 0) return "Eligible now";
 
@@ -388,7 +388,7 @@ const MyDonationsPage: React.FC = () => {
                             Lives Impacted
                           </p>
                           <p className="text-3xl font-bold  mt-2">
-                            {donationStats.livesImpacted}
+                            ~{donationStats.livesImpacted}
                           </p>
                         </div>
                         <div
