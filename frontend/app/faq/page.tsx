@@ -1,5 +1,5 @@
 "use client";
-import Faq from "../pages/FAQ";
+import Faq from "../pages/faq";
 
 export default function FaqPage() {
   return <Faq />;

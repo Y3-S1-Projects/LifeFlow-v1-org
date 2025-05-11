@@ -222,22 +222,31 @@ const SupportDashboard = () => {
   };
 
   // Fetch FAQ feedback
-  const fetchFAQFeedback = async () => {
-    setIsFeedbackLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/faqs/feedback`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch FAQ feedback: ${response.status}`);
-      }
-      const data = await response.json();
-      setFaqFeedback(data.data.feedback || []);
-    } catch (err) {
-      console.error("Fetch FAQ feedback error:", err);
-      setError("Failed to load FAQ feedback. Please try again.");
-    } finally {
-      setIsFeedbackLoading(false);
+// In the fetchFAQFeedback function in SupportDashboard.tsx
+const fetchFAQFeedback = async () => {
+  setIsFeedbackLoading(true);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/faqs/feedback`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch FAQ feedback: ${response.status}`);
     }
-  };
+    const data = await response.json();
+    // Make sure we're handling the data structure correctly
+    if (data && data.data && Array.isArray(data.data.feedback)) {
+      setFaqFeedback(data.data.feedback);
+    } else {
+      console.error("Unexpected feedback data structure:", data);
+      setFaqFeedback([]);
+    }
+  } catch (err) {
+    console.error("Fetch FAQ feedback error:", err);
+    setError("Failed to load FAQ feedback. Please try again.");
+    setFaqFeedback([]);
+  } finally {
+    setIsFeedbackLoading(false);
+  }
+};
+
 
   // Fetch FAQ stats
   const fetchFAQStats = async () => {
@@ -493,13 +502,26 @@ const SupportDashboard = () => {
     fetchFAQs();
   }, []);
 
-  // Fetch feedback data when feedback tab is activated
-  useEffect(() => {
-    if (activeTab === "faq-feedback") {
+// Add this to your SupportDashboard component
+// Update this useEffect in your SupportDashboard component
+useEffect(() => {
+  if (activeTab === "faq-feedback") {
+    // Fetch data immediately when tab is clicked
+    fetchFAQFeedback();
+    fetchFAQStats();
+    
+    // Then set up interval for periodic refreshes
+    const interval = setInterval(() => {
       fetchFAQFeedback();
       fetchFAQStats();
-    }
-  }, [activeTab]);
+    }, 10000); // Refresh every 10 seconds
+    
+    // Clean up interval when component unmounts or tab changes
+    return () => clearInterval(interval);
+  }
+}, [activeTab]); // Only re-run when activeTab changes
+
+
 
   // Function to prepare data for the Cases by Region pie chart
   const prepareCasesByRegionData = () => {
@@ -1794,29 +1816,36 @@ title="Delete FAQ"
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {faqFeedback
-                .filter(feedback => feedback && feedback.faqId && feedback.faqId.question)
-                .slice(0, 10)
-                .map((feedback) => (
-                <tr key={feedback._id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm text-gray-800">{truncateText(feedback.faqId.question, 50)}</td>
-                  <td className="py-3 px-4 text-sm">
-                    {feedback.helpful ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                        <ThumbsUp className="h-3 w-3 inline mr-1" /> Helpful
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                        <ThumbsDown className="h-3 w-3 inline mr-1" /> Not Helpful
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-800">
-                    {feedback.comment ? truncateText(feedback.comment, 50) : "-"}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-800">{new Date(feedback.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
+{faqFeedback
+  .filter(feedback => feedback && feedback.faqId && feedback.faqId.question)
+  .slice(0, 10)
+  .map((feedback) => (
+  <tr key={feedback._id} className="hover:bg-gray-50">
+    <td className="py-3 px-4 text-sm text-gray-800">
+      {feedback.faqId && feedback.faqId.question 
+        ? truncateText(feedback.faqId.question, 50) 
+        : "Unknown Question"}
+    </td>
+    <td className="py-3 px-4 text-sm">
+      {feedback.helpful ? (
+        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+          <ThumbsUp className="h-3 w-3 inline mr-1" /> Helpful
+        </span>
+      ) : (
+        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
+          <ThumbsDown className="h-3 w-3 inline mr-1" /> Not Helpful
+        </span>
+      )}
+    </td>
+    <td className="py-3 px-4 text-sm text-gray-800">
+      {feedback.comment ? truncateText(feedback.comment, 50) : "-"}
+    </td>
+    <td className="py-3 px-4 text-sm text-gray-800">
+      {new Date(feedback.createdAt).toLocaleDateString()}
+    </td>
+  </tr>
+))}
+
             </tbody>
           </table>
         </div>
