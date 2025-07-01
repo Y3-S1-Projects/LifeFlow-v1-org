@@ -9,6 +9,7 @@ import Footer from "@/app/components/Footer";
 import { toast } from "sonner";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface OrganizerData {
   id: string;
@@ -37,12 +38,6 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>("");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
-
   const autofillStyles = `
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
@@ -139,7 +134,7 @@ const OrganizerLogin: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       const csrfTokenFromCookie = Cookies.get("x-csrf-token");
 
       const response = await axios.post<LoginResponse>(
-        `${publicApi}/organizers/login`,
+        `${API_BASE_URL}/organizers/login`,
         { email, password, rememberMe },
         {
           headers: {

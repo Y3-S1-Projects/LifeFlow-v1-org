@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Check, UserPlus, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, UserPlus, AlertCircle } from "lucide-react";
+import axios from "axios";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface Address {
   street: string;
@@ -40,9 +47,9 @@ export default function RegistrationForm() {
     role: "support",
     nic: "",
   });
-  
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const [error, setError] = useState<string | null>("Email, password, and NIC are required.");
+  const [error, setError] = useState<string | null>(
+    "Email, password, and NIC are required."
+  );
   const [success, setSuccess] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState<number>(0);
   const [emailValid, setEmailValid] = useState<boolean | null>(null);
@@ -58,24 +65,24 @@ export default function RegistrationForm() {
       setPasswordStrength(0);
       return;
     }
-    
+
     let strength = 0;
-    
+
     // Length check
     if (formData.password.length >= 8) strength += 1;
-    
+
     // Contains uppercase
     if (/[A-Z]/.test(formData.password)) strength += 1;
-    
+
     // Contains lowercase
     if (/[a-z]/.test(formData.password)) strength += 1;
-    
+
     // Contains numbers
     if (/[0-9]/.test(formData.password)) strength += 1;
-    
+
     // Contains special characters
     if (/[^A-Za-z0-9]/.test(formData.password)) strength += 1;
-    
+
     setPasswordStrength(strength);
   }, [formData.password]);
 
@@ -85,7 +92,7 @@ export default function RegistrationForm() {
       setEmailValid(null);
       return;
     }
-    
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     setEmailValid(emailRegex.test(formData.email));
   }, [formData.email]);
@@ -96,7 +103,7 @@ export default function RegistrationForm() {
       setNicValid(null);
       return;
     }
-    
+
     // Check if it's 10 digits OR 9 digits followed by 'v' or 'V'
     const nicRegex = /^(\d{10}|\d{9}[vV])$/;
     setNicValid(nicRegex.test(formData.nic.trim()));
@@ -123,9 +130,9 @@ export default function RegistrationForm() {
   };
 
   const handleRoleChange = (value: "superadmin" | "support") => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      role: value
+      role: value,
     }));
   };
 
@@ -149,7 +156,9 @@ export default function RegistrationForm() {
 
     // Password strength validation
     if (passwordStrength < 3) {
-      setError("Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters.");
+      setError(
+        "Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters."
+      );
       return;
     }
 
@@ -161,12 +170,12 @@ export default function RegistrationForm() {
     }
 
     try {
-      const csrfResponse = await axios.get(`${publicApi}/api/csrf-token`, {
+      const csrfResponse = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
         withCredentials: true,
       });
       const csrfToken = csrfResponse.data.csrfToken;
-      
-      const response = await fetch(`${publicApi}/admin/register`, {
+
+      const response = await fetch(`${API_BASE_URL}/admin/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -215,27 +224,39 @@ export default function RegistrationForm() {
         <CardContent className="p-6">
           <form onSubmit={handleSubmit}>
             {error && (
-              <Alert variant="destructive" className="mb-6 border-red-300 bg-red-50 flex items-center">
+              <Alert
+                variant="destructive"
+                className="mb-6 border-red-300 bg-red-50 flex items-center"
+              >
                 <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                <AlertDescription className="text-red-700">{error}</AlertDescription>
+                <AlertDescription className="text-red-700">
+                  {error}
+                </AlertDescription>
               </Alert>
             )}
             {success && (
               <Alert className="mb-6 bg-green-50 border border-green-200 flex items-center">
                 <Check className="h-5 w-5 text-green-600 mr-2" />
-                <AlertDescription className="text-green-700">{success}</AlertDescription>
+                <AlertDescription className="text-green-700">
+                  {success}
+                </AlertDescription>
               </Alert>
             )}
 
             <div className="grid gap-5">
               <div className="grid gap-2">
-                <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name</Label>
-                <Input 
-                  id="fullName" 
-                  name="fullName" 
+                <Label
+                  htmlFor="fullName"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Full Name
+                </Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  required 
+                  required
                   className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                   placeholder="Enter your full name"
                 />
@@ -243,25 +264,35 @@ export default function RegistrationForm() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">First Name</Label>
-                  <Input 
-                    id="firstName" 
+                  <Label
+                    htmlFor="firstName"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    First Name
+                  </Label>
+                  <Input
+                    id="firstName"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    required 
+                    required
                     className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                     placeholder="First name"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">Last Name</Label>
-                  <Input 
-                    id="lastName" 
+                  <Label
+                    htmlFor="lastName"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Last Name
+                  </Label>
+                  <Input
+                    id="lastName"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    required 
+                    required
                     className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                     placeholder="Last name"
                   />
@@ -269,38 +300,52 @@ export default function RegistrationForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex justify-between">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700 flex justify-between"
+                >
                   <span>Email Address</span>
                   {emailValid !== null && (
-                    <span className={`text-xs ${emailValid ? 'text-green-600' : 'text-red-600'}`}>
-                      {emailValid ? 'Valid email' : 'Invalid email format'}
+                    <span
+                      className={`text-xs ${
+                        emailValid ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {emailValid ? "Valid email" : "Invalid email format"}
                     </span>
                   )}
                 </Label>
-                <Input 
-                  id="email" 
-                  name="email" 
+                <Input
+                  id="email"
+                  name="email"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required 
+                  required
                   className={`rounded-md transition-all ${
-                    emailValid === null ? 'border-gray-300' : 
-                    emailValid ? 'border-green-500 focus:ring-green-500 focus:border-green-500' : 
-                    'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    emailValid === null
+                      ? "border-gray-300"
+                      : emailValid
+                      ? "border-green-500 focus:ring-green-500 focus:border-green-500"
+                      : "border-red-500 focus:ring-red-500 focus:border-red-500"
                   }`}
                   placeholder="your.email@example.com"
                 />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="address.street" className="text-sm font-medium text-gray-700">Street Address</Label>
-                <Input 
-                  id="address.street" 
+                <Label
+                  htmlFor="address.street"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Street Address
+                </Label>
+                <Input
+                  id="address.street"
                   name="address.street"
                   value={formData.address.street}
                   onChange={handleChange}
-                  required 
+                  required
                   className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                   placeholder="123 Main St"
                 />
@@ -308,25 +353,35 @@ export default function RegistrationForm() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="address.city" className="text-sm font-medium text-gray-700">City</Label>
-                  <Input 
-                    id="address.city" 
+                  <Label
+                    htmlFor="address.city"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    City
+                  </Label>
+                  <Input
+                    id="address.city"
                     name="address.city"
                     value={formData.address.city}
                     onChange={handleChange}
-                    required 
+                    required
                     className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                     placeholder="City"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="address.state" className="text-sm font-medium text-gray-700">State</Label>
-                  <Input 
-                    id="address.state" 
+                  <Label
+                    htmlFor="address.state"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    State
+                  </Label>
+                  <Input
+                    id="address.state"
                     name="address.state"
                     value={formData.address.state}
                     onChange={handleChange}
-                    required 
+                    required
                     className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                     placeholder="State"
                   />
@@ -334,41 +389,54 @@ export default function RegistrationForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700 flex justify-between">
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-medium text-gray-700 flex justify-between"
+                >
                   <span>Password</span>
                   <span className="text-xs text-gray-500">
-                    {passwordStrength === 0 ? 'Enter password' : 
-                     passwordStrength <= 2 ? 'Weak' : 
-                     passwordStrength <= 3 ? 'Medium' : 
-                     passwordStrength <= 4 ? 'Strong' : 'Very Strong'}
+                    {passwordStrength === 0
+                      ? "Enter password"
+                      : passwordStrength <= 2
+                      ? "Weak"
+                      : passwordStrength <= 3
+                      ? "Medium"
+                      : passwordStrength <= 4
+                      ? "Strong"
+                      : "Very Strong"}
                   </span>
                 </Label>
-                <Input 
-                  id="password" 
-                  name="password" 
+                <Input
+                  id="password"
+                  name="password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
-                  required 
+                  required
                   className="rounded-md border-gray-300 focus:ring-red-500 focus:border-red-500 transition-all"
                   placeholder="Create a secure password"
                 />
                 <div className="h-1 w-full bg-gray-200 rounded mt-1 overflow-hidden">
-                  <div 
+                  <div
                     className={`h-full ${getPasswordStrengthColor()} transition-all`}
-                    style={{width: `${passwordStrength * 20}%`}}
+                    style={{ width: `${passwordStrength * 20}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Password should be at least 8 characters and include uppercase, lowercase, numbers, and special characters.
+                  Password should be at least 8 characters and include
+                  uppercase, lowercase, numbers, and special characters.
                 </p>
               </div>
 
               <div className="grid gap-3 pt-2">
-                <Label className="text-sm font-medium text-gray-700">Select Your Role</Label>
-                <RadioGroup 
-                  value={formData.role} 
-                  onValueChange={(value) => handleRoleChange(value as "superadmin" | "support")}
+                <Label className="text-sm font-medium text-gray-700">
+                  Select Your Role
+                </Label>
+                <RadioGroup
+                  value={formData.role}
+                  onValueChange={(value) =>
+                    handleRoleChange(value as "superadmin" | "support")
+                  }
                   className="grid grid-cols-2 gap-2"
                 >
                   {/*<div className="flex items-center justify-center p-3 border rounded-md hover:bg-red-50 cursor-pointer transition-all border-gray-200">
@@ -376,31 +444,48 @@ export default function RegistrationForm() {
                     <Label htmlFor="superadmin" className="cursor-pointer text-sm">Superadmin</Label>
                   </div>*/}
                   <div className="flex items-center justify-center p-3 border rounded-md hover:bg-red-50 cursor-pointer transition-all border-gray-200">
-                    <RadioGroupItem value="support" id="support" className="mr-2 text-red-600" />
-                    <Label htmlFor="support" className="cursor-pointer text-sm">Support</Label>
+                    <RadioGroupItem
+                      value="support"
+                      id="support"
+                      className="mr-2 text-red-600"
+                    />
+                    <Label htmlFor="support" className="cursor-pointer text-sm">
+                      Support
+                    </Label>
                   </div>
                 </RadioGroup>
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="nic" className="text-sm font-medium text-gray-700 flex justify-between">
+                <Label
+                  htmlFor="nic"
+                  className="text-sm font-medium text-gray-700 flex justify-between"
+                >
                   <span>NIC</span>
                   {nicValid !== null && (
-                    <span className={`text-xs ${nicValid ? 'text-green-600' : 'text-red-600'}`}>
-                      {nicValid ? 'Valid NIC' : 'Must be 10 digits or 9 digits with V'}
+                    <span
+                      className={`text-xs ${
+                        nicValid ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {nicValid
+                        ? "Valid NIC"
+                        : "Must be 10 digits or 9 digits with V"}
                     </span>
                   )}
                 </Label>
-                <Input 
-                  id="nic" 
+                <Input
+                  id="nic"
                   name="nic"
                   value={formData.nic}
                   onChange={handleChange}
-                  required 
+                  required
                   className={`rounded-md transition-all ${
-                    nicValid === null ? 'border-gray-300' : 
-                    nicValid ? 'border-green-500 focus:ring-green-500 focus:border-green-500' : 
-                    'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    nicValid === null
+                      ? "border-gray-300"
+                      : nicValid
+                      ? "border-green-500 focus:ring-green-500 focus:border-green-500"
+                      : "border-red-500 focus:ring-red-500 focus:border-red-500"
                   }`}
                   placeholder="National Identity Card number"
                 />
@@ -408,8 +493,8 @@ export default function RegistrationForm() {
             </div>
 
             <CardFooter className="flex justify-center px-0 pt-8 pb-0">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-to-r from-red-700 to-red-900 hover:from-red-800 hover:to-red-950 text-white font-medium py-3 rounded-md transition-all shadow-md hover:shadow-lg"
               >
                 Create Account

@@ -21,6 +21,7 @@ import { getToken } from "../../utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
 import { toast, Toaster } from "sonner";
 import axios from "axios";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface FormErrors {
   fullName?: string;
@@ -84,7 +85,6 @@ export default function EligibilityForm() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const [csrfToken, setCsrfToken] = useState<string>("");
   const [age, setAge] = useState<number | null>(null);
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
     email: "",
@@ -113,10 +113,6 @@ export default function EligibilityForm() {
       longitude: null,
     },
   });
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
   const [userLocation, setUserLocation] = useState({
     latitude: 6.9271, // Colombo's latitude
     longitude: 79.8612, // Colombo's longitude
@@ -411,7 +407,7 @@ export default function EligibilityForm() {
 
     try {
       const response = await fetch(
-        `${publicApi}/users/updateUser/${user?._id}`,
+        `${API_BASE_URL}/users/updateUser/${user?._id}`,
         {
           method: "PUT",
           headers: {

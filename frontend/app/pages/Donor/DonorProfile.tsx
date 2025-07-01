@@ -35,6 +35,7 @@ import Loader from "@/app/components/Loader";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
 import BloodDonationChatbot from "@/app/components/ChatBot";
 import { Calendar } from "@/components/ui/calendar";
+import { API_BASE_URL } from "@/app/libs/utils";
 // Blood types options
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -566,9 +567,7 @@ export default function DonorProfilePage() {
 
     try {
       // Get CSRF token first
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const csrfResponse = await axios.get(`${API_URL}/api/csrf-token`, {
+      const csrfResponse = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
         withCredentials: true,
       });
       const csrfToken = csrfResponse.data.csrfToken;
@@ -593,13 +592,17 @@ export default function DonorProfilePage() {
       };
 
       // Call API to update user with CSRF token
-      await axios.put(`${API_URL}/users/updateUser/${user._id}`, updateData, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
-        },
-        withCredentials: true,
-      });
+      await axios.put(
+        `${API_BASE_URL}/users/updateUser/${user._id}`,
+        updateData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
 
       // Refresh user data
       await refetch();

@@ -32,6 +32,7 @@ import {
 import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Define types for our data structures
 type BloodTypeData = {
@@ -129,21 +130,21 @@ const BloodCampReport: React.FC = () => {
               totalCamps: number;
               totalDonors: number;
               totalOrganizers: number;
-            }>("http://localhost:3001/api/stats/summary-stats"),
+            }>(`${API_BASE_URL}api/stats/summary-stats`),
             axios.get<BloodTypeData[]>(
-              "http://localhost:3001/api/stats/blood-type-stats"
+              `${API_BASE_URL}api/stats/blood-type-stats`
             ),
             axios.get<DonationTrendData[]>(
-              "http://localhost:3001/api/stats/donation-trends"
+              `${API_BASE_URL}api/stats/donation-trends`
             ),
             axios.get<CampLocationData[]>(
-              "http://localhost:3001/api/stats/location-stats"
+              `${API_BASE_URL}api/stats/location-stats`
             ),
             axios.get<{ organizers: { status: string }[] }>(
-              "http://localhost:3001/organizers/all"
+              `${API_BASE_URL}organizers/all`
             ),
             axios.get<{ camps: { approvalStatus: string }[] }>(
-              "http://localhost:3001/camps/all-camps"
+              `${API_BASE_URL}camps/all-camps`
             ),
           ]);
 

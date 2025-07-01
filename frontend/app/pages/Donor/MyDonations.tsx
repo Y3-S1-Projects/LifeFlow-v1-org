@@ -32,6 +32,7 @@ import Footer from "@/app/components/Footer";
 import { RouteGuard } from "@/app/components/RouteGuard";
 import useUser from "../../hooks/useUser";
 import { useDarkMode } from "@/app/contexts/DarkModeContext";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface Donation {
   donationDate: string;
@@ -94,7 +95,6 @@ const MyDonationsPage: React.FC = () => {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<string>("newest");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [nextEligibleDate, setNextEligibleDate] =
     useState<string>("Loading...");
   const [donationStats, setDonationStats] = useState<DonationStats>({
@@ -126,7 +126,7 @@ const MyDonationsPage: React.FC = () => {
   const fetchDonationHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await fetch(`${publicApi}/users/donation-history`, {
+      const response = await fetch(`${API_BASE_URL}/users/donation-history`, {
         credentials: "include", // Send cookies with request
       });
 

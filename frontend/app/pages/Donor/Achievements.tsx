@@ -28,10 +28,11 @@ import {
   UserPlus,
   Badge,
 } from "lucide-react";
-import { getUserIdFromToken, isAuthenticated } from "@/app/utils/auth";
+import { isAuthenticated } from "@/app/utils/auth";
 import Footer from "@/app/components/Footer";
 import Header from "@/app/components/Header";
 import { RouteGuard } from "@/app/components/RouteGuard";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface Donation {
   donationDate: string;
@@ -73,7 +74,6 @@ const DonorAchievements: React.FC = () => {
   const [donationHistory, setDonationHistory] = useState<Donation[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isDarkMode] = useState(false);
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [achievementStats, setAchievementStats] = useState({
     totalAchieved: 0,
     percentageCompleted: 0,
@@ -106,7 +106,7 @@ const DonorAchievements: React.FC = () => {
   const fetchDonationHistory = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${publicApi}/users/donation-history`, {
+      const response = await fetch(`${API_BASE_URL}/users/donation-history`, {
         credentials: "include",
       });
 

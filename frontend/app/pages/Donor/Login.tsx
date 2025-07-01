@@ -10,6 +10,7 @@ import useUser from "@/app/hooks/useUser";
 import { toast } from "sonner";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 const Login = () => {
   const router = useRouter();
@@ -24,11 +25,6 @@ const Login = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>("");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
   const autofillStyles = `
   /* Light mode autofill styles */
   input:-webkit-autofill,

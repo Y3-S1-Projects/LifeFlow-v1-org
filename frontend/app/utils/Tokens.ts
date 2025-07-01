@@ -1,8 +1,5 @@
 import axios from "axios";
-const API_BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://lifeflow-v1-org-production.up.railway.app"
-    : "http://localhost:3001";
+import { API_BASE_URL } from "../libs/utils";
 
 export const getCsrfToken = async (): Promise<string | undefined> => {
   try {

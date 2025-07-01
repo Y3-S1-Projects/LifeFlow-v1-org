@@ -13,6 +13,7 @@ import {
 import { getUserIdFromToken } from "../utils/auth";
 import axios from "axios";
 import { toast } from "sonner";
+import { API_BASE_URL } from "../libs/utils";
 
 interface EligibilityStatus {
   isEligible: boolean;
@@ -73,11 +74,6 @@ export default function BloodDonationChatbot() {
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [nearbyCamps, setNearbyCamps] = useState<Camp[]>([]);
   const [showAnimation, setShowAnimation] = useState(false);
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
   // Autoscroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -140,7 +136,7 @@ export default function BloodDonationChatbot() {
       const userId = await getUserIdFromToken();
 
       // Call Gemini API with context about blood donation
-      const response = await fetch(`${publicApi}/chatbot/gemini`, {
+      const response = await fetch(`${API_BASE_URL}/chatbot/gemini`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,7 +149,7 @@ export default function BloodDonationChatbot() {
             role: msg.sender === "user" ? "user" : "model",
             parts: [{ text: msg.content }],
           })),
-          userId: userId, // Pass the user ID here
+          userId: userId,
         }),
       });
 

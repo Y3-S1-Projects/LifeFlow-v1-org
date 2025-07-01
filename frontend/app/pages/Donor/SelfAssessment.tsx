@@ -10,6 +10,7 @@ import { getToken } from "../../utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
 import axios from "axios";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 type FormFields =
   | "understandsBenefits"
@@ -29,7 +30,6 @@ const BloodDonationForm = () => {
   const token = getToken();
   const [currentSection, setCurrentSection] = useState(1);
   const { user } = useUser();
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [formData, setFormData] = useState<FormData>({
     understandsBenefits: false,
     awareOfSideEffects: false,
@@ -40,10 +40,6 @@ const BloodDonationForm = () => {
     agreesToHonesty: false,
   });
   const [csrfToken, setCsrfToken] = useState<string>("");
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
   const [apiMessage, setApiMessage] = useState<{
     type: "success" | "error" | null;
     content: string;
@@ -137,7 +133,7 @@ const BloodDonationForm = () => {
 
     try {
       const response = await axios.put(
-        `${publicApi}/users/updateUser/${user?._id}`,
+        `${API_BASE_URL}/users/updateUser/${user?._id}`,
         dataToSubmit,
         {
           headers: {

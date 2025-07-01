@@ -3,9 +3,8 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Search, Trash2, Edit, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { getToken } from "@/app/utils/auth";
+import { API_BASE_URL } from "@/app/libs/utils";
 
-// Type Definitions
 interface Address {
   street: string;
   city: string;
@@ -57,9 +56,6 @@ const SupportAdminTable: React.FC = () => {
     },
     nic: "",
   });
-
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/admin";
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {

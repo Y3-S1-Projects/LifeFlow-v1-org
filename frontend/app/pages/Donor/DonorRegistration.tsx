@@ -17,6 +17,7 @@ import Footer from "../../components/Footer";
 import GlobalHeader from "../../components/GlobalHeader";
 import axios from "axios";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 const DonorRegistration = () => {
   const router = useRouter();
@@ -31,11 +32,6 @@ const DonorRegistration = () => {
     lastName: "",
   });
   const [csrfToken, setCsrfToken] = useState<string>("");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
   const [passwordErrors, setPasswordErrors] = useState({
     length: false,
     number: false,
@@ -208,7 +204,7 @@ const DonorRegistration = () => {
       });
       setCsrfToken(Tokendata.data.csrfToken);
 
-      const response = await fetch(`${publicApi}/users/register`, {
+      const response = await fetch(`${API_BASE_URL}/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

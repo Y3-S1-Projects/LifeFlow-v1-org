@@ -54,6 +54,7 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 import { toast } from "sonner";
 import MapComponent from "../../components/Map"; // Import the MapComponent
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Form validation schema
 const formSchema = z.object({
@@ -115,12 +116,7 @@ export default function CreateCamp() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [date, setDate] = React.useState<Date>();
   const [userRole, setUserRole] = useState<string | null>(null);
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
   const [csrfToken, setCsrfToken] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
@@ -199,7 +195,7 @@ export default function CreateCamp() {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const response = await fetch("http://localhost:3001/camps/create", {
+      const response = await fetch(`${API_BASE_URL}/camps/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
