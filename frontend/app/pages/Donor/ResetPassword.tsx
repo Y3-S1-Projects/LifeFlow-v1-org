@@ -17,6 +17,11 @@ interface PasswordCriteriaProps {
   isDarkMode: boolean;
 }
 
+interface ResetPasswordProps {
+  token: string | null;
+  email: string | null;
+}
+
 const PasswordCriteria: React.FC<PasswordCriteriaProps> = ({
   met,
   text,
@@ -34,9 +39,8 @@ const PasswordCriteria: React.FC<PasswordCriteriaProps> = ({
   </div>
 );
 
-const ResetPassword = () => {
+const ResetPassword = ({ token, email }: ResetPasswordProps) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [focusedInput, setFocusedInput] = useState("");
@@ -59,10 +63,6 @@ const ResetPassword = () => {
     lowercase: false,
     special: false,
   });
-
-  // Get token from URL
-  const token = searchParams.get("token");
-  const email = searchParams.get("email");
 
   const autofillStyles = `
     input:-webkit-autofill,
