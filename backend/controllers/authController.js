@@ -7,6 +7,11 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import PasswordResetToken from "../models/PasswordResetToken.js";
 
+const FRONTEND_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.PROD_FRONTEND
+    : process.env.LOCAL_FRONTEND;
+
 // Nodemailer configuration
 dotenv.config();
 
@@ -259,7 +264,7 @@ export const forgotPassword = async (req, res) => {
 
     await PasswordResetToken.create({ userId: user._id, token, expiresAt });
 
-    const resetLink = `http://localhost:3000/donor/reset-password?token=${token}&email=${encodeURIComponent(
+    const resetLink = `${FRONTEND_URL}/donor/reset-password?token=${token}&email=${encodeURIComponent(
       email
     )}`;
 

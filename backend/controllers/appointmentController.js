@@ -3,6 +3,11 @@ import Camp from "../models/Camp.js";
 import User from "../models/User.js"; // Assuming you have a User model
 import emailService from "../services/emailService.js"; // Import the email service
 
+const FRONTEND_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.PROD_FRONTEND
+    : process.env.LOCAL_FRONTEND;
+
 /**
  * @desc Create a new appointment
  * @route POST /api/appointments
@@ -72,7 +77,7 @@ export const createAppointment = async (req, res) => {
         ],
         actionButton: {
           text: "View Appointment",
-          link: `http://localhost:3000/donor/appointments`,
+          link: `${FRONTEND_URL}/donor/appointments`,
         },
       },
     });
