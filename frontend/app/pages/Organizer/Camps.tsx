@@ -29,7 +29,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash, Edit, Users, Calendar, MapPin, Phone, Search, RefreshCw, Download } from "lucide-react";
+import {
+  Trash,
+  Edit,
+  Users,
+  Calendar,
+  MapPin,
+  Phone,
+  Search,
+  RefreshCw,
+  Download,
+} from "lucide-react";
 import { format } from "date-fns";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
@@ -37,7 +47,15 @@ import { toast } from "sonner";
 import { getUserIdFromToken, getToken } from "@/app/utils/auth";
 import { RouteGuard } from "@/app/components/RouteGuard";
 import dynamic from "next/dynamic";
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  PDFDownloadLink,
+} from "@react-pdf/renderer";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Import Map component with dynamic loading to prevent SSR issues
 const MapComponent = dynamic(() => import("@/app/components/Map"), {
@@ -62,7 +80,8 @@ interface Camp {
   address: Address;
   status: "Upcoming" | "Active" | "Completed" | "Cancelled";
   approvalStatus: "Pending" | "Approved" | "Rejected"; // Add this
-  approvalDetails?: { // Add this
+  approvalDetails?: {
+    // Add this
     approvedAt?: Date;
     rejectionReason?: string;
   };
@@ -90,12 +109,12 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#000',
+    borderBottomColor: "#000",
     paddingBottom: 10,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
   },
   subtitle: {
@@ -107,26 +126,26 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 5,
   },
   label: {
     width: 120,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   value: {
     flex: 1,
   },
   mapPlaceholder: {
-    width: '100%',
+    width: "100%",
     height: 200,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 10,
   },
   table: {
@@ -148,7 +167,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderLeftWidth: 0,
     borderTopWidth: 0,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     padding: 5,
   },
   tableCol: {
@@ -160,7 +179,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   tableCellHeader: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 10,
   },
   tableCell: {
@@ -180,7 +199,6 @@ const getApprovalStatusColor = (status: string) => {
       return "bg-gray-100 text-gray-800";
   }
 };
-
 
 // PDF Report Component
 const CampReport = ({ camp }: { camp: Camp }) => (
@@ -226,13 +244,15 @@ const CampReport = ({ camp }: { camp: Camp }) => (
         <View style={styles.row}>
           <Text style={styles.label}>Address:</Text>
           <Text style={styles.value}>
-            {camp.address.street}, {camp.address.city}, {camp.address.postalCode}
+            {camp.address.street}, {camp.address.city},{" "}
+            {camp.address.postalCode}
           </Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Coordinates:</Text>
           <Text style={styles.value}>
-            Latitude: {camp.location.coordinates[1]}, Longitude: {camp.location.coordinates[0]}
+            Latitude: {camp.location.coordinates[1]}, Longitude:{" "}
+            {camp.location.coordinates[0]}
           </Text>
         </View>
         <View style={styles.mapPlaceholder}>
@@ -254,10 +274,14 @@ const CampReport = ({ camp }: { camp: Camp }) => (
           {camp.availableDates.map((date, index) => (
             <View style={styles.tableRow} key={index}>
               <View style={styles.tableCol}>
-                <Text style={styles.tableCell}>{format(new Date(date), "MMMM d, yyyy")}</Text>
+                <Text style={styles.tableCell}>
+                  {format(new Date(date), "MMMM d, yyyy")}
+                </Text>
               </View>
               <View style={styles.tableCol}>
-                <Text style={styles.tableCell}>{format(new Date(date), "EEEE")}</Text>
+                <Text style={styles.tableCell}>
+                  {format(new Date(date), "EEEE")}
+                </Text>
               </View>
             </View>
           ))}
@@ -268,7 +292,9 @@ const CampReport = ({ camp }: { camp: Camp }) => (
         <Text style={styles.sectionTitle}>Report Metadata</Text>
         <View style={styles.row}>
           <Text style={styles.label}>Generated On:</Text>
-          <Text style={styles.value}>{format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</Text>
+          <Text style={styles.value}>
+            {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}
+          </Text>
         </View>
       </View>
     </Page>
@@ -282,7 +308,6 @@ const Camps = () => {
   const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>("");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API || "";
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -290,7 +315,7 @@ const Camps = () => {
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {
       try {
-        const { data } = await axios.get(`${publicApi}/api/csrf-token`, {
+        const { data } = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
           withCredentials: true,
         });
         setCsrfToken(data.csrfToken);
@@ -302,13 +327,13 @@ const Camps = () => {
     };
 
     fetchCsrfToken();
-  }, [publicApi]);
+  }, [API_BASE_URL]);
 
   const fetchCamps = async () => {
     const organizerId = await getUserIdFromToken();
     try {
       const response = await axios.get(
-        `${publicApi}/camps/get-camps/${organizerId}`
+        `${API_BASE_URL}/camps/get-camps/${organizerId}`
       );
       setCamps(response.data.camps);
     } catch (error) {
@@ -322,7 +347,7 @@ const Camps = () => {
 
   const fetchCampUsers = async (campId: string) => {
     try {
-      const response = await axios.get(`${publicApi}/camps/${campId}/users`);
+      const response = await axios.get(`${API_BASE_URL}/camps/${campId}/users`);
       setCampUsers(response.data.users || []);
       setIsUsersDialogOpen(true);
 
@@ -341,7 +366,7 @@ const Camps = () => {
       setIsDeleting(true);
       try {
         const token = getToken();
-        await axios.delete(`${publicApi}/camps/delete/${campId}`, {
+        await axios.delete(`${API_BASE_URL}/camps/delete/${campId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "X-CSRF-Token": csrfToken,
@@ -380,10 +405,11 @@ const Camps = () => {
     }
   };
 
-  const filteredCamps = camps.filter(camp =>
-    camp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    camp.address.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    camp.status.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCamps = camps.filter(
+    (camp) =>
+      camp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      camp.address.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      camp.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -396,84 +422,90 @@ const Camps = () => {
           </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <div className="lg:col-span-1">
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Your Camps</CardTitle>
-            <CardDescription>
-              Manage your blood donation camps
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchCamps()}
-            title="Refresh camps list"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="relative mb-4">
-          <input
-            type="text"
-            placeholder="Search camps..."
-            className="w-full pl-8 pr-4 py-2 border rounded-md text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-        </div>
-        <div className="space-y-2">
-          {filteredCamps.length > 0 ? (
-            filteredCamps.map((camp) => (
-              <div
-                key={camp._id}
-                className={`p-3 border rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
-                  selectedCamp && selectedCamp._id === camp._id
-                    ? "border-blue-500 bg-blue-50"
-                    : ""
-                }`}
-                onClick={() => setSelectedCamp(camp)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium">{camp.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {camp.address.city}
-                    </p>
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Your Camps</CardTitle>
+                      <CardDescription>
+                        Manage your blood donation camps
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchCamps()}
+                      title="Refresh camps list"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge className={getStatusColor(camp.status)}>
-                      {camp.status}
-                    </Badge>
-                    <Badge className={getApprovalStatusColor(camp.approvalStatus)}>
-                      {camp.approvalStatus}
-                    </Badge>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative mb-4">
+                    <input
+                      type="text"
+                      placeholder="Search camps..."
+                      className="w-full pl-8 pr-4 py-2 border rounded-md text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                   </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">
-              {searchTerm ? "No matching camps found" : "No camps found. Create your first camp to get started."}
-            </p>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button
-          className="w-full"
-          onClick={() => router.push("/organizer/camps/create")}
-        >
-          Create New Camp
-        </Button>
-      </CardFooter>
-    </Card>
-  </div>
+                  <div className="space-y-2">
+                    {filteredCamps.length > 0 ? (
+                      filteredCamps.map((camp) => (
+                        <div
+                          key={camp._id}
+                          className={`p-3 border rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
+                            selectedCamp && selectedCamp._id === camp._id
+                              ? "border-blue-500 bg-blue-50"
+                              : ""
+                          }`}
+                          onClick={() => setSelectedCamp(camp)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{camp.name}</h3>
+                              <p className="text-sm text-gray-500">
+                                {camp.address.city}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge className={getStatusColor(camp.status)}>
+                                {camp.status}
+                              </Badge>
+                              <Badge
+                                className={getApprovalStatusColor(
+                                  camp.approvalStatus
+                                )}
+                              >
+                                {camp.approvalStatus}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">
+                        {searchTerm
+                          ? "No matching camps found"
+                          : "No camps found. Create your first camp to get started."}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    className="w-full"
+                    onClick={() => router.push("/organizer/camps/create")}
+                  >
+                    Create New Camp
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
 
             <div className="lg:col-span-2">
               {selectedCamp ? (
@@ -504,9 +536,12 @@ const Camps = () => {
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
-                        <PDFDownloadLink 
-                          document={<CampReport camp={selectedCamp} />} 
-                          fileName={`${selectedCamp.name.replace(/\s+/g, '_')}_Report.pdf`}
+                        <PDFDownloadLink
+                          document={<CampReport camp={selectedCamp} />}
+                          fileName={`${selectedCamp.name.replace(
+                            /\s+/g,
+                            "_"
+                          )}_Report.pdf`}
                         >
                           {({ loading }) => (
                             <Button
@@ -534,30 +569,49 @@ const Camps = () => {
                         <TabsTrigger value="location">Location</TabsTrigger>
                       </TabsList>
                       <TabsContent value="details" className="space-y-4 mt-4">
-  <div className="flex items-center gap-2 text-sm">
-    <Badge className={getStatusColor(selectedCamp.status)}>
-      {selectedCamp.status}
-    </Badge>
-    <Badge className={getApprovalStatusColor(selectedCamp.approvalStatus)}>
-      {selectedCamp.approvalStatus}
-    </Badge>
-  </div>
-  
-  {selectedCamp.approvalStatus === "Rejected" && selectedCamp.approvalDetails?.rejectionReason && (
-    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-      <h4 className="text-sm font-medium text-red-800">Rejection Reason</h4>
-      <p className="text-sm text-red-700">{selectedCamp.approvalDetails.rejectionReason}</p>
-    </div>
-  )}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge
+                            className={getStatusColor(selectedCamp.status)}
+                          >
+                            {selectedCamp.status}
+                          </Badge>
+                          <Badge
+                            className={getApprovalStatusColor(
+                              selectedCamp.approvalStatus
+                            )}
+                          >
+                            {selectedCamp.approvalStatus}
+                          </Badge>
+                        </div>
 
-  {selectedCamp.approvalStatus === "Approved" && selectedCamp.approvalDetails?.approvedAt && (
-    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-      <h4 className="text-sm font-medium text-green-800">Approved On</h4>
-      <p className="text-sm text-green-700">
-        {format(new Date(selectedCamp.approvalDetails.approvedAt), "MMMM d, yyyy 'at' h:mm a")}
-      </p>
-    </div>
-  )}
+                        {selectedCamp.approvalStatus === "Rejected" &&
+                          selectedCamp.approvalDetails?.rejectionReason && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                              <h4 className="text-sm font-medium text-red-800">
+                                Rejection Reason
+                              </h4>
+                              <p className="text-sm text-red-700">
+                                {selectedCamp.approvalDetails.rejectionReason}
+                              </p>
+                            </div>
+                          )}
+
+                        {selectedCamp.approvalStatus === "Approved" &&
+                          selectedCamp.approvalDetails?.approvedAt && (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                              <h4 className="text-sm font-medium text-green-800">
+                                Approved On
+                              </h4>
+                              <p className="text-sm text-green-700">
+                                {format(
+                                  new Date(
+                                    selectedCamp.approvalDetails.approvedAt
+                                  ),
+                                  "MMMM d, yyyy 'at' h:mm a"
+                                )}
+                              </p>
+                            </div>
+                          )}
                         <div>
                           <h3 className="text-sm font-medium mb-1">
                             Contact Information

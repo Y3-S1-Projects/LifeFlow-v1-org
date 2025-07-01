@@ -7,11 +7,12 @@ import {
   ThumbsUp,
   ThumbsDown,
   Home,
-  Mail
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import Footer from "../components/Footer";
 import { toast } from "sonner";
+import { API_BASE_URL } from "../libs/utils";
 
 interface FAQ {
   _id: string;
@@ -21,9 +22,6 @@ interface FAQ {
   createdAt: string;
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
-
 const FAQPage: NextPage = () => {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +29,12 @@ const FAQPage: NextPage = () => {
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [faqCategory, setFaqCategory] = useState("all");
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState<Record<string, boolean>>({});
-  const [feedbackComments, setFeedbackComments] = useState<Record<string, string>>({});
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<
+    Record<string, boolean>
+  >({});
+  const [feedbackComments, setFeedbackComments] = useState<
+    Record<string, string>
+  >({});
   const [csrfToken, setCsrfToken] = useState<string>("");
 
   useEffect(() => {
@@ -54,7 +56,8 @@ const FAQPage: NextPage = () => {
     const fetchFAQs = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/v1/faqs`);
-        if (!response.ok) throw new Error(`Failed to fetch FAQs: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Failed to fetch FAQs: ${response.status}`);
         const data = await response.json();
         setFaqs(data.data.faqs);
       } catch (err) {
@@ -68,10 +71,11 @@ const FAQPage: NextPage = () => {
 
   const getFilteredFAQs = () => {
     let filtered = [...faqs];
-    if (faqCategory !== "all") filtered = filtered.filter(faq => faq.category === faqCategory);
+    if (faqCategory !== "all")
+      filtered = filtered.filter((faq) => faq.category === faqCategory);
     if (searchTerm.trim() !== "")
       filtered = filtered.filter(
-        faq =>
+        (faq) =>
           faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
           faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -79,14 +83,14 @@ const FAQPage: NextPage = () => {
   };
 
   const getFAQCategories = () => {
-    const categories = new Set(faqs.map(faq => faq.category || "General"));
+    const categories = new Set(faqs.map((faq) => faq.category || "General"));
     return ["all", ...Array.from(categories)];
   };
 
   const handleCommentChange = (faqId: string, comment: string) => {
-    setFeedbackComments(prev => ({
+    setFeedbackComments((prev) => ({
       ...prev,
-      [faqId]: comment
+      [faqId]: comment,
     }));
   };
 
@@ -101,30 +105,33 @@ const FAQPage: NextPage = () => {
         },
         credentials: "include",
       });
-      
+
       // Submit the feedback with the comment specific to this FAQ
-      const response = await fetch(`${API_BASE_URL}/api/v1/faqs/${faqId}/feedback`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          helpful,
-          comment: feedbackComments[faqId] || "",
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/faqs/${faqId}/feedback`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            helpful,
+            comment: feedbackComments[faqId] || "",
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to submit feedback: ${response.status}`);
       }
 
-      setFeedbackSubmitted(prev => ({ ...prev, [faqId]: true }));
+      setFeedbackSubmitted((prev) => ({ ...prev, [faqId]: true }));
       // Clear just this FAQ's comment after submission
-      setFeedbackComments(prev => ({
+      setFeedbackComments((prev) => ({
         ...prev,
-        [faqId]: ""
+        [faqId]: "",
       }));
       toast.success("Thank you for your feedback!");
     } catch (err) {
@@ -142,11 +149,17 @@ const FAQPage: NextPage = () => {
             Support Center
           </h1>
           <div className="flex space-x-4">
-            <Link href="/" className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/"
+              className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
+            >
               <Home size={20} className="mr-1" />
               <span>Home</span>
             </Link>
-            <Link href="/contact" className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/contact"
+              className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
+            >
               <Mail size={20} className="mr-1" />
               <span>Contact Support</span>
             </Link>
@@ -168,14 +181,14 @@ const FAQPage: NextPage = () => {
               placeholder="Search FAQs..."
               className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             <select
               className="w-full md:w-48 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-200 focus:outline-none"
               value={faqCategory}
-              onChange={e => setFaqCategory(e.target.value)}
+              onChange={(e) => setFaqCategory(e.target.value)}
             >
-              {getFAQCategories().map(cat => (
+              {getFAQCategories().map((cat) => (
                 <option key={cat} value={cat}>
                   {cat === "all" ? "All Categories" : cat}
                 </option>
@@ -185,16 +198,23 @@ const FAQPage: NextPage = () => {
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
+                <div
+                  key={i}
+                  className="h-20 bg-gray-200 rounded-lg animate-pulse"
+                />
               ))}
             </div>
           ) : error ? (
-            <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
+            <div className="bg-red-100 text-red-700 p-4 rounded-md">
+              {error}
+            </div>
           ) : getFilteredFAQs().length === 0 ? (
-            <div className="text-center text-gray-500 py-10">No FAQs found.</div>
+            <div className="text-center text-gray-500 py-10">
+              No FAQs found.
+            </div>
           ) : (
             <div className="space-y-5">
-              {getFilteredFAQs().map(faq => (
+              {getFilteredFAQs().map((faq) => (
                 <div
                   key={faq._id}
                   className="rounded-xl overflow-hidden border border-blue-100 w-full"
@@ -224,11 +244,14 @@ const FAQPage: NextPage = () => {
                       <div className="text-gray-800 mb-3">{faq.answer}</div>
                       <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
                         <span>
-                          {new Date(faq.createdAt).toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                          })}
+                          {new Date(faq.createdAt).toLocaleDateString(
+                            undefined,
+                            {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                            }
+                          )}
                         </span>
                       </div>
                       <div className="border-t pt-4">
@@ -260,7 +283,9 @@ const FAQPage: NextPage = () => {
                               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                               placeholder="Do you have any additional feedback? (optional)"
                               value={feedbackComments[faq._id] || ""}
-                              onChange={e => handleCommentChange(faq._id, e.target.value)}
+                              onChange={(e) =>
+                                handleCommentChange(faq._id, e.target.value)
+                              }
                             />
                           </div>
                         )}

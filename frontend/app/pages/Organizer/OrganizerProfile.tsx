@@ -40,6 +40,7 @@ import { RouteGuard } from "../../components/RouteGuard";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getToken } from "@/app/utils/auth";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Define a type for the address object
 type AddressType = {
@@ -79,17 +80,12 @@ const OrganizerProfile = () => {
     },
     additionalInfo: "",
   });
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const API_BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://lifeflow-v1-org-production.up.railway.app"
-    : "http://localhost:3001";
-    const [csrfToken, setCsrfToken] = useState<string>("");
-    
+  const [csrfToken, setCsrfToken] = useState<string>("");
+
   // Update formData when user data is available
   useEffect(() => {
     if (user) {
@@ -189,15 +185,15 @@ const OrganizerProfile = () => {
 
       const dataToSend = {
         ...formData,
-        address: formData.address.street 
-          ? `${formData.address.street}, ${formData.address.city}, ${formData.address.state}`.trim() 
+        address: formData.address.street
+          ? `${formData.address.street}, ${formData.address.city}, ${formData.address.state}`.trim()
           : "",
         lastDonationDate: date ? format(date, "yyyy-MM-dd") : undefined,
       };
-      
+
       await axios.put(
-        `${publicApi}/organizers/update/${user._id}`,
-          dataToSend,
+        `${API_BASE_URL}/organizers/update/${user._id}`,
+        dataToSend,
         // {
         //   ...formData,
         //   lastDonationDate: date ? format(date, "yyyy-MM-dd") : undefined,
@@ -208,7 +204,7 @@ const OrganizerProfile = () => {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfToken,
           },
-          withCredentials: true
+          withCredentials: true,
         }
       );
 

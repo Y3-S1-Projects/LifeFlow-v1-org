@@ -22,6 +22,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Loader from "../../components/Loader";
 import axios from "axios";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface ApiResponse {
   message: string;
@@ -46,11 +47,6 @@ const VerifyOtpContent: React.FC = () => {
   const [message, setMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState(5);
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {
@@ -79,7 +75,7 @@ const VerifyOtpContent: React.FC = () => {
         otp,
       };
 
-      const response = await fetch(`${publicApi}/organizers/verify-otp`, {
+      const response = await fetch(`${API_BASE_URL}/organizers/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -116,7 +112,7 @@ const VerifyOtpContent: React.FC = () => {
 
   const handleResendCode = async (): Promise<void> => {
     try {
-      const response = await fetch(`${publicApi}/organizers/resend-otp`, {
+      const response = await fetch(`${API_BASE_URL}/organizers/resend-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

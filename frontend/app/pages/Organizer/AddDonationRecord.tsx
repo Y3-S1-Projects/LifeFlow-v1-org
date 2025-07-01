@@ -3,6 +3,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { getUserIdFromToken } from "@/app/utils/auth";
 import Header from "@/app/components/Header";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Types
 interface DonationCenter {
@@ -82,7 +83,7 @@ const AddDonationRecord: React.FC = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:3001/camps/get-camps/${organizerId}`
+          `${API_BASE_URL}/camps/get-camps/${organizerId}`
         );
 
         if (response.data?.camps?.length > 0) {
@@ -131,7 +132,7 @@ const AddDonationRecord: React.FC = () => {
       setError(null);
 
       const response = await axios.get(
-        `http://localhost:3001/users/findUser/${userId}`
+        `${API_BASE_URL}/users/findUser/${userId}`
       );
       setUser(response.data);
     } catch (err) {
@@ -170,7 +171,7 @@ const AddDonationRecord: React.FC = () => {
     try {
       setLoading(true);
       await axios.post(
-        `http://localhost:3001/users/addUserDonationRecord/${userId}`,
+        `${API_BASE_URL}/users/addUserDonationRecord/${userId}`,
         formData
       );
       setSuccess(true);

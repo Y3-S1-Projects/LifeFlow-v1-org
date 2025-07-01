@@ -28,7 +28,8 @@ import OrganizerTable from "./IneligibleOrganizersTable";
 import MapComponent from "@/app/components/Map";
 import CampApprovalTable from "./CampApprovalTable";
 import Report from "./Report";
-import CampTable from "./CampTable";  // Import the CampTable component
+import CampTable from "./CampTable"; // Import the CampTable component
+import { API_BASE_URL } from "@/app/libs/utils";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("Report");
@@ -167,7 +168,7 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:3001/admin/logout", {
+      const response = await fetch(`${API_BASE_URL}/admin/logout`, {
         method: "POST",
         credentials: "include", // Important for cookies
       });
@@ -620,8 +621,8 @@ const AdminDashboard = () => {
                 />
                 {/* Camp Table Component */}
                 <div className="mt-6">
-                <h3 className="text-md font-medium mb-2">Available Camps</h3>
-                <CampTable />
+                  <h3 className="text-md font-medium mb-2">Available Camps</h3>
+                  <CampTable />
                 </div>
               </div>
             )}

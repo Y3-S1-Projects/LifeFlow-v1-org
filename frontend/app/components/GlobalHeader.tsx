@@ -6,6 +6,7 @@ import useUser from "../hooks/useUser";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
+import { API_BASE_URL } from "../libs/utils";
 
 interface HeaderProps {
   isMenuOpen: boolean;
@@ -32,11 +33,6 @@ const GlobalHeader: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
     { title: "Find Camps", href: "/find-camps" },
     { title: "Contact", href: "/contact" },
   ];
-
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {

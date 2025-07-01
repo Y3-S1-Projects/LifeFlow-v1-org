@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Search, Download, Loader2, Check, X, RefreshCw } from "lucide-react";
+import { Search, Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Type Definitions
 interface Document {
@@ -38,9 +39,6 @@ const IneligibleOrganizersTable: React.FC = () => {
   const [updatingStatus, setUpdatingStatus] = useState<{
     [key: string]: boolean;
   }>({});
-
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
   // Initialize axios instance
   const apiClient = axios.create({
