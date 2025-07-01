@@ -32,7 +32,7 @@ app.use(fileMiddleware);
 // Allow requests from your frontend
 app.use(
   cors({
-    origin: "http://localhost:3000,https://lifeflow-woad.vercel.app/",
+    origin: ["http://localhost:3000", "https://lifeflow-woad.vercel.app"],
     methods: "GET,POST,PUT,DELETE,PATCH",
     credentials: true,
   })
