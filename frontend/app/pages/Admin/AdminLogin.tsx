@@ -5,6 +5,7 @@ import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from "react-google-recaptcha-v3";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface AdminData {
   id: string;
@@ -36,12 +37,6 @@ const LoginForm: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const router = useRouter();
   const { executeRecaptcha } = useGoogleReCaptcha();
-
-  // API base URL
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {

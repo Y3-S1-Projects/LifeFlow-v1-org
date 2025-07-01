@@ -9,6 +9,7 @@ import Footer from "@/app/components/Footer";
 import { toast } from "sonner";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 const ForgotPassword = () => {
   const router = useRouter();
@@ -21,11 +22,6 @@ const ForgotPassword = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>("");
-
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   const autofillStyles = `
     input:-webkit-autofill,

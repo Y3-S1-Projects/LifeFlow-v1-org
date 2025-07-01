@@ -25,6 +25,7 @@ import useUser from "../hooks/useUser";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import axios from "axios";
 import { toast } from "sonner";
+import { API_BASE_URL } from "../libs/utils";
 
 const Header = () => {
   const router = useRouter();
@@ -32,7 +33,6 @@ const Header = () => {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [csrfToken, setCsrfToken] = useState<string>("");
 
   // Update current path when component mounts and when route changes
@@ -52,11 +52,6 @@ const Header = () => {
       window.removeEventListener("popstate", handleRouteChange);
     };
   }, []);
-
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   useEffect(() => {
     const fetchCsrfToken = async (): Promise<void> => {

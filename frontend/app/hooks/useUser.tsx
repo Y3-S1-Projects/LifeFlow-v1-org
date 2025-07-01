@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { isAuthenticated } from "../utils/auth";
+import { API_BASE_URL } from "../libs/utils";
 
 interface UserData {
   _id: string;
@@ -65,8 +66,6 @@ const useUser = (): UseUserReturn => {
   const [isUserAuthenticated, setIsUserAuthenticated] =
     useState<boolean>(false);
 
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
   const checkAuthentication = async () => {
     try {
       const authStatus = await isAuthenticated();
@@ -93,7 +92,7 @@ const useUser = (): UseUserReturn => {
         return;
       }
 
-      const response = await axios.get(`${publicApi}/api/me`, {
+      const response = await axios.get(`${API_BASE_URL}/api/me`, {
         headers: {
           "Content-Type": "application/json",
         },

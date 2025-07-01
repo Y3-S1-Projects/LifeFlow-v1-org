@@ -6,6 +6,7 @@ import type React from "react";
 import { Mail, User, MessageSquare, Send, Heart } from "lucide-react";
 import GlobalHeader from "../components/GlobalHeader";
 import Footer from "../components/Footer";
+import { API_BASE_URL } from "../libs/utils";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ const ContactPage = () => {
     setResponseMessage("");
 
     try {
-      const response = await fetch("http://localhost:3001/contact/send", {
+      const response = await fetch(`${API_BASE_URL}/contact/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

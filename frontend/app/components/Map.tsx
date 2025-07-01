@@ -7,6 +7,7 @@ import {
 } from "@react-google-maps/api";
 import axios from "axios";
 import { Clock, Phone, Calendar } from "lucide-react";
+import { API_BASE_URL } from "../libs/utils";
 
 interface Camp {
   _id: string;
@@ -54,7 +55,6 @@ const MapComponent: React.FC<IMapProps> = ({
   const [selectedCamp, setSelectedCamp] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const defaultLocation = { lat: 6.9271, lng: 79.8612 }; // Colombo (default)
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [center, setCenter] = useState<{ lat: number; lng: number }>(
     defaultLocation
   );
@@ -124,13 +124,13 @@ const MapComponent: React.FC<IMapProps> = ({
   useEffect(() => {
     const fetchCamps = async () => {
       try {
-        let url = `${publicApi}/camps`;
+        let url = `${API_BASE_URL}/camps`;
 
         if (showNearbyCamps) {
           url += `/nearby?lat=${userLatitude}&lng=${userLongitude}&radius=20`;
         } else if (showAllCamps) {
           // If showAllCamps is true, fetch all camps
-          url = `${publicApi}/camps/all`;
+          url = `${API_BASE_URL}/camps/all`;
         } else {
           return; // Do nothing if no camp fetching is required
         }
@@ -166,7 +166,7 @@ const MapComponent: React.FC<IMapProps> = ({
 
       try {
         const response = await axios.get(
-          `${publicApi}/camps/nearby?lat=${userLatitude}&lng=${userLongitude}&radius=20`
+          `${API_BASE_URL}/camps/nearby?lat=${userLatitude}&lng=${userLongitude}&radius=20`
         );
         setCamps(response.data);
         if (selectedCampId) {

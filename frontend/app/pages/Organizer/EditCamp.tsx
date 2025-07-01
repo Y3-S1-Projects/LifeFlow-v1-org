@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/select";
 import { getRoleFromToken, getUserIdFromToken } from "@/app/utils/auth";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 // Import Map component with dynamic loading to prevent SSR issues
 const MapComponent = dynamic(() => import("@/app/components/Map"), {
@@ -128,11 +129,6 @@ export default function EditCamp({ params }: { params: { id: string } }) {
     lng: number;
   } | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>("");
-
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   // Initialize form
   const form = useForm<FormValues>({

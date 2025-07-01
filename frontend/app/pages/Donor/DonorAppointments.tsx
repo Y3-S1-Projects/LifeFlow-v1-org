@@ -34,6 +34,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import BloodDonationChatbot from "@/app/components/ChatBot";
+import { API_BASE_URL } from "@/app/libs/utils";
 
 interface Address {
   street: string;
@@ -139,7 +140,6 @@ const BloodDonationAppointments: React.FC = () => {
   const [csrfToken, setCsrfToken] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredCamps, setFilteredCamps] = useState<Camp[]>([]);
-  const publicApi = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [showMap, setShowMap] = useState<boolean>(false); // State to control map visibility
   const isAxiosError = (error: unknown): error is AxiosErrorResponse => {
     return typeof error === "object" && error !== null && "response" in error;
@@ -147,10 +147,6 @@ const BloodDonationAppointments: React.FC = () => {
   const [rescheduleAppointment, setRescheduleAppointment] =
     useState<Appointment | null>(null);
   const router = useRouter();
-  const API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://lifeflow-v1-org-production.up.railway.app"
-      : "http://localhost:3001";
 
   useEffect(() => {
     if (!user) return; // Ensure user is available before proceeding
@@ -207,7 +203,7 @@ const BloodDonationAppointments: React.FC = () => {
     ) => {
       try {
         const response = await fetch(
-          `${publicApi}/camps/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
+          `${API_BASE_URL}/camps/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
         );
 
         if (!response.ok) {
@@ -293,7 +289,7 @@ const BloodDonationAppointments: React.FC = () => {
         }
 
         const response = await fetch(
-          `${publicApi}/appointments/getByUser/${userId}`,
+          `${API_BASE_URL}/appointments/getByUser/${userId}`,
           {
             method: "GET",
             headers: {
@@ -316,7 +312,7 @@ const BloodDonationAppointments: React.FC = () => {
       }
     };
     fetchAppointments();
-  }, [publicApi]);
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     setAppointmentDate("");
@@ -340,7 +336,7 @@ const BloodDonationAppointments: React.FC = () => {
   ) => {
     try {
       const response = await axios.put(
-        `${publicApi}/appointments/reschedule/${appointmentId}`,
+        `${API_BASE_URL}/appointments/reschedule/${appointmentId}`,
         { date: newDate, time: newTime },
         {
           headers: {
@@ -370,7 +366,7 @@ const BloodDonationAppointments: React.FC = () => {
   const handleCancelAppointment = async (appointmentId: string) => {
     try {
       const response = await fetch(
-        `${publicApi}/appointments/cancel/${appointmentId}`,
+        `${API_BASE_URL}/appointments/cancel/${appointmentId}`,
         {
           method: "DELETE",
           headers: {
@@ -423,7 +419,7 @@ const BloodDonationAppointments: React.FC = () => {
       }
 
       const response = await axios.post(
-        `${publicApi}/appointments/create`,
+        `${API_BASE_URL}/appointments/create`,
         {
           userId: user?._id,
           campId: selectedCamp._id,
@@ -454,7 +450,7 @@ const BloodDonationAppointments: React.FC = () => {
 
         // Optionally update the appointments list without refresh
         const updatedAppointments = await axios.get(
-          `${publicApi}/appointments/getByUser/${user?._id}`
+          `${API_BASE_URL}/appointments/getByUser/${user?._id}`
         );
         setAppointments(updatedAppointments.data);
       }

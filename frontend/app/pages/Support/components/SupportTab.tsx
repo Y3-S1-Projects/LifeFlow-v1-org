@@ -8,7 +8,8 @@ import {
   User,
   X,
 } from "lucide-react";
-import react, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/app/libs/utils";
 import { toast } from "sonner";
 
 interface ContactMessage {
@@ -37,8 +38,6 @@ export const SupportTab = () => {
     []
   );
   const [searchTerm, setSearchTerm] = useState("");
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
