@@ -8,6 +8,19 @@ body {
   font-family: "Poppins", sans-serif;
 }
 
+@keyframes progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-progress {
+  animation: progress var(--slide-duration, 5s) linear forwards;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
