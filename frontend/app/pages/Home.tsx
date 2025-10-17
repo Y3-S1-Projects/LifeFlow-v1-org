@@ -240,7 +240,7 @@ const Home = () => {
               </Link>
             </div>
           </div>
-          <div className="w-full md:w-1/2">
+          <div className="w-full md:w-1/2 group">
             <Card className="bg-white/10 backdrop-blur border-none overflow-hidden shadow-xl">
               <CardContent className="p-0">
                 <div className="relative overflow-hidden h-48 sm:h-56 md:h-64 lg:h-96">
@@ -249,12 +249,11 @@ const Home = () => {
                       key={index}
                       className={`absolute inset-0 transition-all duration-1000 ease-in-out bg-gradient-to-br ${
                         slide.color
-                      } p-4 sm:p-6 md:p-8 flex flex-col justify-center items-center text-center 
-                ${
-                  index === currentSlide
-                    ? "opacity-100 transform translate-x-0"
-                    : "opacity-0 transform translate-x-full"
-                }`}
+                      } p-4 sm:p-6 md:p-8 flex flex-col justify-center items-center text-center ${
+                        index === currentSlide
+                          ? "opacity-100 translate-x-0"
+                          : "opacity-0 translate-x-full"
+                      }`}
                     >
                       <div className="text-red-600">{slide.icon}</div>
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mt-2 md:mt-4 text-red-600">
@@ -274,31 +273,40 @@ const Home = () => {
                     </div>
                   ))}
 
+                  {/* Background for Prev Button */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 md:w-10 bg-gradient-to-r from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+                  {/* Background for Next Button */}
+                  <div className="absolute right-0 top-0 bottom-0 w-8 md:w-10 bg-gradient-to-l from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+                  {/* Prev Button */}
                   <button
                     onClick={prevSlide}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 p-1 sm:p-2 rounded-full text-red-600 hover:bg-white"
+                    className="absolute left-2 top-1/2 -translate-y-1/2  p-1 sm:p-2 text-red-600  opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     aria-label="Previous slide"
                   >
                     <ChevronLeft size={16} className="h-4 w-4 md:h-5 md:w-5" />
                   </button>
 
+                  {/* Next Button */}
                   <button
                     onClick={nextSlide}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 p-1 sm:p-2 rounded-full text-red-600 hover:bg-white"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 sm:p-2 text-red-600  opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     aria-label="Next slide"
                   >
                     <ChevronRight size={16} className="h-4 w-4 md:h-5 md:w-5" />
                   </button>
 
+                  {/* Line pagination */}
                   <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex space-x-1 md:space-x-2">
                     {slides.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => goToSlide(index)}
-                        className={`w-1 h-1 md:w-2 md:h-2 rounded-full transition-all ${
+                        className={`h-1 md:h-1.5 transition-all ${
                           currentSlide === index
-                            ? "bg-red-600 w-3 md:w-4"
-                            : "bg-white/60"
+                            ? "bg-red-600 w-6 md:w-8 rounded-sm"
+                            : "bg-white/60 w-4 md:w-6 rounded-sm"
                         }`}
                         aria-label={`Go to slide ${index + 1}`}
                       />
